@@ -8,6 +8,7 @@ interface CreateThreadOptions {
   title?: string;
   tags?: string[];
   preferredModelId?: string;
+  folderId?: Id;
 }
 
 const SEED_THREADS: ChatThread[] = [
@@ -141,13 +142,30 @@ export class ChatThreadsService {
       preferredModelId: preferredModelId ?? undefined,
       messageCount: 0,
       tags: options.tags ?? ['draft'],
-      version: 1
+      version: 1,
+      folderId: options.folderId
     };
 
     await this.idb.putThread(thread);
     this.threadsSignal.update((current) => [thread, ...current]);
     this.selectedThreadIdSignal.set(thread.id);
     return thread;
+  }
+
+  async moveThreadToFolder(threadId: Id, folderId: Id | null): Promise<void> {
+    const thread = await this.idb.getThread(threadId);
+    if (!thread) {
+      return;
+    }
+
+    const updated: ChatThread = {
+      ...thread,
+      folderId: folderId ?? undefined,
+      updatedAt: new Date().toISOString()
+    };
+
+    await this.idb.putThread(updated);
+    this.upsertThreadInSignal(updated);
   }
 
   selectThread(id: Id | null): void {
@@ -322,6 +340,24 @@ export class ChatThreadsService {
     const updated: ChatThread = {
       ...thread,
       preferredModelId: modelId,
+      updatedAt: new Date().toISOString()
+    };
+    await this.idb.putThread(updated);
+    this.upsertThreadInSignal(updated);
+  }
+
+  async updateThreadSettings(
+    id: Id,
+    settings: { systemPrompt?: string; temperature?: number }
+  ): Promise<void> {
+    const thread = await this.idb.getThread(id);
+    if (!thread) {
+      return;
+    }
+    const updated: ChatThread = {
+      ...thread,
+      systemPrompt: settings.systemPrompt,
+      temperature: settings.temperature,
       updatedAt: new Date().toISOString()
     };
     await this.idb.putThread(updated);

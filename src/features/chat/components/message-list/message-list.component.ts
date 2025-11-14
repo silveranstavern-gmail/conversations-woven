@@ -17,6 +17,8 @@ export class MessageListComponent {
   public readonly messages = input<ChatMessage[]>([]);
   public readonly activeMessageId = input<Id | null>(null);
   public readonly selectedIds = input<Id[]>([]);
+  public readonly isContextSelectionActive = input(false);
+  public readonly contextSelectedIds = input<Set<Id>>(new Set());
 
   public readonly deleteMessage = output<Id>();
   public readonly branchFrom = output<Id>();
@@ -24,6 +26,7 @@ export class MessageListComponent {
   public readonly selectionChange = output<{ id: Id; selected: boolean; range: boolean }>();
   public readonly restoreCompaction = output<Id>();
   public readonly updateMessage = output<{ id: Id; content: string }>();
+  public readonly contextSelectionChange = output<{ messageId: Id; included: boolean }>();
 
   protected readonly itemSize = MessageListComponent.ITEM_SIZE;
   protected readonly selectedSet = computed(() => new Set(this.selectedIds()));
@@ -52,5 +55,9 @@ export class MessageListComponent {
 
   protected onUpdate(payload: { id: Id; content: string }): void {
     this.updateMessage.emit(payload);
+  }
+
+  protected onContextSelectionChange(event: { messageId: Id; included: boolean }): void {
+    this.contextSelectionChange.emit(event);
   }
 }

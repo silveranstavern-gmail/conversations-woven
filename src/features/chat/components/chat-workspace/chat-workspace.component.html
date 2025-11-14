@@ -9,6 +9,22 @@
         @if (isStreaming()) {
           <span class="badge badge--ghost workspace__badge">Streaming…</span>
         }
+        <label class="workspace__context-toggle">
+          <input
+            type="checkbox"
+            [checked]="isContextSelectionActive()"
+            (change)="handleToggleContextSelection()"
+          />
+          <span>Manual Context</span>
+        </label>
+        <button
+          type="button"
+          class="ghost-button"
+          (click)="handleOpenSettings()"
+          title="Thread settings"
+        >
+          ⚙️ Settings
+        </button>
         <button
           type="button"
           class="ghost-button"
@@ -17,7 +33,6 @@
         >
           Export
         </button>
-        <button type="button" class="ghost-button">Manage Context</button>
       </div>
     </header>
 
@@ -67,12 +82,15 @@
           [messages]="messages()"
           [activeMessageId]="activeMessageId()"
           [selectedIds]="selectedMessageIds()"
+          [isContextSelectionActive]="isContextSelectionActive()"
+          [contextSelectedIds]="currentThreadContextSet()"
           (deleteMessage)="handleDeleteMessage($event)"
           (branchFrom)="handleBranchMessage($event)"
           (copyMessage)="handleCopyMessage($event)"
           (selectionChange)="handleSelectionChange($event)"
           (restoreCompaction)="handleRestoreCompaction($event)"
           (updateMessage)="handleUpdateMessage($event)"
+          (contextSelectionChange)="handleContextSelectionChange($event)"
         />
       }
 

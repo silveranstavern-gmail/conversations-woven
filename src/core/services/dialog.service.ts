@@ -3,6 +3,7 @@ import { Subject, firstValueFrom } from 'rxjs';
 import { PromptDialogComponent } from '@shared/ui/prompt-dialog/prompt-dialog.component';
 import { ConfirmDialogComponent } from '@shared/ui/confirm-dialog/confirm-dialog.component';
 import { AlertDialogComponent } from '@shared/ui/alert-dialog/alert-dialog.component';
+import { ThreadSettingsComponent, ThreadSettings } from '@features/chat/components/thread-settings/thread-settings.component';
 
 export interface PromptConfig {
   title: string;
@@ -39,9 +40,9 @@ export class DialogService {
     const dialog = componentRef.instance;
     
     dialog.title = config.title;
-    dialog.message = config.message;
+    dialog.message = config.message ?? '';
     dialog.initialValue = config.initialValue ?? '';
-    dialog.placeholder = config.placeholder;
+    dialog.placeholder = config.placeholder ?? '';
     dialog.confirmLabel = config.confirmLabel ?? 'OK';
     dialog.cancelLabel = config.cancelLabel ?? 'Cancel';
     dialog.inputValue.set(config.initialValue ?? '');
@@ -76,6 +77,20 @@ export class DialogService {
 
     await firstValueFrom(dialog.result$);
     this.destroyDialog(componentRef);
+  }
+
+  async threadSettings(config: { systemPrompt?: string; temperature?: number }): Promise<ThreadSettings | null> {
+    const componentRef = this.createDialogComponent(ThreadSettingsComponent);
+    const dialog = componentRef.instance;
+    
+    dialog.initialSystemPrompt = config.systemPrompt ?? '';
+    dialog.initialTemperature = config.temperature;
+    dialog.systemPrompt.set(config.systemPrompt ?? '');
+    dialog.temperature.set(config.temperature);
+
+    const result = await firstValueFrom(dialog.result$);
+    this.destroyDialog(componentRef);
+    return result;
   }
 
   private createDialogComponent<T>(component: new (...args: any[]) => T): ComponentRef<T> {

@@ -7,9 +7,14 @@
       </p>
     </div>
 
-    <button type="button" class="ghost-button" (click)="onCreateThread()">
-      + New Chat
-    </button>
+    <div class="thread-list__header-actions">
+      <button type="button" class="ghost-button ghost-button--sm" (click)="onCreateFolder()">
+        + New Folder
+      </button>
+      <button type="button" class="ghost-button" (click)="onCreateThread()">
+        + New Chat
+      </button>
+    </div>
   </header>
 
   <label class="thread-list__search">
@@ -78,88 +83,197 @@
   <div class="thread-list__items" role="listbox">
     @if (filteredThreads().length === 0) {
       <div class="thread-list__empty">
-        <p>No threads match “{{ term() }}”.</p>
+        <p>No threads match "{{ term() }}".</p>
         <button type="button" class="ghost-button" (click)="onCreateThread()">Start a new chat</button>
       </div>
     } @else {
-      @for (thread of filteredThreads(); track thread.id) {
-        <article
-          class="thread-list__item"
-          [class.active]="thread.id === activeThreadId()"
-          role="option"
-          tabindex="0"
-          [attr.aria-selected]="thread.id === activeThreadId()"
-          (click)="onSelectThread(thread.id)"
-          (keydown)="onKeydownSelect($event, thread.id)"
-        >
-          <div class="thread-list__item-row">
-            <label class="thread-list__checkbox">
-              <span class="visually-hidden">Select {{ thread.title }}</span>
-              <input
-                type="checkbox"
-                [checked]="selectedSet().has(thread.id)"
-                (change)="onSelectionChange($event, thread.id)"
-              />
-            </label>
+      <!-- Uncategorized threads -->
+      @if (uncategorizedThreads().length > 0) {
+        <div class="thread-list__section">
+          <h3 class="thread-list__section-title">Uncategorized</h3>
+          @for (thread of uncategorizedThreads(); track thread.id) {
+            <article
+              class="thread-list__item"
+              [class.active]="thread.id === activeThreadId()"
+              role="option"
+              tabindex="0"
+              [attr.aria-selected]="thread.id === activeThreadId()"
+              [routerLink]="['/chat', thread.id]"
+              routerLinkActive="active"
+              (keydown)="onKeydownSelect($event, thread.id)"
+            >
+              <div class="thread-list__item-row">
+                <label class="thread-list__checkbox">
+                  <span class="visually-hidden">Select {{ thread.title }}</span>
+                  <input
+                    type="checkbox"
+                    [checked]="selectedSet().has(thread.id)"
+                    (change)="onSelectionChange($event, thread.id)"
+                  />
+                </label>
 
-            <div class="thread-list__item-main">
-              <div>
-                <p class="thread-list__item-title">
-                  {{ thread.title }}
-                </p>
-                <p class="thread-list__item-subtitle">
-                  {{ thread.messageCount }} messages · Updated
-                  {{ thread.updatedAt | date: 'short' }}
-                </p>
+                <div class="thread-list__item-main">
+                  <div>
+                    <p class="thread-list__item-title">
+                      {{ thread.title }}
+                    </p>
+                    <p class="thread-list__item-subtitle">
+                      {{ thread.messageCount }} messages · Updated
+                      {{ thread.updatedAt | date: 'short' }}
+                    </p>
+                  </div>
+
+                  <div class="thread-list__item-actions">
+                    <button type="button" class="ghost-button ghost-button--sm thread-list__item-menu-trigger" (click)="onToggleMenu($event, thread.id)">
+                      ...
+                    </button>
+                    @if (openMenuThreadId() === thread.id) {
+                      <div class="thread-list__item-menu" (click)="$event.stopPropagation()">
+                        <button type="button" class="ghost-button ghost-button--sm" (click)="onMoveThreadToFolder($event, thread.id)">
+                          Move to Folder
+                        </button>
+                        <button type="button" class="ghost-button ghost-button--sm" (click)="onRenameThread($event, thread.id)">
+                          Rename
+                        </button>
+                        <button type="button" class="ghost-button ghost-button--sm" (click)="onTogglePin($event, thread.id, !(thread.pinned ?? false))">
+                          {{ thread.pinned ? 'Unpin' : 'Pin' }}
+                        </button>
+                        <button type="button" class="ghost-button ghost-button--sm" (click)="onToggleProtection($event, thread.id, !(thread.protected ?? false))">
+                          {{ thread.protected ? 'Unprotect' : 'Protect' }}
+                        </button>
+                        <button type="button" class="ghost-button ghost-button--sm ghost-button--danger" (click)="onDeleteThread($event, thread.id)" [disabled]="thread.protected" [attr.title]="thread.protected ? 'Unprotect before deleting' : null">
+                          Delete
+                        </button>
+                      </div>
+                    }
+                  </div>
+                </div>
               </div>
 
-              <div class="thread-list__item-actions">
-                <button
-                  type="button"
-                  class="ghost-button ghost-button--sm"
-                  (click)="onRenameThread($event, thread.id)"
-                >
-                  Rename
-                </button>
-                <button
-                  type="button"
-                  class="ghost-button ghost-button--sm"
-                  (click)="onTogglePin($event, thread.id, !(thread.pinned ?? false))"
-                >
-                  {{ thread.pinned ? 'Unpin' : 'Pin' }}
-                </button>
-                <button
-                  type="button"
-                  class="ghost-button ghost-button--sm"
-                  (click)="onToggleProtection($event, thread.id, !(thread.protected ?? false))"
-                >
-                  {{ thread.protected ? 'Unprotect' : 'Protect' }}
-                </button>
-                <button
-                  type="button"
-                  class="ghost-button ghost-button--sm ghost-button--danger"
-                  (click)="onDeleteThread($event, thread.id)"
-                  [disabled]="thread.protected"
-                  [attr.title]="thread.protected ? 'Unprotect before deleting' : null"
-                >
-                  Delete
-                </button>
+              <div class="thread-list__item-tags">
+                @if (thread.protected) {
+                  <span class="badge badge--neutral">Protected</span>
+                }
+                @if (thread.pinned) {
+                  <span class="badge">Pinned</span>
+                }
+                @for (tag of thread.tags ?? []; track tag) {
+                  <span class="badge badge--ghost">{{ tag }}</span>
+                }
               </div>
+            </article>
+          }
+        </div>
+      }
+
+      <!-- Folders -->
+      @for (folder of folders(); track folder.id) {
+        <div class="thread-list__section">
+          <div class="thread-list__folder-header">
+            <button
+              type="button"
+              class="thread-list__folder-toggle"
+              (click)="onToggleFolderExpansion(folder.id)"
+              [attr.aria-expanded]="expandedFolderIds().has(folder.id)"
+            >
+              <span class="thread-list__folder-icon">
+                {{ expandedFolderIds().has(folder.id) ? '▼' : '▶' }}
+              </span>
+              <h3 class="thread-list__section-title">{{ folder.name }}</h3>
+            </button>
+            <div class="thread-list__folder-actions">
+              <button
+                type="button"
+                class="ghost-button ghost-button--sm"
+                (click)="onRenameFolder($event, folder.id)"
+              >
+                Rename
+              </button>
+              <button
+                type="button"
+                class="ghost-button ghost-button--sm ghost-button--danger"
+                (click)="onDeleteFolder($event, folder.id)"
+              >
+                Delete
+              </button>
             </div>
           </div>
 
-          <div class="thread-list__item-tags">
-            @if (thread.protected) {
-              <span class="badge badge--neutral">Protected</span>
+          @if (expandedFolderIds().has(folder.id)) {
+            @for (thread of threadsByFolder().get(folder.id) ?? []; track thread.id) {
+              <article
+                class="thread-list__item"
+                [class.active]="thread.id === activeThreadId()"
+                role="option"
+                tabindex="0"
+                [attr.aria-selected]="thread.id === activeThreadId()"
+                [routerLink]="['/chat', thread.id]"
+                routerLinkActive="active"
+                (keydown)="onKeydownSelect($event, thread.id)"
+              >
+                <div class="thread-list__item-row">
+                  <label class="thread-list__checkbox">
+                    <span class="visually-hidden">Select {{ thread.title }}</span>
+                    <input
+                      type="checkbox"
+                      [checked]="selectedSet().has(thread.id)"
+                      (change)="onSelectionChange($event, thread.id)"
+                    />
+                  </label>
+
+                  <div class="thread-list__item-main">
+                    <div>
+                      <p class="thread-list__item-title">
+                        {{ thread.title }}
+                      </p>
+                      <p class="thread-list__item-subtitle">
+                        {{ thread.messageCount }} messages · Updated
+                        {{ thread.updatedAt | date: 'short' }}
+                      </p>
+                    </div>
+
+                    <div class="thread-list__item-actions">
+                      <button type="button" class="ghost-button ghost-button--sm thread-list__item-menu-trigger" (click)="onToggleMenu($event, thread.id)">
+                        ...
+                      </button>
+                      @if (openMenuThreadId() === thread.id) {
+                        <div class="thread-list__item-menu" (click)="$event.stopPropagation()">
+                          <button type="button" class="ghost-button ghost-button--sm" (click)="onMoveThreadToFolder($event, thread.id)">
+                            Move to Folder
+                          </button>
+                          <button type="button" class="ghost-button ghost-button--sm" (click)="onRenameThread($event, thread.id)">
+                            Rename
+                          </button>
+                          <button type="button" class="ghost-button ghost-button--sm" (click)="onTogglePin($event, thread.id, !(thread.pinned ?? false))">
+                            {{ thread.pinned ? 'Unpin' : 'Pin' }}
+                          </button>
+                          <button type="button" class="ghost-button ghost-button--sm" (click)="onToggleProtection($event, thread.id, !(thread.protected ?? false))">
+                            {{ thread.protected ? 'Unprotect' : 'Protect' }}
+                          </button>
+                          <button type="button" class="ghost-button ghost-button--sm ghost-button--danger" (click)="onDeleteThread($event, thread.id)" [disabled]="thread.protected" [attr.title]="thread.protected ? 'Unprotect before deleting' : null">
+                            Delete
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                </div>
+
+                <div class="thread-list__item-tags">
+                  @if (thread.protected) {
+                    <span class="badge badge--neutral">Protected</span>
+                  }
+                  @if (thread.pinned) {
+                    <span class="badge">Pinned</span>
+                  }
+                  @for (tag of thread.tags ?? []; track tag) {
+                    <span class="badge badge--ghost">{{ tag }}</span>
+                  }
+                </div>
+              </article>
             }
-            @if (thread.pinned) {
-              <span class="badge">Pinned</span>
-            }
-            @for (tag of thread.tags ?? []; track tag) {
-              <span class="badge badge--ghost">{{ tag }}</span>
-            }
-          </div>
-        </article>
+          }
+        </div>
       }
     }
   </div>

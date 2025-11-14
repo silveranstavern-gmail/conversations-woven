@@ -1,12 +1,14 @@
 import { Injectable } from '@angular/core';
 import Dexie, { Table } from 'dexie';
 import type { ChatMessage, ChatThread, Id } from '@models/chat';
+import type { Folder } from '@models/folder';
 import {
   chatMessageSchema,
   chatMessagesSchema,
   chatThreadSchema,
   chatThreadsSchema
 } from '@models/validators';
+import { folderSchema, foldersSchema } from '@models/folder';
 
 export interface KvEntry<T = unknown> {
   key: string;
@@ -22,21 +24,29 @@ export interface CompactionSnapshot {
 }
 
 const DB_NAME = 'advanced-llm-chat';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const COMPACTION_KEY_PREFIX = 'compaction:';
 
 class ChatDatabase extends Dexie {
   public threads!: Table<ChatThread, Id>;
   public messages!: Table<ChatMessage, Id>;
   public kv!: Table<KvEntry, string>;
+  public folders!: Table<Folder, Id>;
 
   constructor() {
     super(DB_NAME);
 
-    this.version(DB_VERSION).stores({
+    this.version(1).stores({
       threads: '&id, updatedAt, pinned, protected',
       messages: '&id, threadId, parentId, createdAt',
       kv: '&key'
+    });
+
+    this.version(2).stores({
+      threads: '&id, updatedAt, pinned, protected, folderId',
+      messages: '&id, threadId, parentId, createdAt',
+      kv: '&key',
+      folders: '&id, name, createdAt'
     });
   }
 }
@@ -156,6 +166,30 @@ export class IdbService {
       acc[messageId] = entry.value as CompactionSnapshot;
       return acc;
     }, {});
+  }
+
+  async listFolders(): Promise<Folder[]> {
+    const records = await this.db.folders.toArray();
+    return foldersSchema.parse(records) as Folder[];
+  }
+
+  async getFolder(id: Id): Promise<Folder | undefined> {
+    const record = await this.db.folders.get(id);
+    return record ? (folderSchema.parse(record) as Folder) : undefined;
+  }
+
+  async putFolder(folder: Folder): Promise<void> {
+    const payload = folderSchema.parse(folder) as Folder;
+    await this.db.folders.put(payload);
+  }
+
+  async bulkPutFolders(folders: Folder[]): Promise<void> {
+    const payload = foldersSchema.parse(folders) as Folder[];
+    await this.db.folders.bulkPut(payload);
+  }
+
+  async deleteFolder(id: Id): Promise<void> {
+    await this.db.folders.delete(id);
   }
 
   async replaceWithBundle(payload: {

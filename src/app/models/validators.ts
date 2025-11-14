@@ -38,7 +38,10 @@ export const chatThreadSchema = z.object({
   meta: z.record(z.any()).optional(),
   version: z.number().int().positive(),
   pinned: z.boolean().optional(),
-  protected: z.boolean().optional()
+  protected: z.boolean().optional(),
+  systemPrompt: z.string().optional(),
+  temperature: z.number().min(0).max(2).optional(),
+  folderId: idSchema.optional()
 });
 
 export const chatMessageSchema = z.object({

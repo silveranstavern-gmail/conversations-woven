@@ -2,6 +2,7 @@ import { computed, effect, inject, Injectable, signal } from '@angular/core';
 import type { ChatMessage, Id } from '@models/chat';
 import { IdbService } from '@core/services/persistence/idb.service';
 import { ChatThreadsService } from './chat-threads.service';
+import type { ChatTurn } from '../adapters/llm-adapter';
 
 @Injectable({
   providedIn: 'root'
@@ -131,7 +132,7 @@ export class MessageStateService {
     return this.messages().filter((message) => lookup.has(message.id));
   }
 
-  buildChatTurns(threadId: Id): Array<{ role: string; content: string }> {
+  buildChatTurns(threadId: Id): ChatTurn[] {
     return this.messages()
       .filter((message) => message.threadId === threadId)
       .filter((message) => message.role !== 'assistant' || message.state === 'complete')
@@ -139,7 +140,34 @@ export class MessageStateService {
         role: message.role,
         content: message.rawMd ?? ''
       }))
-      .filter((turn) => turn.content.trim().length > 0);
+      .filter((turn) => turn.content.trim().length > 0) as ChatTurn[];
+  }
+
+  buildChatTurnsFromIds(ids: Id[]): ChatTurn[] {
+    // Get all messages for the current thread
+    const threadId = this.threads.selectedThreadId();
+    if (!threadId) {
+      return [];
+    }
+
+    // Filter to only include messages whose IDs are in the provided set
+    const idSet = new Set(ids);
+    const filteredMessages = this.messages()
+      .filter((message) => message.threadId === threadId && idSet.has(message.id))
+      .filter((message) => message.role !== 'assistant' || message.state === 'complete');
+
+    // Sort by createdAt timestamp
+    const sorted = filteredMessages.sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+
+    // Map to ChatTurn format
+    return sorted
+      .map((message) => ({
+        role: message.role,
+        content: message.rawMd ?? ''
+      }))
+      .filter((turn) => turn.content.trim().length > 0) as ChatTurn[];
   }
 
   generateId(): Id {

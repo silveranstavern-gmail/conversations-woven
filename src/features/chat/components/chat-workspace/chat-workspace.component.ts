@@ -5,6 +5,8 @@ import { ComposerComponent, ComposerSubmitPayload } from '../composer/composer.c
 import { ActiveChatService } from '../../data/active-chat.service';
 import { ChatAdaptersService } from '../../data/chat-adapters.service';
 import { ChatThreadsService } from '../../data/chat-threads.service';
+import { SelectionStateService } from '../../data/selection-state.service';
+import { DialogService } from '@core/services/dialog.service';
 
 @Component({
   selector: 'app-chat-workspace',
@@ -20,6 +22,8 @@ export class ChatWorkspaceComponent {
   private readonly activeChat = inject(ActiveChatService);
   private readonly adapters = inject(ChatAdaptersService);
   private readonly threads = inject(ChatThreadsService);
+  private readonly selectionState = inject(SelectionStateService);
+  private readonly dialogService = inject(DialogService);
 
   protected readonly messages = this.activeChat.messages;
   protected readonly activeMessageId = this.activeChat.activeMessageId;
@@ -58,6 +62,15 @@ export class ChatWorkspaceComponent {
   protected readonly composerDisabled = computed(
     () => !this.thread() || this.isLoading() || this.isStreaming() || !this.preferredModelId()
   );
+
+  protected readonly isContextSelectionActive = this.selectionState.isContextSelectionActive.asReadonly();
+  protected readonly currentThreadContextSet = computed(() => {
+    const threadId = this.thread()?.id;
+    if (!threadId) {
+      return new Set<Id>();
+    }
+    return this.selectionState.getContextForThread(threadId);
+  });
 
   protected handleDeleteMessage(messageId: Id): void {
     void this.activeChat.deleteMessage(messageId);
@@ -119,6 +132,18 @@ export class ChatWorkspaceComponent {
     void this.activeChat.uncompactMessage(messageId);
   }
 
+  protected handleToggleContextSelection(): void {
+    this.selectionState.toggleContextSelection(!this.isContextSelectionActive());
+  }
+
+  protected handleContextSelectionChange(event: { messageId: Id; included: boolean }): void {
+    const threadId = this.thread()?.id;
+    if (!threadId) {
+      return;
+    }
+    this.selectionState.setContextForMessage(threadId, event.messageId, event.included);
+  }
+
   protected handleCopySelection(): void {
     const ids = this.selectedMessageIds();
     if (!ids.length || typeof navigator === 'undefined' || !navigator.clipboard) {
@@ -144,6 +169,20 @@ export class ChatWorkspaceComponent {
     }
     const markdown = this.buildThreadDocument(thread, messages);
     this.downloadTextFile(markdown, `${this.buildFilename(thread.title)}.md`);
+  }
+
+  protected async handleOpenSettings(): Promise<void> {
+    const thread = this.thread();
+    if (!thread) {
+      return;
+    }
+    const settings = await this.dialogService.threadSettings({
+      systemPrompt: thread.systemPrompt,
+      temperature: thread.temperature
+    });
+    if (settings !== null) {
+      void this.threads.updateThreadSettings(thread.id, settings);
+    }
   }
 
   private formatMessagesMarkdown(messages: ChatMessage[]): string {

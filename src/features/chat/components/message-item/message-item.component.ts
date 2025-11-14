@@ -17,6 +17,8 @@ export class MessageItemComponent {
   public readonly message = input.required<ChatMessage>();
   public readonly isActive = input(false);
   public readonly isSelected = input(false);
+  public readonly isContextSelectionActive = input(false);
+  public readonly isContextSelected = input(false);
 
   public readonly deleteMessage = output<ChatMessage['id']>();
   public readonly branchFrom = output<ChatMessage['id']>();
@@ -28,6 +30,7 @@ export class MessageItemComponent {
     selected: boolean;
     range: boolean;
   }>();
+  public readonly contextSelectionChange = output<{ messageId: Id; included: boolean }>();
 
   protected readonly mode = signal<ViewMode>('rendered');
   protected readonly isEditing = signal(false);
@@ -117,5 +120,17 @@ export class MessageItemComponent {
 
   protected handleUncompact(): void {
     this.restoreCompaction.emit(this.message().id);
+  }
+
+  protected handleContextSelectionToggle(event: Event): void {
+    event.stopPropagation();
+    const checkbox = event.target as HTMLInputElement | null;
+    if (!checkbox) {
+      return;
+    }
+    this.contextSelectionChange.emit({
+      messageId: this.message().id,
+      included: checkbox.checked
+    });
   }
 }

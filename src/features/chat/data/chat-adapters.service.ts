@@ -110,7 +110,7 @@ export class ChatAdaptersService {
   streamModel(
     modelId: string,
     turns: ChatTurn[],
-    opts: { maxTokens?: number; temperature?: number }
+    opts: { maxTokens?: number; temperature?: number; system?: string }
   ) {
     const model = this.getModelById(modelId);
     if (model?.adapterId !== 'openrouter') {
@@ -120,7 +120,8 @@ export class ChatAdaptersService {
     return this.openrouterAdapter.streamChat(turns, {
       model: model.adapterModelId,
       maxTokens: opts.maxTokens,
-      temperature: opts.temperature
+      temperature: opts.temperature,
+      system: opts.system
     });
   }
 

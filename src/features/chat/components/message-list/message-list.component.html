@@ -19,12 +19,15 @@
           [message]="message"
           [isActive]="message.id === activeMessageId()"
           [isSelected]="selectedSet().has(message.id)"
+          [isContextSelectionActive]="isContextSelectionActive()"
+          [isContextSelected]="contextSelectedIds().has(message.id)"
           (deleteMessage)="onDelete($event)"
           (branchFrom)="onBranch($event)"
           (copyMessage)="onCopy($event)"
           (selectionChange)="onSelectionChanged($event)"
           (restoreCompaction)="onRestore($event)"
           (updateMessage)="onUpdate($event)"
+          (contextSelectionChange)="onContextSelectionChange($event)"
         />
       </div>
     </cdk-virtual-scroll-viewport>

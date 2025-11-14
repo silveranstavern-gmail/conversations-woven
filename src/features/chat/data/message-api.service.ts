@@ -2,6 +2,8 @@ import { inject, Injectable } from '@angular/core';
 import type { ChatMessage, Id } from '@models/chat';
 import { ChatAdaptersService } from './chat-adapters.service';
 import { MessageStateService } from './message-state.service';
+import { ChatThreadsService } from './chat-threads.service';
+import { SelectionStateService } from './selection-state.service';
 import { ChatTurn } from '../adapters/llm-adapter';
 
 @Injectable({
@@ -10,6 +12,8 @@ import { ChatTurn } from '../adapters/llm-adapter';
 export class MessageApiService {
   private readonly adapters = inject(ChatAdaptersService);
   private readonly messageState = inject(MessageStateService);
+  private readonly threads = inject(ChatThreadsService);
+  private readonly selectionState = inject(SelectionStateService);
 
   async sendUserMessage(rawMd: string, modelId: string, threadId: Id): Promise<void> {
     if (this.messageState.isStreaming()) {
@@ -52,8 +56,42 @@ export class MessageApiService {
     this.messageState.setStreamingMessageId(assistantMessage.id);
 
     try {
-      const turns = this.messageState.buildChatTurns(threadId);
-      const stream = await this.adapters.streamModel(model.id, turns, {});
+      // Determine which messages to send based on context selection mode
+      const activeThread = this.threads.activeThread();
+      let turns: ChatTurn[];
+
+      if (activeThread && this.selectionState.isContextSelectionActive()) {
+        const contextIds = this.selectionState.getContextForThread(activeThread.id);
+        if (contextIds.size > 0) {
+          // Build turns from selected context IDs
+          turns = this.messageState.buildChatTurnsFromIds(Array.from(contextIds));
+          // IMPORTANT: The new user message must be added to the turns before sending
+          turns.push({
+            role: 'user',
+            content: userMessage.rawMd ?? ''
+          });
+        } else {
+          // No context selected, fall back to all messages
+          turns = this.messageState.buildChatTurns(threadId);
+        }
+      } else {
+        // Normal mode: use all messages
+        turns = this.messageState.buildChatTurns(threadId);
+      }
+
+      // Prepend system prompt if it exists (only if not already in turns)
+      const thread = this.threads.getThreadSnapshot(threadId);
+      if (thread?.systemPrompt && !turns.some((t) => t.role === 'system')) {
+        turns = [
+          { role: 'system', content: thread.systemPrompt },
+          ...turns
+        ];
+      }
+
+      const stream = await this.adapters.streamModel(model.id, turns, {
+        system: thread?.systemPrompt,
+        temperature: thread?.temperature
+      });
       let workingAssistant = assistantMessage;
       let hasContent = false;
 

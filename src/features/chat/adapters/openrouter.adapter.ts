@@ -34,12 +34,22 @@ export class OpenRouterAdapter implements LlmAdapter {
       dangerouslyAllowBrowser: true
     });
 
-    const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = turns.map((turn) => ({
-      role: turn.role,
-      content: turn.content
-    }));
+    // Filter out tool messages as they require tool_call_id which we don't have
+    // and they're typically not needed in the conversation context
+    const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = turns
+      .filter((turn): turn is Exclude<ChatTurn, { role: 'tool' }> => turn.role !== 'tool')
+      .map((turn) => {
+        // TypeScript now knows turn.role is 'system' | 'user' | 'assistant'
+        if (turn.role === 'system') {
+          return { role: 'system' as const, content: turn.content };
+        } else if (turn.role === 'user') {
+          return { role: 'user' as const, content: turn.content };
+        } else {
+          return { role: 'assistant' as const, content: turn.content };
+        }
+      });
 
-    if (opts.system) {
+    if (opts.system?.trim()) {
       messages.unshift({ role: 'system', content: opts.system });
     }
 

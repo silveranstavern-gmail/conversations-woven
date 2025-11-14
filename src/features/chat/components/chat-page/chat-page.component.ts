@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input } from '@angular/core';
+import { Router } from '@angular/router';
 import { Id } from '@models/chat';
 import { ChatWorkspaceComponent } from '../chat-workspace/chat-workspace.component';
 import { ThreadListComponent } from '../thread-list/thread-list.component';
@@ -15,6 +16,9 @@ import { DialogService } from '@core/services/dialog.service';
 export class ChatPageComponent {
   private readonly threadsService = inject(ChatThreadsService);
   private readonly dialogService = inject(DialogService);
+  private readonly router = inject(Router);
+
+  public readonly threadId = input<string | undefined>();
 
   protected readonly threads = this.threadsService.threads;
   protected readonly activeThreadId = this.threadsService.selectedThreadId;
@@ -22,12 +26,59 @@ export class ChatPageComponent {
   protected readonly hasThreads = this.threadsService.hasThreads;
   protected readonly isReady = this.threadsService.isReady;
 
+  constructor() {
+    // Sync route param to service
+    effect(() => {
+      const routeThreadId = this.threadId();
+      const currentSelectedId = this.threadsService.selectedThreadId();
+      
+      if (routeThreadId) {
+        const exists = this.threads().some((thread) => thread.id === routeThreadId);
+        if (exists && routeThreadId !== currentSelectedId) {
+          // Route has a valid thread ID that differs from current selection - update service
+          this.threadsService.selectThread(routeThreadId);
+        } else if (!exists) {
+          // Thread doesn't exist, navigate to root or first available thread
+          const firstThread = this.threads()[0];
+          if (firstThread) {
+            void this.router.navigate(['/chat', firstThread.id], { replaceUrl: true });
+          } else {
+            void this.router.navigate(['/chat'], { replaceUrl: true });
+          }
+        }
+      } else {
+        // No threadId in route - select first thread if available, otherwise clear selection
+        const firstThread = this.threads()[0];
+        if (firstThread && firstThread.id !== currentSelectedId) {
+          void this.router.navigate(['/chat', firstThread.id], { replaceUrl: true });
+        } else if (!firstThread && currentSelectedId !== null) {
+          this.threadsService.selectThread(null);
+        }
+      }
+    });
+
+    // Sync service selection to route (when thread is created or selected programmatically)
+    effect(() => {
+      const selectedId = this.threadsService.selectedThreadId();
+      const routeThreadId = this.threadId();
+      // Only navigate if service selection differs from route and we're not already navigating
+      if (selectedId && selectedId !== routeThreadId) {
+        void this.router.navigate(['/chat', selectedId], { replaceUrl: true });
+      } else if (!selectedId && routeThreadId) {
+        // Service cleared selection but route still has a threadId - navigate to root
+        void this.router.navigate(['/chat'], { replaceUrl: true });
+      }
+    });
+  }
+
   protected readonly handleThreadSelected = (threadId: Id): void => {
-    this.threadsService.selectThread(threadId);
+    // Navigation will be handled by routerLink, but we keep this for programmatic selection
+    void this.router.navigate(['/chat', threadId]);
   };
 
-  protected readonly handleCreateThread = (): void => {
-    void this.threadsService.createThread();
+  protected readonly handleCreateThread = async (): Promise<void> => {
+    const newThread = await this.threadsService.createThread();
+    void this.router.navigate(['/chat', newThread.id]);
   };
 
   protected readonly handleRenameThread = async (threadId: Id): Promise<void> => {
@@ -61,12 +112,21 @@ export class ChatPageComponent {
       confirmLabel: 'Delete'
     });
     if (confirmed) {
+      const isActiveThread = threadId === this.activeThreadId();
       const deleted = await this.threadsService.deleteThread(threadId);
       if (!deleted) {
         await this.dialogService.alert({
           title: 'Error',
           message: 'Thread could not be deleted.'
         });
+      } else if (isActiveThread) {
+        // Navigate to root or first available thread
+        const remainingThreads = this.threads();
+        if (remainingThreads.length > 0) {
+          void this.router.navigate(['/chat', remainingThreads[0].id]);
+        } else {
+          void this.router.navigate(['/chat']);
+        }
       }
     }
   };

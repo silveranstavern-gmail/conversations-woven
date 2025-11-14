@@ -22,6 +22,9 @@ export interface ChatThread {
   version: number;
   pinned?: boolean;
   protected?: boolean;
+  systemPrompt?: string;
+  temperature?: number;
+  folderId?: Id;
 }
 
 export type MessageState = 'draft' | 'sending' | 'streaming' | 'complete' | 'failed';

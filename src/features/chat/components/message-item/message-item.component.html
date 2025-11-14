@@ -4,15 +4,28 @@
   [class.message--selected]="isSelected()"
 >
   <header class="message__header">
-    <label class="message__selection">
-      <input
-        type="checkbox"
-        class="message__checkbox"
-        [checked]="isSelected()"
-        (click)="handleSelectionToggle($event)"
-        aria-label="Select message"
-      />
-    </label>
+    <div class="message__selections">
+      <label class="message__selection">
+        <input
+          type="checkbox"
+          class="message__checkbox"
+          [checked]="isSelected()"
+          (click)="handleSelectionToggle($event)"
+          aria-label="Select message"
+        />
+      </label>
+      @if (isContextSelectionActive()) {
+        <label class="message__selection message__selection--context">
+          <input
+            type="checkbox"
+            class="message__checkbox message__checkbox--context"
+            [checked]="isContextSelected()"
+            (change)="handleContextSelectionToggle($event)"
+            aria-label="Include in context"
+          />
+        </label>
+      }
+    </div>
 
     <div class="message__meta">
       <p class="message__author">{{ authorLabel() }}</p>
