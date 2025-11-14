@@ -1,0 +1,110 @@
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.dialog-container {
+  background: var(--surface-card, #ffffff);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  min-width: 400px;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.2s ease-out;
+}
+
+.dialog-header {
+  padding: 24px 24px 16px;
+}
+
+.dialog-title {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.dialog-message {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary, #666666);
+  line-height: 1.5;
+}
+
+.dialog-footer {
+  padding: 16px 24px 24px;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.dialog-button {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s, opacity 0.2s;
+}
+
+.dialog-button--secondary {
+  background: var(--surface-secondary, #f5f5f5);
+  color: var(--text-primary, #1a1a1a);
+}
+
+.dialog-button--secondary:hover {
+  background: var(--surface-hover, #e8e8e8);
+}
+
+.dialog-button--primary {
+  background: var(--primary-color, #0066cc);
+  color: white;
+}
+
+.dialog-button--primary:hover {
+  background: var(--primary-hover, #0052a3);
+  opacity: 0.9;
+}
+
+.dialog-button--danger {
+  background: var(--danger-color, #dc3545);
+  color: white;
+}
+
+.dialog-button--danger:hover {
+  background: var(--danger-hover, #c82333);
+  opacity: 0.9;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+

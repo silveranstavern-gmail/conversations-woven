@@ -1,4 +1,4 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { CryptoService, EncryptedPayload } from './crypto.service';
 import { IdbService } from './persistence/idb.service';
 
@@ -8,6 +8,9 @@ const KEY_PREFIX = 'api-key:';
   providedIn: 'root'
 })
 export class KeychainService {
+  private readonly idb = inject(IdbService);
+  private readonly crypto = inject(CryptoService);
+
   private passphrase: string | null = null;
 
   private readonly unlockedSignal = signal(false);
@@ -22,7 +25,7 @@ export class KeychainService {
   readonly isUnlocked = this.unlockedSignal.asReadonly();
   readonly storedProviders = computed(() => Object.keys(this.storedMapSignal()));
 
-  constructor(private readonly idb: IdbService, private readonly crypto: CryptoService) {
+  constructor() {
     void this.refresh();
   }
 
