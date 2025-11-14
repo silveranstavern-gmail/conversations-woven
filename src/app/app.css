@@ -1,0 +1,89 @@
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.app-shell {
+  min-height: 100vh;
+  width: min(100%, var(--container-max-width));
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-6) var(--space-4) var(--space-8);
+}
+
+.app-shell__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid color-mix(in oklch, var(--color-border) 80%, transparent);
+  background: color-mix(in oklch, var(--color-surface-1) 90%, transparent);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(16px);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-text-strong);
+}
+
+.brand__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklch, var(--color-brand) 30%, transparent);
+  color: var(--color-brand-strong);
+}
+
+.brand__copy {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.brand__copy strong {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.brand__copy small {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+
+.primary-nav {
+  display: inline-flex;
+  gap: var(--space-2);
+  padding: 0.15rem;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-surface-2);
+  border: 1px solid color-mix(in oklch, var(--color-border) 60%, transparent);
+}
+
+.primary-nav a {
+  padding: 0.35rem 0.95rem;
+  border-radius: var(--radius-pill);
+  font-weight: 500;
+  color: var(--color-muted);
+  transition: color var(--transition-base), background var(--transition-base);
+}
+
+.primary-nav a.active {
+  background-color: var(--color-brand);
+  color: white;
+}
+
+.app-shell__content {
+  flex: 1;
+  display: flex;
+}

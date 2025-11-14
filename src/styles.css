@@ -1,0 +1,157 @@
+:root {
+  color-scheme: light;
+  --font-family-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+  --font-scale: 1;
+
+  --color-surface-0: oklch(98% 0.004 260);
+  --color-surface-1: oklch(95% 0.008 260);
+  --color-surface-2: oklch(90% 0.02 260);
+  --color-border: oklch(80% 0.02 260);
+  --color-muted: oklch(55% 0.02 260);
+  --color-text: oklch(20% 0.03 260);
+  --color-text-strong: oklch(15% 0.05 260);
+  --color-brand: oklch(64% 0.18 260);
+  --color-brand-strong: oklch(57% 0.24 264);
+  --color-accent: oklch(70% 0.2 23);
+
+  --shadow-sm: 0 1px 2px oklch(0% 0 0 / 0.05);
+  --shadow-md: 0 8px 24px oklch(0% 0 0 / 0.08);
+
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-pill: 999px;
+
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+
+  --container-max-width: 1440px;
+  --transition-base: 150ms ease;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --color-surface-0: oklch(22% 0.03 260);
+  --color-surface-1: oklch(26% 0.03 260);
+  --color-surface-2: oklch(32% 0.04 260);
+  --color-border: oklch(40% 0.04 260);
+  --color-muted: oklch(70% 0.02 260);
+  --color-text: oklch(94% 0.03 260);
+  --color-text-strong: oklch(97% 0.03 260);
+  --color-brand: oklch(70% 0.18 260);
+  --color-brand-strong: oklch(80% 0.25 260);
+  --color-accent: oklch(78% 0.18 23);
+  --shadow-sm: 0 1px 2px oklch(0% 0 0 / 0.2);
+  --shadow-md: 0 18px 40px oklch(0% 0 0 / 0.35);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-family-sans);
+  font-size: calc(16px * var(--font-scale));
+  background-color: var(--color-surface-0);
+  color: var(--color-text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+app-root {
+  min-height: 100vh;
+  background: radial-gradient(circle at top right, color-mix(in oklch, var(--color-brand) 30%, transparent), transparent 55%),
+    var(--color-surface-0);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+.surface-card {
+  background-color: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.text-muted {
+  color: var(--color-muted);
+}
+
+.ghost-button {
+  border: 1px solid color-mix(in oklch, var(--color-border) 80%, transparent);
+  background: transparent;
+  color: inherit;
+  border-radius: var(--radius-pill);
+  padding: 0.4rem 0.9rem;
+  cursor: pointer;
+  transition: border-color var(--transition-base), background var(--transition-base);
+}
+
+.ghost-button:hover {
+  border-color: var(--color-brand);
+  background: color-mix(in oklch, var(--color-brand) 12%, transparent);
+}
+
+.ghost-button--sm {
+  padding: 0.2rem 0.6rem;
+  font-size: 0.8rem;
+}
+
+.ghost-button--danger {
+  color: var(--color-accent);
+  border-color: color-mix(in oklch, var(--color-accent) 60%, transparent);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.55rem;
+  border-radius: var(--radius-pill);
+  background-color: color-mix(in oklch, var(--color-brand) 30%, transparent);
+  color: var(--color-brand-strong);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.badge--neutral {
+  background-color: color-mix(in oklch, var(--color-border) 80%, transparent);
+  color: var(--color-text);
+}
+
+.badge--ghost {
+  background: transparent;
+  border: 1px solid color-mix(in oklch, var(--color-border) 85%, transparent);
+  color: var(--color-muted);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

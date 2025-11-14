@@ -1,0 +1,104 @@
+.workspace {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: var(--space-4);
+}
+
+.workspace__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.workspace__title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.workspace__subtitle {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.workspace__header-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.workspace__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 96px;
+}
+
+.workspace__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  overflow-y: auto;
+  padding-bottom: var(--space-4);
+}
+
+.workspace__loading {
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--color-border);
+  text-align: center;
+}
+
+.workspace__card {
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid color-mix(in oklch, var(--color-border) 80%, transparent);
+}
+
+.workspace__card h3 {
+  margin-top: 0;
+}
+
+.workspace__card ul {
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-6);
+}
+
+.workspace__empty {
+  margin: auto;
+  max-width: 420px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.workspace__empty h2 {
+  margin: 0;
+}
+
+.workspace__selection {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+}
+
+.workspace__selection-label {
+  margin: 0;
+  font-weight: 500;
+}
+
+.workspace__selection-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}

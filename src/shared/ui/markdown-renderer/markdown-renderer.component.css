@@ -1,0 +1,30 @@
+.markdown {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--color-text);
+  word-break: break-word;
+}
+
+.markdown pre {
+  background: color-mix(in oklch, var(--color-surface-2) 80%, transparent);
+  padding: 0.85rem;
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+}
+
+.markdown code {
+  font-family: var(--font-family-mono);
+  font-size: 0.85rem;
+}
+
+.markdown h1,
+.markdown h2,
+.markdown h3,
+.markdown h4 {
+  margin-top: 1.2em;
+  margin-bottom: 0.6em;
+}
+
+.markdown ul {
+  padding-left: 1.3rem;
+}

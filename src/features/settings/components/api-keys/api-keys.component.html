@@ -1,0 +1,106 @@
+<header class="settings-section__header">
+  <div>
+    <p class="settings-section__eyebrow">Access</p>
+    <h2>API keys</h2>
+    <p class="text-muted">
+      Keys are encrypted with your passphrase before being written to IndexedDB. The passphrase never
+      leaves this device.
+    </p>
+  </div>
+</header>
+
+<section class="settings-section__body api-keys">
+  <article class="surface-card keychain">
+    <h3>Keychain</h3>
+    @if (isUnlocked()) {
+      <p class="text-muted">Keychain unlocked for this session.</p>
+      <button type="button" class="ghost-button" (click)="handleLock()">Lock</button>
+    } @else {
+      <label>
+        <span>Passphrase</span>
+        <input
+          type="password"
+          placeholder="Create or enter passphrase"
+          [value]="passphrase()"
+          (input)="handlePassphraseInput($event)"
+        />
+      </label>
+      @if (unlockError()) {
+        <p class="form-error">{{ unlockError() }}</p>
+      }
+      <button type="button" class="ghost-button" (click)="handleUnlock()">Unlock</button>
+      <p class="text-muted small">
+        If this is your first time storing keys, choose any passphrase you like. Remember it — we
+        cannot recover lost passphrases.
+      </p>
+    }
+  </article>
+
+  <section class="provider-grid">
+    @for (provider of providers(); track provider.id) {
+      <article class="provider-card surface-card" [class.provider-card--locked]="statusFor(provider.id) === 'locked'">
+        <header class="provider-card__header">
+          <div>
+            <p class="provider-card__title">{{ provider.label }}</p>
+            <p class="provider-card__scopes text-muted">
+              @for (scope of provider.scopes; track scope) {
+                <code>{{ scope }}</code>
+              }
+            </p>
+          </div>
+          <span
+            class="badge"
+            [class.badge--neutral]="statusFor(provider.id) !== 'configured'"
+          >
+            {{ statusFor(provider.id) }}
+          </span>
+        </header>
+
+        <label class="provider-card__input">
+          <span>API key</span>
+          <textarea
+            rows="2"
+            placeholder="sk-..."
+            [disabled]="statusFor(provider.id) === 'locked'"
+            [value]="draftValue(provider.id)"
+            (input)="handleDraftInput(provider.id, $event)"
+          ></textarea>
+        </label>
+
+        <div class="provider-card__actions">
+          <a class="ghost-button ghost-button--sm" [href]="provider.docUrl" target="_blank" rel="noreferrer">
+            Docs
+          </a>
+          <button
+            type="button"
+            class="ghost-button ghost-button--sm"
+            [disabled]="statusFor(provider.id) === 'locked'"
+            (click)="handleValidate(provider.id)"
+          >
+            Validate
+          </button>
+          <button
+            type="button"
+            class="ghost-button ghost-button--sm"
+            [disabled]="statusFor(provider.id) === 'locked'"
+            (click)="handleSave(provider.id)"
+          >
+            Save
+          </button>
+          <button
+            type="button"
+            class="ghost-button ghost-button--sm ghost-button--danger"
+            [disabled]="!isUnlocked() || statusFor(provider.id) === 'locked'"
+            (click)="handleRemove(provider.id)"
+          >
+            Remove
+          </button>
+        </div>
+
+        @if (messageFor(provider.id); as message) {
+          <p class="provider-card__message">{{ message }}</p>
+        }
+      </article>
+    }
+  </section>
+</section>

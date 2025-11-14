@@ -1,0 +1,104 @@
+<section class="workspace" aria-live="polite">
+  @if (thread(); as current) {
+    <header class="workspace__header">
+      <div>
+        <p class="workspace__title">{{ current.title }}</p>
+        <p class="workspace__subtitle text-muted">{{ headerSubtitle() }}</p>
+      </div>
+      <div class="workspace__header-actions">
+        @if (isStreaming()) {
+          <span class="badge badge--ghost workspace__badge">Streaming…</span>
+        }
+        <button
+          type="button"
+          class="ghost-button"
+          (click)="handleExportThread()"
+          [disabled]="messages().length === 0"
+        >
+          Export
+        </button>
+        <button type="button" class="ghost-button">Manage Context</button>
+      </div>
+    </header>
+
+    <section class="workspace__body">
+      @if (isLoading()) {
+        <div class="workspace__loading surface-card">Loading thread…</div>
+      } @else {
+        @if (hasSelection()) {
+          <div class="workspace__selection surface-card">
+            <p class="workspace__selection-label">
+              {{ selectionCount() }} message{{ selectionCount() === 1 ? '' : 's' }} selected
+            </p>
+            <div class="workspace__selection-actions">
+              <button type="button" class="ghost-button ghost-button--sm" (click)="handleSelectAll()">
+                Select all
+              </button>
+              <button
+                type="button"
+                class="ghost-button ghost-button--sm"
+                (click)="handleCopySelection()"
+              >
+                Copy
+              </button>
+              <button
+                type="button"
+                class="ghost-button ghost-button--sm"
+                (click)="handleCompactSelection()"
+                [disabled]="!canCompactSelection()"
+              >
+                Compact
+              </button>
+              <button
+                type="button"
+                class="ghost-button ghost-button--sm ghost-button--danger"
+                (click)="handleDeleteSelected()"
+              >
+                Delete
+              </button>
+              <button type="button" class="ghost-button ghost-button--sm" (click)="handleClearSelection()">
+                Clear
+              </button>
+            </div>
+          </div>
+        }
+
+        <app-message-list
+          [messages]="messages()"
+          [activeMessageId]="activeMessageId()"
+          [selectedIds]="selectedMessageIds()"
+          (deleteMessage)="handleDeleteMessage($event)"
+          (branchFrom)="handleBranchMessage($event)"
+          (copyMessage)="handleCopyMessage($event)"
+          (selectionChange)="handleSelectionChange($event)"
+          (restoreCompaction)="handleRestoreCompaction($event)"
+          (updateMessage)="handleUpdateMessage($event)"
+        />
+      }
+
+      <app-composer
+        [disabled]="composerDisabled()"
+        [models]="models()"
+        [selectedModelId]="preferredModelId()"
+        (modelSelected)="handleModelSelected($event)"
+        (submitMessage)="handleComposerSubmit($event)"
+      />
+    </section>
+  } @else if (hasThreads()) {
+    <div class="workspace__empty">
+      <h2>Select a conversation</h2>
+      <p class="text-muted">
+        Pick any thread from the sidebar to load its message graph, or create a new conversation to
+        start from scratch.
+      </p>
+    </div>
+  } @else {
+    <div class="workspace__empty">
+      <h2>Start your first conversation</h2>
+      <p class="text-muted">
+        Craft prompts with confidence—context controls, reversible compaction, and branching workflows
+        live here once you create a thread.
+      </p>
+    </div>
+  }
+</section>

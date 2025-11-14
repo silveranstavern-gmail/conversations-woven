@@ -1,0 +1,107 @@
+.api-keys {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.keychain {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid color-mix(in oklch, var(--color-border) 60%, transparent);
+  border-radius: var(--radius-md);
+}
+
+.keychain label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.keychain input {
+  padding: 0.65rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-0);
+  color: var(--color-text);
+}
+
+.keychain .small {
+  font-size: 0.85rem;
+}
+
+.form-error {
+  color: var(--color-accent);
+  margin: 0;
+}
+
+.provider-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-4);
+}
+
+.provider-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  border: 1px solid color-mix(in oklch, var(--color-border) 60%, transparent);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.provider-card--locked {
+  opacity: 0.65;
+}
+
+.provider-card__header {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+
+.provider-card__title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.provider-card__scopes {
+  margin: 0.2rem 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.provider-card__scopes code {
+  padding: 0.15rem 0.35rem;
+  border-radius: var(--radius-xs);
+  background: color-mix(in oklch, var(--color-border) 30%, transparent);
+}
+
+.provider-card__input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.provider-card__input textarea {
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  padding: var(--space-3);
+  resize: vertical;
+  font-family: var(--font-family-mono);
+}
+
+.provider-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.provider-card__message {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}

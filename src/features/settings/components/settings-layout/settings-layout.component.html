@@ -1,0 +1,30 @@
+<section class="settings-layout">
+  <aside class="settings-layout__nav">
+    <div>
+      <p class="settings-layout__eyebrow">Control center</p>
+      <h1>Settings</h1>
+      <p class="text-muted">
+        Configure access, persistence, and experience preferences for every workspace.
+      </p>
+    </div>
+
+    <nav aria-label="Settings sections" class="settings-layout__links">
+      @for (section of sections; track section.path) {
+        <a
+          routerLink="./{{ section.path }}"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <span>
+            <strong>{{ section.label }}</strong>
+            <small>{{ section.description }}</small>
+          </span>
+        </a>
+      }
+    </nav>
+  </aside>
+
+  <section class="settings-layout__content surface-card">
+    <router-outlet />
+  </section>
+</section>

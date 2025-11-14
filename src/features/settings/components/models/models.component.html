@@ -1,0 +1,66 @@
+<section class="models">
+  <header class="models__header">
+    <div>
+      <h1>Models visibility</h1>
+      <p class="text-muted">
+        Choose which provider models appear in the composer dropdown. Disabled models stay available
+        for existing threads but cannot be selected for new prompts.
+      </p>
+      <p class="text-muted small">
+        {{ enabledCount() }} of {{ totalCount() }} visible · {{ disabledCount() }} hidden
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="ghost-button"
+      (click)="handleEnableAll()"
+      [disabled]="disabledCount() === 0"
+    >
+      Enable all
+    </button>
+  </header>
+
+  <div class="models__grid">
+    @for (model of catalog(); track trackByModelId($index, model)) {
+      <article class="models__card surface-card" [class.models__card--disabled]="!model.enabled">
+        <div class="models__card-header">
+          <div>
+            <p class="models__card-title">
+              {{ model.label }}
+            </p>
+            <p class="text-muted small">{{ model.adapterLabel }}</p>
+          </div>
+
+          <label class="models__toggle">
+            <span>{{ model.enabled ? 'Visible' : 'Hidden' }}</span>
+            <input
+              type="checkbox"
+              role="switch"
+              [checked]="model.enabled"
+              (change)="handleToggleModel(model.id, $event)"
+              aria-label="Toggle {{ model.label }}"
+            />
+          </label>
+        </div>
+
+        <div class="models__meta">
+          <div class="models__badges" aria-label="Capabilities">
+            <span class="badge" [class.models__badge--off]="!model.capabilities.streaming">
+              Streaming
+            </span>
+            <span class="badge" [class.models__badge--off]="!model.capabilities.tools">
+              Tools
+            </span>
+            <span class="badge" [class.models__badge--off]="!model.capabilities.jsonMode">
+              JSON
+            </span>
+          </div>
+          <p class="text-muted small">
+            Max {{ model.capabilities.maxTokens | number: '1.0-0' }} tokens
+          </p>
+        </div>
+      </article>
+    }
+  </div>
+</section>

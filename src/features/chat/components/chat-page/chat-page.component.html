@@ -1,0 +1,23 @@
+<section class="chat-layout">
+  <app-thread-list
+    class="chat-layout__sidebar"
+    [attr.aria-busy]="!isReady()"
+    [threads]="threads()"
+    [activeThreadId]="activeThreadId()"
+    (threadSelected)="handleThreadSelected($event)"
+    (createThread)="handleCreateThread()"
+    (renameThread)="handleRenameThread($event)"
+    (deleteThread)="handleDeleteThread($event)"
+    (togglePin)="handleTogglePin($event)"
+    (toggleProtection)="handleToggleProtection($event)"
+    (bulkDelete)="handleBulkDelete($event)"
+    (bulkPin)="handleBulkPin($event)"
+    (bulkProtect)="handleBulkProtect($event)"
+  />
+
+  <app-chat-workspace
+    class="chat-layout__workspace"
+    [thread]="activeThread() ?? undefined"
+    [hasThreads]="hasThreads()"
+  />
+</section>

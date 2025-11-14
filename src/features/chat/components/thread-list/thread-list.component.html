@@ -1,0 +1,166 @@
+<section class="thread-list" aria-label="Conversation threads">
+  <header class="thread-list__header">
+    <div>
+      <p class="thread-list__title">Conversations</p>
+      <p class="thread-list__meta text-muted">
+        {{ threads().length }} total · {{ pinnedCount() }} pinned
+      </p>
+    </div>
+
+    <button type="button" class="ghost-button" (click)="onCreateThread()">
+      + New Chat
+    </button>
+  </header>
+
+  <label class="thread-list__search">
+    <span class="visually-hidden">Search threads</span>
+    <input
+      type="search"
+      placeholder="Search or filter..."
+      (input)="onFilterChange($event)"
+      autocomplete="off"
+    />
+  </label>
+
+  <div class="thread-list__selection-toolbar">
+    <label class="thread-list__select-filter">
+      <input
+        type="checkbox"
+        [checked]="allFilteredSelected()"
+        [disabled]="filteredThreads().length === 0"
+        (change)="onToggleSelectFiltered($event)"
+      />
+      <span>Select filtered ({{ filteredThreads().length }})</span>
+    </label>
+
+    <div class="thread-list__selection-actions">
+      <span class="thread-list__selection-count" [class.thread-list__selection-count--active]="hasSelection()">
+        {{ selectedCount() }} selected
+      </span>
+      <button
+        type="button"
+        class="ghost-button ghost-button--sm"
+        (click)="onClearSelection()"
+        [disabled]="!hasSelection()"
+      >
+        Clear selection
+      </button>
+    </div>
+  </div>
+
+  @if (hasSelection()) {
+    <div class="thread-list__bulk">
+      <p>{{ selectedCount() }} selected</p>
+      <div class="thread-list__bulk-actions">
+        <button type="button" class="ghost-button ghost-button--sm" (click)="onBulkPin(true)">
+          Pin
+        </button>
+        <button type="button" class="ghost-button ghost-button--sm" (click)="onBulkPin(false)">
+          Unpin
+        </button>
+        <button type="button" class="ghost-button ghost-button--sm" (click)="onBulkProtect(true)">
+          Protect
+        </button>
+        <button type="button" class="ghost-button ghost-button--sm" (click)="onBulkProtect(false)">
+          Unprotect
+        </button>
+        <button
+          type="button"
+          class="ghost-button ghost-button--sm ghost-button--danger"
+          (click)="onBulkDelete()"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  }
+
+  <div class="thread-list__items" role="listbox">
+    @if (filteredThreads().length === 0) {
+      <div class="thread-list__empty">
+        <p>No threads match “{{ term() }}”.</p>
+        <button type="button" class="ghost-button" (click)="onCreateThread()">Start a new chat</button>
+      </div>
+    } @else {
+      @for (thread of filteredThreads(); track thread.id) {
+        <article
+          class="thread-list__item"
+          [class.active]="thread.id === activeThreadId()"
+          role="option"
+          tabindex="0"
+          [attr.aria-selected]="thread.id === activeThreadId()"
+          (click)="onSelectThread(thread.id)"
+          (keydown)="onKeydownSelect($event, thread.id)"
+        >
+          <div class="thread-list__item-row">
+            <label class="thread-list__checkbox">
+              <span class="visually-hidden">Select {{ thread.title }}</span>
+              <input
+                type="checkbox"
+                [checked]="selectedSet().has(thread.id)"
+                (change)="onSelectionChange($event, thread.id)"
+              />
+            </label>
+
+            <div class="thread-list__item-main">
+              <div>
+                <p class="thread-list__item-title">
+                  {{ thread.title }}
+                </p>
+                <p class="thread-list__item-subtitle">
+                  {{ thread.messageCount }} messages · Updated
+                  {{ thread.updatedAt | date: 'short' }}
+                </p>
+              </div>
+
+              <div class="thread-list__item-actions">
+                <button
+                  type="button"
+                  class="ghost-button ghost-button--sm"
+                  (click)="onRenameThread($event, thread.id)"
+                >
+                  Rename
+                </button>
+                <button
+                  type="button"
+                  class="ghost-button ghost-button--sm"
+                  (click)="onTogglePin($event, thread.id, !(thread.pinned ?? false))"
+                >
+                  {{ thread.pinned ? 'Unpin' : 'Pin' }}
+                </button>
+                <button
+                  type="button"
+                  class="ghost-button ghost-button--sm"
+                  (click)="onToggleProtection($event, thread.id, !(thread.protected ?? false))"
+                >
+                  {{ thread.protected ? 'Unprotect' : 'Protect' }}
+                </button>
+                <button
+                  type="button"
+                  class="ghost-button ghost-button--sm ghost-button--danger"
+                  (click)="onDeleteThread($event, thread.id)"
+                  [disabled]="thread.protected"
+                  [attr.title]="thread.protected ? 'Unprotect before deleting' : null"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="thread-list__item-tags">
+            @if (thread.protected) {
+              <span class="badge badge--neutral">Protected</span>
+            }
+            @if (thread.pinned) {
+              <span class="badge">Pinned</span>
+            }
+            @for (tag of thread.tags ?? []; track tag) {
+              <span class="badge badge--ghost">{{ tag }}</span>
+            }
+          </div>
+        </article>
+      }
+    }
+  </div>
+</section>

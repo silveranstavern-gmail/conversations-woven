@@ -1,0 +1,32 @@
+<section class="message-list">
+  @if (messages().length === 0) {
+    <div class="message-list__empty">
+      <p>No messages yet.</p>
+      <p class="text-muted">Use the composer below to start the conversation.</p>
+    </div>
+  } @else {
+    <cdk-virtual-scroll-viewport
+      class="message-list__viewport"
+      [itemSize]="itemSize"
+      [minBufferPx]="itemSize * 4"
+      [maxBufferPx]="itemSize * 6"
+    >
+      <div
+        class="message-list__item"
+        *cdkVirtualFor="let message of messages(); trackBy: trackById"
+      >
+        <app-message-item
+          [message]="message"
+          [isActive]="message.id === activeMessageId()"
+          [isSelected]="selectedSet().has(message.id)"
+          (deleteMessage)="onDelete($event)"
+          (branchFrom)="onBranch($event)"
+          (copyMessage)="onCopy($event)"
+          (selectionChange)="onSelectionChanged($event)"
+          (restoreCompaction)="onRestore($event)"
+          (updateMessage)="onUpdate($event)"
+        />
+      </div>
+    </cdk-virtual-scroll-viewport>
+  }
+</section>

@@ -1,0 +1,71 @@
+<section class="composer surface-card">
+  <div class="composer__model">
+    <label>
+      <span>Model</span>
+      <select
+        [disabled]="disabled() || models().length === 0"
+        [value]="selectedModelId() ?? ''"
+        (change)="onModelChange($event)"
+      >
+        @for (option of models(); track option.id) {
+          <option [value]="option.id">{{ option.label }}</option>
+        }
+      </select>
+    </label>
+
+    @if (activeModel(); as model) {
+      <div class="composer__model-meta">
+        <p class="composer__model-provider text-muted">
+          {{ model.adapterLabel }}
+        </p>
+
+        <div class="composer__model-capabilities" aria-label="Model capabilities">
+          <span
+            class="badge composer__capability"
+            [class.composer__capability--off]="!model.capabilities.streaming"
+          >
+            Streaming
+          </span>
+          <span
+            class="badge composer__capability"
+            [class.composer__capability--off]="!model.capabilities.tools"
+          >
+            Tools
+          </span>
+          <span
+            class="badge composer__capability"
+            [class.composer__capability--off]="!model.capabilities.jsonMode"
+          >
+            JSON
+          </span>
+        </div>
+
+        <p class="composer__model-tokens text-muted">
+          Max {{ model.capabilities.maxTokens | number: '1.0-0' }} tokens
+        </p>
+      </div>
+    }
+  </div>
+
+  <div class="composer__input">
+    <textarea
+      placeholder="Ctrl/⌘ + Enter to send"
+      [value]="draft()"
+      [disabled]="disabled()"
+      (input)="onDraftInput($event)"
+      (keydown)="onKeydown($event)"
+      rows="3"
+    ></textarea>
+  </div>
+
+  <div class="composer__actions">
+    <button
+      type="button"
+      class="ghost-button"
+      [disabled]="disabled() || !selectedModelId()"
+      (click)="onSubmit()"
+    >
+      Send
+    </button>
+  </div>
+</section>

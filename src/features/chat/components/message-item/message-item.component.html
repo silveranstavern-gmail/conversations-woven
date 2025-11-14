@@ -1,0 +1,96 @@
+<article
+  class="message"
+  [class.message--active]="isActive()"
+  [class.message--selected]="isSelected()"
+>
+  <header class="message__header">
+    <label class="message__selection">
+      <input
+        type="checkbox"
+        class="message__checkbox"
+        [checked]="isSelected()"
+        (click)="handleSelectionToggle($event)"
+        aria-label="Select message"
+      />
+    </label>
+
+    <div class="message__meta">
+      <p class="message__author">{{ authorLabel() }}</p>
+      <p class="message__timestamp text-muted">{{ timestamp() | date: 'short' }}</p>
+    </div>
+
+    <div class="message__toolbar">
+      <button type="button" class="ghost-button ghost-button--sm" (click)="handleCopy()">Copy</button>
+      <button type="button" class="ghost-button ghost-button--sm" (click)="handleBranch()">Branch</button>
+      <button type="button" class="ghost-button ghost-button--sm ghost-button--danger" (click)="handleDelete()">
+        Delete
+      </button>
+      @if (canEdit() && !isEditing()) {
+        <button type="button" class="ghost-button ghost-button--sm" (click)="handleStartEdit()">
+          Edit
+        </button>
+      }
+    </div>
+  </header>
+
+  @if (isCompacted()) {
+    <div class="message__compaction">
+      <span class="badge badge--ghost">Compacted {{ compactedCount() }} messages</span>
+      <button type="button" class="ghost-button ghost-button--sm" (click)="handleUncompact()">
+        Restore
+      </button>
+    </div>
+  }
+
+  @if (isEditing()) {
+    <section class="message__edit">
+      <textarea
+        rows="6"
+        class="message__edit-input"
+        [value]="editDraft()"
+        (input)="handleEditInput($event)"
+        placeholder="Edit message content"
+      ></textarea>
+      <div class="message__edit-actions">
+        <button type="button" class="ghost-button ghost-button--sm" (click)="handleCancelEdit()">
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="ghost-button ghost-button--sm"
+          [disabled]="!canCommitEdit()"
+          (click)="handleSaveEdit()"
+        >
+          Save changes
+        </button>
+      </div>
+    </section>
+  } @else {
+    <nav class="message__tabs" aria-label="Message view options">
+      <button
+        type="button"
+        class="ghost-button ghost-button--sm"
+        [class.active]="mode() === 'rendered'"
+        (click)="onSwitchMode('rendered')"
+      >
+        Rendered
+      </button>
+      <button
+        type="button"
+        class="ghost-button ghost-button--sm"
+        [class.active]="mode() === 'raw'"
+        (click)="onSwitchMode('raw')"
+      >
+        Raw
+      </button>
+    </nav>
+
+    <section class="message__body">
+      @if (mode() === 'rendered') {
+        <app-markdown-renderer [content]="message().rawMd ?? ''" />
+      } @else {
+        <pre class="message__raw">{{ message().rawMd ?? '' }}</pre>
+      }
+    </section>
+  }
+</article>

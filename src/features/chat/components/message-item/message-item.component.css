@@ -1,0 +1,109 @@
+.message {
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid color-mix(in oklch, var(--color-border) 70%, transparent);
+  background: var(--color-surface-1);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.message--active {
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--color-brand) 35%, transparent);
+}
+
+.message--selected {
+  border-color: color-mix(in oklch, var(--color-brand) 60%, var(--color-border));
+  background: color-mix(in oklch, var(--color-brand) 4%, var(--color-surface-1));
+}
+
+.message__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.message__selection {
+  display: flex;
+  align-items: center;
+  margin-top: 0.2rem;
+}
+
+.message__checkbox {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.message__meta {
+  flex: 1;
+}
+
+.message__author {
+  margin: 0;
+  font-weight: 600;
+}
+
+.message__timestamp {
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.message__toolbar {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.message__compaction {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: 0.85rem;
+}
+
+.message__tabs {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.message__body {
+  font-size: 0.95rem;
+}
+
+.message__edit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.message__edit-input {
+  width: 100%;
+  min-height: 8rem;
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  font-family: var(--font-family-mono);
+  font-size: 0.9rem;
+  background: var(--color-surface-0, var(--color-surface-1));
+  color: var(--color-text);
+  resize: vertical;
+}
+
+.message__edit-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.message__raw {
+  margin: 0;
+  font-family: var(--font-family-mono);
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+}
+
+.ghost-button.active {
+  border-color: var(--color-brand);
+  background: color-mix(in oklch, var(--color-brand) 10%, transparent);
+}
