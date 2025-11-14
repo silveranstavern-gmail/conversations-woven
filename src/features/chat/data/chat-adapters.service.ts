@@ -1,6 +1,6 @@
-import { Injectable, Signal, computed, signal } from '@angular/core';
-import { LLM_ADAPTER_MAP, LLM_MODELS, LLM_MODEL_MAP } from '../adapters/adapters.registry';
-import { ChatTurn, LlmCapabilities } from '../adapters/llm-adapter';
+import { computed, inject, Injectable, signal } from '@angular/core';
+import { LlmCapabilities, LlmModelDescriptor, ChatTurn } from '../adapters/llm-adapter';
+import { OpenRouterAdapter } from '../adapters/openrouter.adapter';
 
 export interface ChatModelOption {
   id: string;
@@ -25,35 +25,62 @@ const MODEL_PREFERENCES_KEY = 'model-preferences';
   providedIn: 'root'
 })
 export class ChatAdaptersService {
-  private readonly baseModels: ChatModelOption[] = LLM_MODELS.map((model) => ({
-    id: model.id,
-    label: model.label,
-    adapterId: model.adapterId,
-    adapterLabel: LLM_ADAPTER_MAP.get(model.adapterId)?.label ?? model.adapterId,
-    adapterModelId: model.adapterModelId,
-    capabilities: model.capabilities
-  }));
+  private readonly openrouterAdapter = inject(OpenRouterAdapter);
+
+  private readonly allModelsSignal = signal<ChatModelOption[]>([]);
 
   private readonly disabledModelIds = signal<string[]>(this.hydrateDisabledModelIds());
 
-  private readonly catalogSignal: Signal<ChatModelVisibilityOption[]> = computed(() => {
+  public readonly catalog = computed(() => {
     const disabled = new Set(this.disabledModelIds());
-    return this.baseModels.map((model) => ({
+    return this.allModelsSignal().map((model) => ({
       ...model,
       enabled: !disabled.has(model.id)
     }));
   });
 
-  readonly catalog = this.catalogSignal;
-
-  readonly models = computed<ChatModelOption[]>(() =>
-    this.catalogSignal()
+  public readonly models = computed<ChatModelOption[]>(() =>
+    this.catalog()
       .filter((model) => model.enabled)
       .map(({ enabled: _enabled, ...rest }) => rest)
   );
 
+  constructor() {
+    void this.initializeModels();
+  }
+
+  private async initializeModels(): Promise<void> {
+    try {
+      const response = await fetch('https://openrouter.ai/api/v1/models');
+      if (!response.ok) {
+        throw new Error('Failed to fetch models from OpenRouter');
+      }
+
+      const { data } = (await response.json()) as { data: any[] };
+
+      const models: ChatModelOption[] = data.map((model: any) => ({
+        id: model.id,
+        label: model.name,
+        adapterId: 'openrouter',
+        adapterLabel: 'OpenRouter',
+        adapterModelId: model.id,
+        capabilities: {
+          streaming: true, // Assume all OpenRouter models support streaming
+          tools: model.supported_features?.includes('tools') ?? false,
+          jsonMode: model.supported_features?.includes('json_mode') ?? false,
+          maxTokens: model.context_length ?? 8000
+        }
+      }));
+
+      this.allModelsSignal.set(models);
+    } catch (error) {
+      console.error('Error initializing models:', error);
+      // Optionally, set a fallback or error state
+    }
+  }
+
   getModelById(id: string): ChatModelOption | undefined {
-    const match = this.catalogSignal().find((model) => model.id === id);
+    const match = this.catalog().find((model) => model.id === id);
     if (!match) {
       return undefined;
     }
@@ -62,16 +89,13 @@ export class ChatAdaptersService {
   }
 
   setModelEnabled(id: string, enabled: boolean): void {
-    if (!this.baseModels.some((model) => model.id === id)) {
+    if (!this.allModelsSignal().some((model) => model.id === id)) {
       return;
     }
+
     this.disabledModelIds.update((current) => {
       const next = new Set(current);
-      if (enabled) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
+      enabled ? next.delete(id) : next.add(id);
       const snapshot = Array.from(next);
       this.persistDisabledModelIds(snapshot);
       return snapshot;
@@ -83,21 +107,18 @@ export class ChatAdaptersService {
     this.persistDisabledModelIds([]);
   }
 
-  async streamModel(
+  streamModel(
     modelId: string,
     turns: ChatTurn[],
     opts: { maxTokens?: number; temperature?: number }
   ) {
-    const descriptor = LLM_MODEL_MAP.get(modelId);
-    if (!descriptor) {
-      throw new Error(`Unknown model ${modelId}`);
+    const model = this.getModelById(modelId);
+    if (model?.adapterId !== 'openrouter') {
+      throw new Error(`Adapter for model ${modelId} not found or not supported.`);
     }
-    const adapter = LLM_ADAPTER_MAP.get(descriptor.adapterId);
-    if (!adapter) {
-      throw new Error(`Missing adapter ${descriptor.adapterId}`);
-    }
-    return adapter.streamChat(turns, {
-      model: descriptor.adapterModelId,
+
+    return this.openrouterAdapter.streamChat(turns, {
+      model: model.adapterModelId,
       maxTokens: opts.maxTokens,
       temperature: opts.temperature
     });
@@ -105,20 +126,14 @@ export class ChatAdaptersService {
 
   private hydrateDisabledModelIds(): string[] {
     const storage = this.getStorage();
-    if (!storage) {
-      return [];
-    }
+    if (!storage) return [];
+
     try {
       const raw = storage.getItem(MODEL_PREFERENCES_KEY);
-      if (!raw) {
-        return [];
-      }
+      if (!raw) return [];
+
       const parsed = JSON.parse(raw) as Partial<ModelPreferencesSnapshot>;
-      const disabled = Array.isArray(parsed.disabledModelIds) ? parsed.disabledModelIds : [];
-      const validIds = disabled.filter((id): id is string =>
-        this.baseModels.some((model) => model.id === id)
-      );
-      return Array.from(new Set(validIds));
+      return Array.isArray(parsed.disabledModelIds) ? parsed.disabledModelIds : [];
     } catch {
       return [];
     }
@@ -126,23 +141,17 @@ export class ChatAdaptersService {
 
   private persistDisabledModelIds(ids: string[]): void {
     const storage = this.getStorage();
-    if (!storage) {
-      return;
-    }
-    const payload: ModelPreferencesSnapshot = {
-      disabledModelIds: ids
-    };
+    if (!storage) return;
+
+    const payload: ModelPreferencesSnapshot = { disabledModelIds: ids };
     try {
       storage.setItem(MODEL_PREFERENCES_KEY, JSON.stringify(payload));
     } catch {
-      // ignore storage quota issues
+      // ignore
     }
   }
 
   private getStorage(): Storage | null {
-    if (typeof globalThis === 'undefined' || !globalThis.localStorage) {
-      return null;
-    }
     try {
       return globalThis.localStorage;
     } catch {

@@ -13,6 +13,7 @@ export class KeychainService {
   private readonly unlockedSignal = signal(false);
   private readonly storedMapSignal = signal<Record<string, EncryptedPayload>>({});
   private readonly providerValidators: Record<string, (key: string) => Promise<boolean> | boolean> = {
+    openrouter: (key: string) => /^sk-or-v1-[a-zA-Z0-9]{64,}$/.test(key),
     openai: (key: string) => /^sk-[a-zA-Z0-9]{32,}$/.test(key),
     anthropic: (key: string) => /^sk-ant-[a-z0-9]{32,}$/i.test(key),
     'azure-openai': (key: string) => /^[a-z0-9]{32}$/i.test(key)

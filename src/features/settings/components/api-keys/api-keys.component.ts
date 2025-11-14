@@ -19,6 +19,12 @@ export class ApiKeysComponent {
 
   protected readonly providers = signal<ProviderDefinition[]>([
     {
+      id: 'openrouter',
+      label: 'OpenRouter',
+      scopes: ['chat', 'models:read'],
+      docUrl: 'https://openrouter.ai/keys'
+    },
+    {
       id: 'openai',
       label: 'OpenAI',
       scopes: ['chat.completions', 'responses'],

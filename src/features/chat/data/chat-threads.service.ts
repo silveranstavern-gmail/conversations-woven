@@ -16,7 +16,7 @@ const SEED_THREADS: ChatThread[] = [
     title: 'Claude — context tools exploration',
     createdAt: '2024-10-12T08:12:00.000Z',
     updatedAt: '2024-10-13T19:42:00.000Z',
-    preferredModelId: 'anthropic:claude-3-5-sonnet',
+    preferredModelId: 'anthropic/claude-3.5-sonnet',
     messageCount: 18,
     tags: ['context', 'analysis'],
     pinned: true,
@@ -27,7 +27,7 @@ const SEED_THREADS: ChatThread[] = [
     title: 'Prompt refactor for bug triage',
     createdAt: '2024-10-09T14:20:00.000Z',
     updatedAt: '2024-10-11T15:10:00.000Z',
-    preferredModelId: 'openai:gpt-4o-mini',
+    preferredModelId: 'openai/gpt-4o-mini',
     messageCount: 9,
     tags: ['llm', 'triage'],
     version: 1,
@@ -38,7 +38,7 @@ const SEED_THREADS: ChatThread[] = [
     title: 'Idea board — research helper persona',
     createdAt: '2024-10-02T09:05:00.000Z',
     updatedAt: '2024-10-05T12:33:00.000Z',
-    preferredModelId: 'anthropic:claude-3-5-haiku',
+    preferredModelId: 'anthropic/claude-3-haiku-20240307',
     messageCount: 25,
     version: 1
   }
@@ -64,7 +64,7 @@ const SEED_MESSAGES: ChatMessage[] = [
     rawMd:
       'Sure! 1) we capture document embeddings, 2) we summarize per tool constraint, 3) we stream merges. Each step stays within 120k tokens so compaction is safe.',
     state: 'complete',
-    model: 'claude-3-5-sonnet'
+    model: 'anthropic/claude-3.5-sonnet'
   },
   {
     id: 'msg-triage-1',
@@ -85,7 +85,7 @@ const SEED_MESSAGES: ChatMessage[] = [
     rawMd:
       'Consider a format like:\n\n1. **Repro** – required steps\n2. **Impact** – affected personas\n3. **Logs** – attach sanitized output\n\nHappy to iterate.',
     state: 'complete',
-    model: 'gpt-4o'
+    model: 'openai/gpt-4o'
   },
   {
     id: 'msg-research-1',
@@ -95,7 +95,7 @@ const SEED_MESSAGES: ChatMessage[] = [
     revision: 1,
     rawMd: 'What research helper persona traits are you exploring today?',
     state: 'complete',
-    model: 'sonar-pro'
+    model: 'perplexity/sonar-small-online'
   }
 ];
 
