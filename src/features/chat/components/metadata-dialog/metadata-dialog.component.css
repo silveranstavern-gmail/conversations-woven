@@ -1,9 +1,68 @@
 /* Component-specific styles for metadata dialog */
+
+/* --- Restored Form Layout Styles --- */
+
+.dialog-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* Fixes the label/hint collapsing issue */
+.dialog-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.dialog-label-hint {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--color-muted);
+}
+
+/* Ensures inputs look correct within this specific dialog */
+.dialog-input,
+.dialog-textarea {
+  width: 100%;
+  box-sizing: border-box; /* Crucial to prevent overflow/clipping */
+  padding: 0.65rem 0.85rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-base);
+  color: var(--color-text);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.dialog-input:focus,
+.dialog-textarea:focus {
+  outline: none;
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px var(--color-brand-subtle);
+}
+
+.dialog-textarea {
+  resize: vertical;
+  min-height: 100px;
+  line-height: 1.5;
+}
+
+/* --- End Restored Styles --- */
+
+/* Tags Input Container */
 .tags-input-container {
   width: 100%;
 }
 
 .tags-list {
+  width: 100%;
+  box-sizing: border-box;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;

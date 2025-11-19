@@ -15,6 +15,7 @@ export interface MetadataDialogResult {
   standalone: true,
   imports: [DialogShellComponent],
   templateUrl: './metadata-dialog.component.html',
+  styleUrls: ['./metadata-dialog.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MetadataDialogComponent {
