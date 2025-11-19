@@ -8,9 +8,8 @@
 .settings-layout__nav {
   padding: var(--space-4);
   border-radius: var(--radius-md);
-  border: 1px solid color-mix(in oklch, var(--color-border) 80%, transparent);
-  background-color: var(--color-surface-1);
-  box-shadow: var(--shadow-sm);
+  border-right: 1px solid var(--color-border);
+  background-color: var(--color-surface);
   display: flex;
   flex-direction: column;
   gap: var(--space-4);

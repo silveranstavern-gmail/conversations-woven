@@ -77,6 +77,12 @@ export class SummarizerService {
         return 'Compacted summary unavailable.';
       }
 
+      // Sandwich strategy: Re-inject instructions at the end
+      turns.push({
+        role: 'system',
+        content: `IMPORTANT REMINDER: ${compactorSettings.prompt}`
+      });
+
       // Stream the summarization request using settings from SystemPromptsService
       const stream = await this.adapters.streamModel(modelId, turns, {
         system: compactorSettings.prompt,

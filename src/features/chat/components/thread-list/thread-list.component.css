@@ -96,25 +96,23 @@
 .thread-list__item {
   position: relative;
   width: 100%;
-  border: 1px solid color-mix(in oklch, var(--color-border) 70%, transparent);
-  background: var(--color-surface-0);
+  border: none;
+  background: transparent;
   color: inherit;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-md);
   padding: 0.4rem var(--space-3);
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  transition: border-color var(--transition-base), transform var(--transition-base);
+  transition: background-color var(--transition-base);
 }
 
 .thread-list__item:hover {
-  border-color: var(--color-brand);
-  transform: translateY(-1px);
+  background-color: var(--color-surface-hover);
 }
 
 .thread-list__item.active {
-  border-color: var(--color-brand);
-  background: color-mix(in oklch, var(--color-brand) 12%, transparent);
+  background-color: var(--color-surface-hover);
 }
 
 .thread-list__checkbox {
@@ -223,6 +221,6 @@
   padding: var(--space-4);
   text-align: center;
   border-radius: var(--radius-sm);
-  border: 1px dashed var(--color-border);
+  border: none;
   color: var(--color-muted);
 }

@@ -13,6 +13,7 @@ export class PromptDialogComponent {
   message = '';
   initialValue = '';
   placeholder = '';
+  inputType: 'text' | 'password' = 'text';
   confirmLabel = 'OK';
   cancelLabel = 'Cancel';
 

@@ -91,6 +91,12 @@ export class MetadataGeneratorService {
         return null;
       }
 
+      // Sandwich strategy: Re-inject instructions at the end to prevent context leaking
+      turns.push({
+        role: 'system',
+        content: `IMPORTANT REMINDER: ${metadataSettings.prompt}`
+      });
+
       console.log('[MetadataGenerator] Calling LLM with', { 
         turnCount: turns.length, 
         systemPromptLength: metadataSettings.prompt.length 

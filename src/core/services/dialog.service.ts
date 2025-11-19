@@ -12,6 +12,7 @@ export interface PromptConfig {
   message?: string;
   initialValue?: string;
   placeholder?: string;
+  inputType?: 'text' | 'password';
   confirmLabel?: string;
   cancelLabel?: string;
 }
@@ -45,6 +46,7 @@ export class DialogService {
     dialog.message = config.message ?? '';
     dialog.initialValue = config.initialValue ?? '';
     dialog.placeholder = config.placeholder ?? '';
+    dialog.inputType = config.inputType ?? 'text';
     dialog.confirmLabel = config.confirmLabel ?? 'OK';
     dialog.cancelLabel = config.cancelLabel ?? 'Cancel';
     dialog.inputValue.set(config.initialValue ?? '');

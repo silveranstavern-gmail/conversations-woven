@@ -1,53 +1,108 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
 :root {
   color-scheme: light;
-  --font-family-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-family-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+
+  /* --- Typography --- */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
   --font-scale: 1;
 
-  --color-surface-0: oklch(98% 0.004 260);
-  --color-surface-1: oklch(95% 0.008 260);
-  --color-surface-2: oklch(90% 0.02 260);
-  --color-border: oklch(80% 0.02 260);
-  --color-muted: oklch(55% 0.02 260);
-  --color-text: oklch(20% 0.03 260);
-  --color-text-strong: oklch(15% 0.05 260);
-  --color-brand: oklch(64% 0.18 260);
-  --color-brand-strong: oklch(57% 0.24 264);
-  --color-accent: oklch(70% 0.2 23);
-
-  --shadow-sm: 0 1px 2px oklch(0% 0 0 / 0.05);
-  --shadow-md: 0 8px 24px oklch(0% 0 0 / 0.08);
-
-  --radius-xs: 4px;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-pill: 999px;
-
+  /* --- Spacing & Layout --- */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 9999px;
+  
+  --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
   --space-4: 1rem;
   --space-6: 1.5rem;
   --space-8: 2rem;
-  --space-10: 2.5rem;
+  
+  --container-max-width: 1600px;
+  --transition-base: 200ms cubic-bezier(0.2, 0.0, 0.2, 1); /* Snappier easing */
 
-  --container-max-width: 1440px;
-  --transition-base: 150ms ease;
+  /* --- Light Theme Palette (Zinc/Indigo) --- */
+  /* Brand: Deep Indigo */
+  --color-brand: oklch(55% 0.2 270); 
+  --color-brand-contrast: oklch(100% 0 0);
+  --color-brand-subtle: oklch(96% 0.03 270);
+
+  /* Neutral / Surfaces */
+  --color-base: oklch(100% 0 0);        /* Main App Background (White) */
+  --color-surface: oklch(98% 0.003 240); /* Sidebar / Cards (Very light gray) */
+  --color-surface-hover: oklch(95% 0.005 240);
+  
+  /* Borders */
+  --color-border: oklch(92% 0.005 240);
+  --color-border-hover: oklch(80% 0.005 240);
+
+  /* Text */
+  --color-text: oklch(20% 0.01 240);         /* Primary Text */
+  --color-text-muted: oklch(55% 0.02 240);   /* Secondary Text */
+  
+  /* Feedback */
+  --color-danger: oklch(60% 0.15 20);
+  --color-danger-bg: oklch(97% 0.05 20);
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.05);
+  --shadow-sm: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -1px rgb(0 0 0 / 0.03);
+  --shadow-md: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -2px rgb(0 0 0 / 0.025);
+
+  /* Legacy compatibility - map old variables to new ones */
+  --font-family-sans: var(--font-sans);
+  --font-family-mono: var(--font-mono);
+  --color-surface-0: var(--color-base);
+  --color-surface-1: var(--color-surface);
+  --color-surface-2: var(--color-surface-hover);
+  --color-muted: var(--color-text-muted);
+  --color-text-strong: var(--color-text);
+  --color-brand-strong: var(--color-brand);
+  --color-accent: var(--color-danger);
+  --radius-xs: var(--radius-sm);
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --color-surface-0: oklch(22% 0.03 260);
-  --color-surface-1: oklch(26% 0.03 260);
-  --color-surface-2: oklch(32% 0.04 260);
-  --color-border: oklch(40% 0.04 260);
-  --color-muted: oklch(70% 0.02 260);
-  --color-text: oklch(94% 0.03 260);
-  --color-text-strong: oklch(97% 0.03 260);
-  --color-brand: oklch(70% 0.18 260);
-  --color-brand-strong: oklch(80% 0.25 260);
-  --color-accent: oklch(78% 0.18 23);
-  --shadow-sm: 0 1px 2px oklch(0% 0 0 / 0.2);
-  --shadow-md: 0 18px 40px oklch(0% 0 0 / 0.35);
+
+  /* --- Dark Theme Palette (Slate) --- */
+  /* Brand: Lighter Indigo for contrast on dark */
+  --color-brand: oklch(70% 0.15 270);
+  --color-brand-contrast: oklch(20% 0.05 270);
+  --color-brand-subtle: oklch(25% 0.05 270);
+
+  /* Neutral / Surfaces */
+  --color-base: oklch(17% 0.01 240);    /* Main Background (Deep Slate) */
+  --color-surface: oklch(20% 0.015 240); /* Sidebar / Cards (Lighter Slate) */
+  --color-surface-hover: oklch(25% 0.02 240);
+
+  /* Borders */
+  --color-border: oklch(28% 0.02 240);
+  --color-border-hover: oklch(40% 0.02 240);
+
+  /* Text */
+  --color-text: oklch(95% 0.01 240);
+  --color-text-muted: oklch(65% 0.02 240);
+
+  /* Feedback */
+  --color-danger: oklch(70% 0.15 20);
+  --color-danger-bg: oklch(25% 0.05 20);
+  
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.5);
+  --shadow-sm: 0 4px 6px -1px rgb(0 0 0 / 0.4);
+  --shadow-md: 0 10px 15px -3px rgb(0 0 0 / 0.4);
+
+  /* Legacy compatibility */
+  --color-surface-0: var(--color-base);
+  --color-surface-1: var(--color-surface);
+  --color-surface-2: var(--color-surface-hover);
+  --color-muted: var(--color-text-muted);
+  --color-text-strong: var(--color-text);
+  --color-brand-strong: var(--color-brand);
+  --color-accent: var(--color-danger);
 }
 
 *,
@@ -56,21 +111,20 @@
   box-sizing: border-box;
 }
 
+/* Global Reset Improvements */
 body {
-  margin: 0;
-  min-height: 100vh;
-  font-family: var(--font-family-sans);
-  font-size: calc(16px * var(--font-scale));
-  background-color: var(--color-surface-0);
+  background-color: var(--color-base);
   color: var(--color-text);
-  line-height: 1.5;
+  font-family: var(--font-sans);
+  font-size: calc(14px * var(--font-scale)); /* Slightly smaller base font for density */
   -webkit-font-smoothing: antialiased;
+  margin: 0;
 }
 
 app-root {
   min-height: 100vh;
   background: radial-gradient(circle at top right, color-mix(in oklch, var(--color-brand) 30%, transparent), transparent 55%),
-    var(--color-surface-0);
+    var(--color-base);
 }
 
 a {
@@ -78,46 +132,101 @@ a {
   text-decoration: none;
 }
 
-button,
-input,
-textarea {
+/* --- Inputs --- */
+input, textarea, select {
   font: inherit;
+  background-color: var(--color-base);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.8rem;
+  outline: none;
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+input:focus, textarea:focus, select:focus {
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px var(--color-brand-subtle);
 }
 
+/* --- Cards --- */
 .surface-card {
-  background-color: var(--color-surface-1);
+  background-color: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
 }
 
 .text-muted {
   color: var(--color-muted);
 }
 
-.ghost-button {
-  border: 1px solid color-mix(in oklch, var(--color-border) 80%, transparent);
-  background: transparent;
-  color: inherit;
-  border-radius: var(--radius-pill);
-  padding: 0.4rem 0.9rem;
-  cursor: pointer;
-  transition: border-color var(--transition-base), background var(--transition-base);
+/* --- Buttons --- */
+button {
+  all: unset; /* Clear default browser styles */
+  box-sizing: border-box;
 }
 
+.btn, .ghost-button { /* Keep ghost-button for backward compatibility but map to new styles */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md); /* Changed from pill to rounded rect */
+  font-weight: 500;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  line-height: 1;
+  border: 1px solid transparent;
+}
+
+/* Variant: Primary (Filled) */
+.btn-primary {
+  background-color: var(--color-brand);
+  color: var(--color-brand-contrast);
+  box-shadow: var(--shadow-xs);
+}
+.btn-primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Variant: Secondary (Outline) */
+.btn-secondary {
+  background-color: transparent;
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+.btn-secondary:hover {
+  background-color: var(--color-surface);
+  border-color: var(--color-border-hover);
+}
+
+/* Variant: Ghost (Subtle) - Overriding existing ghost-button style */
+.ghost-button {
+  background-color: transparent;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-md);
+}
 .ghost-button:hover {
-  border-color: var(--color-brand);
-  background: color-mix(in oklch, var(--color-brand) 12%, transparent);
+  background-color: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+/* Variant: Danger */
+.ghost-button--danger {
+  color: var(--color-danger);
+}
+.ghost-button--danger:hover {
+  background-color: var(--color-danger-bg);
+  border-color: transparent;
 }
 
 .ghost-button--sm {
   padding: 0.2rem 0.6rem;
   font-size: 0.8rem;
-}
-
-.ghost-button--danger {
-  color: var(--color-accent);
-  border-color: color-mix(in oklch, var(--color-accent) 60%, transparent);
 }
 
 .badge {

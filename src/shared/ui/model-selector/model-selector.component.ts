@@ -21,7 +21,20 @@ export class ModelSelectorComponent {
   protected readonly displayModels = computed(() => {
     const custom = this.customOptions();
     const serviceModels = this.adapters.models();
-    return [...custom, ...serviceModels];
+    const allOptions = [...custom, ...serviceModels];
+
+    const currentId = this.selectedModelId();
+    
+    // If the stored model ID exists but isn't in the list (e.g. models haven't loaded yet),
+    // add it temporarily so the dropdown displays the ID instead of falling back to the first option.
+    if (currentId && !allOptions.some((opt) => opt.id === currentId)) {
+      return [
+        ...allOptions,
+        { id: currentId, label: currentId } // Use ID as label until real label loads
+      ];
+    }
+
+    return allOptions;
   });
 
   protected readonly isDefault = (modelId: string) => this.adapters.isDefault(modelId);

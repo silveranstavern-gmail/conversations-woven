@@ -4,25 +4,26 @@
 }
 
 .app-shell {
-  min-height: 100vh;
-  width: min(100%, var(--container-max-width));
+  max-width: var(--container-max-width);
   margin: 0 auto;
+  padding: var(--space-4);
+  height: 100vh;
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  padding: var(--space-6) var(--space-4) var(--space-8);
+  background-color: var(--color-base);
 }
 
 .app-shell__header {
+  /* Remove background and border, make it clean */
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  border: 1px solid color-mix(in oklch, var(--color-border) 80%, transparent);
-  background: color-mix(in oklch, var(--color-surface-1) 90%, transparent);
-  box-shadow: var(--shadow-sm);
-  backdrop-filter: blur(16px);
+  padding: var(--space-2) 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .brand {
@@ -33,6 +34,10 @@
 }
 
 .brand__mark {
+  background: var(--color-brand);
+  color: var(--color-brand-contrast);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -40,9 +45,6 @@
   font-size: 0.85rem;
   letter-spacing: 0.08em;
   padding: 0.35rem 0.65rem;
-  border-radius: var(--radius-pill);
-  background: color-mix(in oklch, var(--color-brand) 30%, transparent);
-  color: var(--color-brand-strong);
 }
 
 .brand__copy {
@@ -62,12 +64,13 @@
 }
 
 .primary-nav {
+  /* Pill shape nav */
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: 4px;
   display: inline-flex;
   gap: var(--space-2);
-  padding: 0.15rem;
   border-radius: var(--radius-pill);
-  background-color: var(--color-surface-2);
-  border: 1px solid color-mix(in oklch, var(--color-border) 60%, transparent);
 }
 
 .primary-nav a {
@@ -79,8 +82,33 @@
 }
 
 .primary-nav a.active {
-  background-color: var(--color-brand);
-  color: white;
+  background-color: var(--color-base);
+  color: var(--color-brand);
+  box-shadow: var(--shadow-xs);
+}
+
+.nav-action {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0.35rem;
+  border-radius: var(--radius-md);
+  transition: background-color 0.2s;
+  font-size: 1.1rem;
+}
+
+.nav-action:hover {
+  background-color: var(--color-surface-hover);
+}
+
+.nav-action--locked {
+  color: var(--color-danger); /* Make it red when locked */
+}
+
+.nav-action--unlocked {
+  color: var(--color-text-muted);
 }
 
 .app-shell__content {
