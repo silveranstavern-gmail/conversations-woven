@@ -23,7 +23,7 @@ export class BackupRestoreComponent {
   protected readonly steps = [
     {
       title: 'Export bundle',
-      detail: 'Generates a JSON payload containing threads, messages, and attachment metadata.'
+      detail: 'Generates a JSON payload containing threads and messages.'
     },
     {
       title: 'Dry-run restore',

@@ -251,8 +251,7 @@ export class ChatActionsService {
         parentId: message.parentId ? idMap.get(message.parentId) ?? undefined : undefined,
         revision: 1,
         compactedFrom: undefined,
-        compactedSummary: undefined,
-        attachments: message.attachments?.map((attachment) => ({ ...attachment }))
+        compactedSummary: undefined
       };
     });
   }
@@ -260,8 +259,7 @@ export class ChatActionsService {
   private cloneForSnapshot(message: ChatMessage): ChatMessage {
     return {
       ...message,
-      compactedFrom: message.compactedFrom?.slice(),
-      attachments: message.attachments?.map((attachment) => ({ ...attachment }))
+      compactedFrom: message.compactedFrom?.slice()
     };
   }
 }

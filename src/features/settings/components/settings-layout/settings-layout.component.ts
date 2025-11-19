@@ -40,11 +40,6 @@ export class SettingsLayoutComponent {
       label: 'Theme & Font',
       description: 'Control theme, typography, and density preferences.',
       path: 'theme'
-    },
-    {
-      label: 'Telemetry',
-      description: 'Opt into anonymous performance metrics.',
-      path: 'telemetry'
     }
   ];
 }

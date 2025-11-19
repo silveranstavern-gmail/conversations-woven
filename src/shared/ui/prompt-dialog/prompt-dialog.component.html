@@ -1,13 +1,13 @@
 <app-dialog-shell [title]="title" [message]="message" (cancel)="handleCancel()">
   <div class="dialog-body-content">
     <input
+      #inputRef
       [type]="inputType"
       class="dialog-input"
       [value]="inputValue()"
       [placeholder]="placeholder"
       (input)="inputValue.set($any($event.target).value)"
       (keydown)="handleKeydown($event)"
-      autofocus
     />
   </div>
   <div class="dialog-footer-content">

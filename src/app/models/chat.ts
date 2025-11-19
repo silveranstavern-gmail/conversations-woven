@@ -1,13 +1,5 @@
 export type Id = string;
 
-export interface Attachment {
-  id: Id;
-  name: string;
-  mime: string;
-  size: number;
-  url?: string;
-}
-
 export interface ChatThread {
   id: Id;
   title: string;
@@ -40,7 +32,6 @@ export interface ChatMessage {
   tokensOut?: number;
   rawMd?: string;
   renderedMd?: string;
-  attachments?: Attachment[];
   revision: number;
   compactedFrom?: Id[];
   compactedSummary?: string;

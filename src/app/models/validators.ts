@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { Attachment, ChatMessage, ChatThread, Id } from './chat';
+import type { ChatMessage, ChatThread, Id } from './chat';
 
 const isoDateString = z
   .string()
@@ -8,14 +8,6 @@ const isoDateString = z
   });
 
 export const idSchema = z.string().min(1) as unknown as z.ZodType<Id>;
-
-export const attachmentSchema = z.object({
-  id: idSchema,
-  name: z.string().min(1),
-  mime: z.string().min(1),
-  size: z.number().nonnegative(),
-  url: z.string().min(1).optional()
-});
 
 export const messageStateSchema = z.enum([
   'draft',
@@ -55,7 +47,6 @@ export const chatMessageSchema = z.object({
   tokensOut: z.number().int().nonnegative().optional(),
   rawMd: z.string().optional(),
   renderedMd: z.string().optional(),
-  attachments: z.array(attachmentSchema).optional(),
   revision: z.number().int().nonnegative(),
   compactedFrom: z.array(idSchema).min(1).optional(),
   compactedSummary: z.string().optional(),
@@ -73,5 +64,3 @@ export const parseChatThreads = (value: unknown): ChatThread[] =>
 export const parseChatMessage = (value: unknown): ChatMessage => chatMessageSchema.parse(value);
 export const parseChatMessages = (value: unknown): ChatMessage[] =>
   chatMessagesSchema.parse(value);
-
-export const parseAttachment = (value: unknown): Attachment => attachmentSchema.parse(value);

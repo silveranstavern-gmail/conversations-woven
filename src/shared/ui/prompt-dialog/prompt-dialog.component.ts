@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import {
+  AfterViewInit,
+  ChangeDetectorRef,
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  signal,
+  ViewChild
+} from '@angular/core';
 import { Subject } from 'rxjs';
 import { DialogShellComponent } from '../dialog-shell/dialog-shell.component';
 
@@ -9,7 +17,7 @@ import { DialogShellComponent } from '../dialog-shell/dialog-shell.component';
   templateUrl: './prompt-dialog.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class PromptDialogComponent {
+export class PromptDialogComponent implements AfterViewInit {
   title = '';
   message = '';
   initialValue = '';
@@ -21,6 +29,18 @@ export class PromptDialogComponent {
   readonly inputValue = signal('');
 
   readonly result$ = new Subject<string | null>();
+
+  @ViewChild('inputRef', { static: false }) inputRef?: ElementRef<HTMLInputElement>;
+
+  constructor(private readonly cdr: ChangeDetectorRef) {}
+
+  ngAfterViewInit(): void {
+    // Use requestAnimationFrame to ensure the dialog is fully rendered before focusing
+    requestAnimationFrame(() => {
+      this.cdr.detectChanges();
+      this.inputRef?.nativeElement?.focus();
+    });
+  }
 
   protected handleConfirm(): void {
     const value = this.inputValue().trim();
