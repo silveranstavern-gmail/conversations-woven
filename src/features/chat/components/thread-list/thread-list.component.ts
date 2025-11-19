@@ -36,6 +36,7 @@ export class ThreadListComponent {
   public readonly deleteThread = output<Id>();
   public readonly togglePin = output<{ id: Id; pinned: boolean }>();
   public readonly toggleProtection = output<{ id: Id; protected: boolean }>();
+  public readonly generateMetadata = output<Id>();
   public readonly bulkDelete = output<Id[]>();
   public readonly bulkPin = output<{ ids: Id[]; pinned: boolean }>();
   public readonly bulkProtect = output<{ ids: Id[]; protected: boolean }>();
@@ -176,6 +177,12 @@ export class ThreadListComponent {
     event.stopPropagation();
     this.closeMenu();
     this.toggleProtection.emit({ id: threadId, protected: isProtected });
+  }
+
+  protected onGenerateMetadata(event: Event, threadId: Id): void {
+    event.stopPropagation();
+    this.closeMenu();
+    this.generateMetadata.emit(threadId);
   }
 
   protected onSelectionChange(event: Event, threadId: Id): void {

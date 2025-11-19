@@ -44,4 +44,34 @@
       original context.
     </p>
   </article>
+
+  <article class="surface-card theme-card">
+    <h3>Chat Hotkeys</h3>
+    <p class="text-muted" style="margin-top: 0; margin-bottom: var(--space-3);">
+      Choose how to send messages in the chat composer.
+    </p>
+    <div class="theme-options">
+      @for (option of hotkeyOptions; track option) {
+        <button
+          type="button"
+          class="ghost-button"
+          [class.active]="sendHotkey() === option"
+          (click)="onHotkeyChange(option)"
+        >
+          @if (option === 'enter') {
+            Enter to send
+          } @else {
+            Ctrl+Enter to send
+          }
+        </button>
+      }
+    </div>
+    <p class="text-muted" style="margin-top: var(--space-2); margin-bottom: 0; font-size: 0.85rem;">
+      @if (sendHotkey() === 'enter') {
+        Press Enter to send, Shift+Enter for a new line.
+      } @else {
+        Press Ctrl/⌘+Enter to send, Enter creates a new line.
+      }
+    </p>
+  </article>
 </section>

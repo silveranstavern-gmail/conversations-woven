@@ -1,0 +1,88 @@
+<div class="dialog-overlay" (click)="handleCancel()">
+  <div class="dialog-container" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <h2 class="dialog-title">{{ title }}</h2>
+      <p class="dialog-message">Set title, tags, and summary for this conversation</p>
+    </div>
+    <div class="dialog-body">
+      <div class="dialog-field">
+        <label class="dialog-label" for="metadata-title">
+          Title
+        </label>
+        <input
+          id="metadata-title"
+          type="text"
+          class="dialog-input"
+          [value]="titleValue()"
+          (input)="handleTitleChange($event)"
+          (keydown)="handleKeydown($event)"
+          placeholder="Conversation title"
+          maxlength="100"
+        />
+      </div>
+
+      <div class="dialog-field">
+        <label class="dialog-label" for="metadata-tags">
+          Tags
+          <span class="dialog-label-hint">Press Enter or comma to add a tag</span>
+        </label>
+        <div class="tags-input-container">
+          <div class="tags-list">
+            @for (tag of tagsValue(); track tag) {
+              <span class="tag">
+                {{ tag }}
+                <button type="button" class="tag-remove" (click)="removeTag(tag)" aria-label="Remove tag">×</button>
+              </span>
+            }
+            <input
+              id="metadata-tags"
+              type="text"
+              class="tags-input"
+              [value]="tagInput()"
+              (input)="handleTagInputChange($event)"
+              (keydown)="handleTagInputKeydown($event)"
+              placeholder="Add tag..."
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="dialog-field">
+        <label class="dialog-label" for="metadata-summary">
+          Summary
+          <span class="dialog-label-hint">Optional brief description of the conversation</span>
+        </label>
+        <textarea
+          id="metadata-summary"
+          class="dialog-textarea"
+          [value]="summaryValue()"
+          (input)="handleSummaryChange($event)"
+          (keydown)="handleKeydown($event)"
+          placeholder="Conversation summary..."
+          rows="4"
+        ></textarea>
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button
+        type="button"
+        class="dialog-button dialog-button--secondary"
+        (click)="handleGenerate()"
+        [disabled]="isGenerating() || !threadId || messages.length === 0"
+      >
+        @if (isGenerating()) {
+          Generating...
+        } @else {
+          Generate
+        }
+      </button>
+      <button type="button" class="dialog-button dialog-button--secondary" (click)="handleCancel()">
+        Cancel
+      </button>
+      <button type="button" class="dialog-button dialog-button--primary" (click)="handleConfirm()">
+        Save
+      </button>
+    </div>
+  </div>
+</div>
+

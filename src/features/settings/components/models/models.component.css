@@ -6,14 +6,39 @@
 
 .models__header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  flex-direction: column;
   gap: var(--space-4);
+}
+
+.models__header > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.models__search {
+  width: 100%;
+}
+
+.models__search input {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface-0);
+  color: var(--color-text);
+  font-size: 0.9rem;
 }
 
 .models__header h1 {
   margin: 0 0 var(--space-2);
   font-size: 1.5rem;
+}
+
+.models__header-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
 }
 
 .models__grid {
@@ -26,7 +51,7 @@
   padding: var(--space-4);
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-3);
   border: 1px solid var(--color-border);
 }
 
@@ -39,6 +64,30 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: var(--space-4);
+}
+
+.models__card-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.models__action-buttons {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.models__action-buttons .ghost-button.active {
+  background: var(--color-brand);
+  color: white;
+  border-color: var(--color-brand);
+}
+
+.models__badge-default,
+.models__badge-pinned {
+  display: inline-block;
+  margin-right: 0.25rem;
 }
 
 .models__card-title {
@@ -75,4 +124,30 @@
   background: transparent;
   color: var(--color-muted);
   border: 1px dashed var(--color-border);
+}
+
+.models__pricing {
+  font-size: 0.8rem;
+}
+
+.models__pricing-title {
+  font-weight: 600;
+  margin-bottom: var(--space-2);
+}
+
+.models__pricing-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.models__pricing-details span {
+  display: inline-flex;
+  gap: 0.25rem;
+}
+
+.models__description {
+  margin-top: auto;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
 }

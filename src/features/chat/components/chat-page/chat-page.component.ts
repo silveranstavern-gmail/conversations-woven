@@ -5,6 +5,7 @@ import { ChatWorkspaceComponent } from '../chat-workspace/chat-workspace.compone
 import { ThreadListComponent } from '../thread-list/thread-list.component';
 import { ChatThreadsService } from '../../data/chat-threads.service';
 import { DialogService } from '@core/services/dialog.service';
+import { MessageStateService } from '../../data/message-state.service';
 
 @Component({
   selector: 'app-chat-page',
@@ -17,6 +18,7 @@ export class ChatPageComponent {
   private readonly threadsService = inject(ChatThreadsService);
   private readonly dialogService = inject(DialogService);
   private readonly router = inject(Router);
+  private readonly messageState = inject(MessageStateService);
 
   public readonly threadId = input<string | undefined>();
 
@@ -171,6 +173,32 @@ export class ChatPageComponent {
       await this.dialogService.alert({
         title: 'Some threads skipped',
         message: `${skipped.length} thread${skipped.length === 1 ? '' : 's'} were protected and skipped.`
+      });
+    }
+  };
+
+  protected readonly handleGenerateMetadata = async (threadId: Id): Promise<void> => {
+    const thread = this.threadsService.getThreadSnapshot(threadId);
+    if (!thread) {
+      return;
+    }
+    
+    // Load messages for this thread
+    const messages = await this.messageState.getMessagesForThread(threadId);
+    
+    const result = await this.dialogService.metadataDialog({
+      threadId,
+      initialTitle: thread.title,
+      initialTags: thread.tags ?? [],
+      initialSummary: thread.meta?.['summary'] as string | undefined,
+      messages
+    });
+    
+    if (result) {
+      void this.threadsService.updateThreadMetadata(threadId, {
+        title: result.title,
+        tags: result.tags,
+        summary: result.summary
       });
     }
   };

@@ -4,6 +4,11 @@ import { ChatMessage, Id } from '@models/chat';
 import { MarkdownRendererComponent } from '@shared/ui/markdown-renderer/markdown-renderer.component';
 
 type ViewMode = 'rendered' | 'raw';
+type MessageViewStatus = {
+  kind: 'info' | 'error';
+  title: string;
+  detail?: string;
+};
 
 @Component({
   selector: 'app-message-item',
@@ -44,6 +49,31 @@ export class MessageItemComponent {
   protected readonly timestamp = computed(() => new Date(this.message().createdAt));
   protected readonly compactedCount = computed(() => this.message().compactedFrom?.length ?? 0);
   protected readonly isCompacted = computed(() => this.compactedCount() > 0);
+  protected readonly status = computed<MessageViewStatus | null>(() => {
+    const message = this.message();
+    switch (message.state) {
+      case 'streaming':
+        return {
+          kind: 'info',
+          title: 'Generating response...',
+          detail: 'Waiting for the model to return tokens.'
+        };
+      case 'sending':
+        return {
+          kind: 'info',
+          title: 'Sending message...',
+          detail: 'Queued for delivery.'
+        };
+      case 'failed':
+        return {
+          kind: 'error',
+          title: 'Response failed',
+          detail: message.error ?? 'The model did not return any content.'
+        };
+      default:
+        return null;
+    }
+  });
   protected readonly canEdit = computed(() => {
     const message = this.message();
     if (message.compactedFrom?.length) {

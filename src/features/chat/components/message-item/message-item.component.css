@@ -67,6 +67,28 @@
   gap: 0.35rem;
 }
 
+.message__status {
+  border: 1px solid color-mix(in oklch, var(--color-border) 75%, transparent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklch, var(--color-border) 20%, transparent);
+  padding: var(--space-3);
+}
+
+.message__status--error {
+  border-color: color-mix(in oklch, var(--color-accent) 60%, transparent);
+  background: color-mix(in oklch, var(--color-accent) 16%, transparent);
+}
+
+.message__status-title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.message__status-detail {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+}
+
 .message__body {
   font-size: 0.95rem;
 }

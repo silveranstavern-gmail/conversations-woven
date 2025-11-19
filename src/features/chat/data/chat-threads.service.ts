@@ -1,6 +1,6 @@
 import { inject, Injectable, computed, signal } from '@angular/core';
 import { Id } from '@models/chat';
-import type { ChatMessage, ChatThread } from '@models/chat';
+import type { ChatThread } from '@models/chat';
 import { IdbService } from '@core/services/persistence/idb.service';
 import { ChatAdaptersService } from './chat-adapters.service';
 
@@ -10,95 +10,6 @@ interface CreateThreadOptions {
   preferredModelId?: string;
   folderId?: Id;
 }
-
-const SEED_THREADS: ChatThread[] = [
-  {
-    id: 'thread-claude-context',
-    title: 'Claude — context tools exploration',
-    createdAt: '2024-10-12T08:12:00.000Z',
-    updatedAt: '2024-10-13T19:42:00.000Z',
-    preferredModelId: 'anthropic/claude-3.5-sonnet',
-    messageCount: 18,
-    tags: ['context', 'analysis'],
-    pinned: true,
-    version: 1
-  },
-  {
-    id: 'thread-bug-triage',
-    title: 'Prompt refactor for bug triage',
-    createdAt: '2024-10-09T14:20:00.000Z',
-    updatedAt: '2024-10-11T15:10:00.000Z',
-    preferredModelId: 'openai/gpt-4o-mini',
-    messageCount: 9,
-    tags: ['llm', 'triage'],
-    version: 1,
-    protected: true
-  },
-  {
-    id: 'thread-research-helper',
-    title: 'Idea board — research helper persona',
-    createdAt: '2024-10-02T09:05:00.000Z',
-    updatedAt: '2024-10-05T12:33:00.000Z',
-    preferredModelId: 'anthropic/claude-3-haiku-20240307',
-    messageCount: 25,
-    version: 1
-  }
-];
-
-const SEED_MESSAGES: ChatMessage[] = [
-  {
-    id: 'msg-claude-1',
-    threadId: 'thread-claude-context',
-    role: 'user',
-    createdAt: '2024-10-13T18:00:00.000Z',
-    revision: 1,
-    rawMd: 'Walk me through how context windows expand when I attach a tool plan.',
-    state: 'complete'
-  },
-  {
-    id: 'msg-claude-2',
-    threadId: 'thread-claude-context',
-    role: 'assistant',
-    parentId: 'msg-claude-1',
-    createdAt: '2024-10-13T18:00:10.000Z',
-    revision: 1,
-    rawMd:
-      'Sure! 1) we capture document embeddings, 2) we summarize per tool constraint, 3) we stream merges. Each step stays within 120k tokens so compaction is safe.',
-    state: 'complete',
-    model: 'anthropic/claude-3.5-sonnet'
-  },
-  {
-    id: 'msg-triage-1',
-    threadId: 'thread-bug-triage',
-    role: 'user',
-    createdAt: '2024-10-11T11:00:00.000Z',
-    revision: 1,
-    rawMd: 'Help me refactor this triage prompt to capture the repro + steps as bullet points.',
-    state: 'complete'
-  },
-  {
-    id: 'msg-triage-2',
-    threadId: 'thread-bug-triage',
-    role: 'assistant',
-    parentId: 'msg-triage-1',
-    createdAt: '2024-10-11T11:00:06.000Z',
-    revision: 1,
-    rawMd:
-      'Consider a format like:\n\n1. **Repro** – required steps\n2. **Impact** – affected personas\n3. **Logs** – attach sanitized output\n\nHappy to iterate.',
-    state: 'complete',
-    model: 'openai/gpt-4o'
-  },
-  {
-    id: 'msg-research-1',
-    threadId: 'thread-research-helper',
-    role: 'assistant',
-    createdAt: '2024-10-05T10:00:00.000Z',
-    revision: 1,
-    rawMd: 'What research helper persona traits are you exploring today?',
-    state: 'complete',
-    model: 'perplexity/sonar-small-online'
-  }
-];
 
 @Injectable({
   providedIn: 'root'
@@ -364,18 +275,34 @@ export class ChatThreadsService {
     this.upsertThreadInSignal(updated);
   }
 
+  async updateThreadMetadata(
+    id: Id,
+    metadata: { title?: string; tags?: string[]; summary?: string }
+  ): Promise<void> {
+    const thread = await this.idb.getThread(id);
+    if (!thread) {
+      return;
+    }
+    const updated: ChatThread = {
+      ...thread,
+      title: metadata.title ?? thread.title,
+      tags: metadata.tags ?? thread.tags,
+      meta: {
+        ...thread.meta,
+        summary: metadata.summary
+      },
+      updatedAt: new Date().toISOString()
+    };
+    await this.idb.putThread(updated);
+    this.upsertThreadInSignal(updated);
+  }
+
   private async loadInitialThreads(): Promise<void> {
     this.isInitializingSignal.set(true);
     try {
       const records = await this.idb.listThreads();
-      if (records.length === 0) {
-        await this.idb.bulkPutThreads(SEED_THREADS);
-        await this.idb.bulkPutMessages(SEED_MESSAGES);
-        this.threadsSignal.set(SEED_THREADS);
-      } else {
-        this.threadsSignal.set(records);
-      }
-      this.selectedThreadIdSignal.set(this.threadsSignal()[0]?.id ?? null);
+      this.threadsSignal.set(records);
+      this.selectedThreadIdSignal.set(records[0]?.id ?? null);
     } finally {
       this.isInitializingSignal.set(false);
     }

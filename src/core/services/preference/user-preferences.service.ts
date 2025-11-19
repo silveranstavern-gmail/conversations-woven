@@ -2,15 +2,22 @@ import { Injectable, signal } from '@angular/core';
 
 type ThemePreference = 'system' | 'light' | 'dark';
 
+export type SendHotkeyMode = 'enter' | 'ctrl-enter';
+export type SystemPromptUseCase = 'compactor' | 'metadata';
+
 interface PreferencesSnapshot {
   theme: ThemePreference;
   fontScale: number;
+  sendHotkey: SendHotkeyMode;
+  systemPromptsUseCase: SystemPromptUseCase;
 }
 
 const STORAGE_KEY = 'app-preferences';
 const DEFAULT_PREFERENCES: PreferencesSnapshot = {
   theme: 'system',
-  fontScale: 1
+  fontScale: 1,
+  sendHotkey: 'enter',
+  systemPromptsUseCase: 'compactor'
 };
 
 @Injectable({
@@ -19,9 +26,13 @@ const DEFAULT_PREFERENCES: PreferencesSnapshot = {
 export class UserPreferencesService {
   private readonly themeSignal = signal<ThemePreference>(DEFAULT_PREFERENCES.theme);
   private readonly fontScaleSignal = signal(DEFAULT_PREFERENCES.fontScale);
+  private readonly sendHotkeySignal = signal<SendHotkeyMode>(DEFAULT_PREFERENCES.sendHotkey);
+  private readonly systemPromptsUseCaseSignal = signal<SystemPromptUseCase>(DEFAULT_PREFERENCES.systemPromptsUseCase);
 
   readonly theme = this.themeSignal.asReadonly();
   readonly fontScale = this.fontScaleSignal.asReadonly();
+  readonly sendHotkey = this.sendHotkeySignal.asReadonly();
+  readonly systemPromptsUseCase = this.systemPromptsUseCaseSignal.asReadonly();
 
   constructor() {
     this.hydrateFromStorage();
@@ -38,6 +49,16 @@ export class UserPreferencesService {
     this.persist();
   }
 
+  setSendHotkey(mode: SendHotkeyMode): void {
+    this.sendHotkeySignal.set(mode);
+    this.persist();
+  }
+
+  setSystemPromptsUseCase(useCase: SystemPromptUseCase): void {
+    this.systemPromptsUseCaseSignal.set(useCase);
+    this.persist();
+  }
+
   private hydrateFromStorage(): void {
     const entry = this.getStorage()?.getItem(STORAGE_KEY);
     if (!entry) {
@@ -51,6 +72,12 @@ export class UserPreferencesService {
       if (typeof parsed.fontScale === 'number') {
         this.fontScaleSignal.set(parsed.fontScale);
       }
+      if (parsed.sendHotkey === 'enter' || parsed.sendHotkey === 'ctrl-enter') {
+        this.sendHotkeySignal.set(parsed.sendHotkey);
+      }
+      if (parsed.systemPromptsUseCase === 'compactor' || parsed.systemPromptsUseCase === 'metadata') {
+        this.systemPromptsUseCaseSignal.set(parsed.systemPromptsUseCase);
+      }
     } catch {
       // ignore corrupt data
     }
@@ -63,7 +90,9 @@ export class UserPreferencesService {
     }
     const payload: PreferencesSnapshot = {
       theme: this.themeSignal(),
-      fontScale: this.fontScaleSignal()
+      fontScale: this.fontScaleSignal(),
+      sendHotkey: this.sendHotkeySignal(),
+      systemPromptsUseCase: this.systemPromptsUseCaseSignal()
     };
     storage.setItem(STORAGE_KEY, JSON.stringify(payload));
   }

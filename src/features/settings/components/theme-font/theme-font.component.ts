@@ -1,6 +1,6 @@
 import { DecimalPipe, DOCUMENT, TitleCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
-import { UserPreferencesService } from '@core/services/preference/user-preferences.service';
+import { UserPreferencesService, SendHotkeyMode } from '@core/services/preference/user-preferences.service';
 
 type ThemePreference = 'system' | 'light' | 'dark';
 
@@ -16,8 +16,10 @@ export class ThemeFontComponent {
   private readonly preferences = inject(UserPreferencesService);
 
   protected readonly themeOptions: ThemePreference[] = ['system', 'light', 'dark'];
+  protected readonly hotkeyOptions: SendHotkeyMode[] = ['enter', 'ctrl-enter'];
   protected readonly themePreference = this.preferences.theme;
   protected readonly fontScale = this.preferences.fontScale;
+  protected readonly sendHotkey = this.preferences.sendHotkey;
   protected readonly previewLabel = computed(
     () => `Preview text · ${(this.fontScale() * 100).toFixed(0)}%`
   );
@@ -38,6 +40,10 @@ export class ThemeFontComponent {
   protected onScaleChange(event: Event): void {
     const nextValue = Number((event.target as HTMLInputElement).value);
     this.preferences.setFontScale(nextValue);
+  }
+
+  protected onHotkeyChange(mode: SendHotkeyMode): void {
+    this.preferences.setSendHotkey(mode);
   }
 
   private applyTheme(preference: ThemePreference): void {

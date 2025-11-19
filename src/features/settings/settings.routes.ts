@@ -5,6 +5,7 @@ import { SettingsLayoutComponent } from './components/settings-layout/settings-l
 import { TelemetryComponent } from './components/telemetry/telemetry.component';
 import { ThemeFontComponent } from './components/theme-font/theme-font.component';
 import { ModelsComponent } from './components/models/models.component';
+import { SystemPromptsComponent } from './components/system-prompts/system-prompts.component';
 
 export const SETTINGS_ROUTES: Routes = [
   {
@@ -40,6 +41,11 @@ export const SETTINGS_ROUTES: Routes = [
         path: 'telemetry',
         component: TelemetryComponent,
         title: 'Settings · Telemetry'
+      },
+      {
+        path: 'system-prompts',
+        component: SystemPromptsComponent,
+        title: 'Settings · System Prompts'
       }
     ]
   }

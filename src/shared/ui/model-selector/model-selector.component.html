@@ -1,0 +1,16 @@
+<select
+  [disabled]="disabled() || displayModels().length === 0"
+  [value]="selectedModelId() ?? ''"
+  (change)="onModelChange($event)"
+>
+  @for (option of displayModels(); track option.id) {
+    <option [value]="option.id">
+      @if (isDefault(option.id)) {
+        ⭐ {{ option.label }}
+      } @else {
+        {{ option.label }}
+      }
+    </option>
+  }
+</select>
+

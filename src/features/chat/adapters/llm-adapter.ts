@@ -32,4 +32,11 @@ export interface LlmAdapter {
     turns: ChatTurn[],
     opts: { model: string; maxTokens?: number; temperature?: number; system?: string }
   ): AsyncIterable<StreamChunk>;
+  /**
+   * Generates a complete chat response as a single string.
+   */
+  generateText(
+    turns: ChatTurn[],
+    opts: { model: string; maxTokens?: number; temperature?: number; system?: string }
+  ): Promise<string>;
 }

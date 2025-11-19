@@ -1,0 +1,107 @@
+.system-prompts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.system-prompts__use-case-selector {
+  padding: var(--space-4);
+}
+
+.system-prompts__settings {
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.system-prompts__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.system-prompts__header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.system-prompts__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.system-prompts__field label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.system-prompts__field label span {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.system-prompts__field textarea {
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  resize: vertical;
+  min-height: 120px;
+}
+
+.system-prompts__field textarea:focus {
+  outline: none;
+  border-color: var(--color-brand);
+}
+
+.system-prompts__controls-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-4);
+}
+
+.system-prompts__field input[type="number"] {
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.system-prompts__field input[type="number"]:focus {
+  outline: none;
+  border-color: var(--color-brand);
+}
+
+.system-prompts__field select {
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-0);
+  color: var(--color-text);
+}
+
+.system-prompts__field select:focus {
+  outline: none;
+  border-color: var(--color-brand);
+}
+
+.help-tooltip {
+  cursor: help;
+  font-size: 0.875rem;
+  opacity: 0.7;
+  transition: opacity var(--transition-base);
+}
+
+.help-tooltip:hover {
+  opacity: 1;
+}
+

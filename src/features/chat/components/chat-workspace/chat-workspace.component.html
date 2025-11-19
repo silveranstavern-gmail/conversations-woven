@@ -2,7 +2,7 @@
   @if (thread(); as current) {
     <header class="workspace__header">
       <div>
-        <p class="workspace__title">{{ current.title }}</p>
+        <p class="workspace__title" (click)="handleTitleClick()" style="cursor: pointer;" title="Click to edit title">{{ current.title }}</p>
         <p class="workspace__subtitle text-muted">{{ headerSubtitle() }}</p>
       </div>
       <div class="workspace__header-actions">
@@ -19,7 +19,7 @@
         </label>
         <button
           type="button"
-          class="ghost-button"
+          class="ghost-button ghost-button--sm"
           (click)="handleOpenSettings()"
           title="Thread settings"
         >
@@ -27,7 +27,7 @@
         </button>
         <button
           type="button"
-          class="ghost-button"
+          class="ghost-button ghost-button--sm"
           (click)="handleExportThread()"
           [disabled]="messages().length === 0"
         >

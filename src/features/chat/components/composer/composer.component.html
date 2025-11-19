@@ -2,15 +2,11 @@
   <div class="composer__model">
     <label>
       <span>Model</span>
-      <select
+      <app-model-selector
         [disabled]="disabled() || models().length === 0"
-        [value]="selectedModelId() ?? ''"
-        (change)="onModelChange($event)"
-      >
-        @for (option of models(); track option.id) {
-          <option [value]="option.id">{{ option.label }}</option>
-        }
-      </select>
+        [selectedModelId]="selectedModelId()"
+        (modelSelected)="onModelChange($event)"
+      />
     </label>
 
     @if (activeModel(); as model) {
@@ -49,7 +45,7 @@
 
   <div class="composer__input">
     <textarea
-      placeholder="Ctrl/⌘ + Enter to send"
+      [placeholder]="placeholderText()"
       [value]="draft()"
       [disabled]="disabled()"
       (input)="onDraftInput($event)"

@@ -42,10 +42,17 @@ export class ChatWorkspaceComponent {
       return null;
     }
     const available = this.models();
-    const candidate = currentThread.preferredModelId;
-    if (candidate && available.some((model) => model.id === candidate)) {
-      return candidate;
+    // First check thread's preferred model
+    const threadPreferred = currentThread.preferredModelId;
+    if (threadPreferred && available.some((model) => model.id === threadPreferred)) {
+      return threadPreferred;
     }
+    // Then check for default model
+    const defaultModel = this.adapters.defaultModel();
+    if (defaultModel && available.some((model) => model.id === defaultModel.id)) {
+      return defaultModel.id;
+    }
+    // Fallback to first available
     return available[0]?.id ?? null;
   });
 
@@ -183,6 +190,22 @@ export class ChatWorkspaceComponent {
     if (settings !== null) {
       void this.threads.updateThreadSettings(thread.id, settings);
     }
+  }
+
+  protected async handleTitleClick(): Promise<void> {
+    const thread = this.thread();
+    if (!thread) {
+      return;
+    }
+    const nextTitle = await this.dialogService.prompt({
+      title: 'Edit title',
+      message: 'Enter a new title for this conversation',
+      initialValue: thread.title
+    });
+    if (!nextTitle || nextTitle.trim() === thread.title) {
+      return;
+    }
+    void this.threads.renameThread(thread.id, nextTitle.trim());
   }
 
   private formatMessagesMarkdown(messages: ChatMessage[]): string {

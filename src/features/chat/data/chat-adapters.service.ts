@@ -1,6 +1,7 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { LlmCapabilities, LlmModelDescriptor, ChatTurn } from '../adapters/llm-adapter';
 import { OpenRouterAdapter } from '../adapters/openrouter.adapter';
+import { ModelCardData } from '@features/settings/components/models/model-card.model';
 
 export interface ChatModelOption {
   id: string;
@@ -9,6 +10,7 @@ export interface ChatModelOption {
   adapterLabel: string;
   adapterModelId: string;
   capabilities: LlmCapabilities;
+  details?: ModelCardData;
 }
 
 export interface ChatModelVisibilityOption extends ChatModelOption {
@@ -17,6 +19,8 @@ export interface ChatModelVisibilityOption extends ChatModelOption {
 
 interface ModelPreferencesSnapshot {
   disabledModelIds: string[];
+  defaultModelId?: string;
+  pinnedModelIds: string[];
 }
 
 const MODEL_PREFERENCES_KEY = 'model-preferences';
@@ -30,6 +34,8 @@ export class ChatAdaptersService {
   private readonly allModelsSignal = signal<ChatModelOption[]>([]);
 
   private readonly disabledModelIds = signal<string[]>(this.hydrateDisabledModelIds());
+  private readonly defaultModelId = signal<string | null>(this.hydrateDefaultModelId());
+  private readonly pinnedModelIds = signal<string[]>(this.hydratePinnedModelIds());
 
   public readonly catalog = computed(() => {
     const disabled = new Set(this.disabledModelIds());
@@ -39,11 +45,32 @@ export class ChatAdaptersService {
     }));
   });
 
-  public readonly models = computed<ChatModelOption[]>(() =>
-    this.catalog()
+  public readonly models = computed<ChatModelOption[]>(() => {
+    const catalog = this.catalog();
+    const enabled = catalog
       .filter((model) => model.enabled)
-      .map(({ enabled: _enabled, ...rest }) => rest)
-  );
+      .map(({ enabled: _enabled, ...rest }) => rest);
+    
+    // Sort: default first, then pinned, then rest
+    const defaultId = this.defaultModelId();
+    const pinned = new Set(this.pinnedModelIds());
+    
+    return enabled.sort((a, b) => {
+      if (a.id === defaultId) return -1;
+      if (b.id === defaultId) return 1;
+      const aPinned = pinned.has(a.id);
+      const bPinned = pinned.has(b.id);
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+      return a.label.localeCompare(b.label); // Alphabetical fallback
+    });
+  });
+
+  public readonly defaultModel = computed(() => {
+    const defaultId = this.defaultModelId();
+    if (!defaultId) return null;
+    return this.models().find(m => m.id === defaultId) ?? null;
+  });
 
   constructor() {
     void this.initializeModels();
@@ -66,10 +93,25 @@ export class ChatAdaptersService {
         adapterModelId: model.id,
         capabilities: {
           streaming: true, // Assume all OpenRouter models support streaming
-          tools: model.supported_features?.includes('tools') ?? false,
-          jsonMode: model.supported_features?.includes('json_mode') ?? false,
-          maxTokens: model.context_length ?? 8000
-        }
+          tools: model.supported_parameters?.includes('tools') ?? model.supported_features?.includes('tools') ?? false,
+          jsonMode: model.supported_parameters?.includes('response_format') ?? model.supported_features?.includes('json_mode') ?? false,
+          maxTokens: model.top_provider?.max_completion_tokens ?? model.context_length ?? 8000
+        },
+        details: {
+          description: model.description ?? '',
+          pricing: {
+            prompt: model.pricing?.prompt ?? 0,
+            completion: model.pricing?.completion ?? 0,
+            request: model.pricing?.request ?? 0,
+            image: model.pricing?.image ?? 0,
+          },
+          contextLength: model.context_length ?? 0,
+          architecture: {
+            modality: model.architecture?.modality ?? '',
+            input_modalities: model.architecture?.input_modalities ?? [],
+            output_modalities: model.architecture?.output_modalities ?? [],
+          },
+        },
       }));
 
       this.allModelsSignal.set(models);
@@ -107,6 +149,63 @@ export class ChatAdaptersService {
     this.persistDisabledModelIds([]);
   }
 
+  disableAllModels(): void {
+    const allModelIds = this.allModelsSignal().map((model) => model.id);
+    this.disabledModelIds.set(allModelIds);
+    this.persistDisabledModelIds(allModelIds);
+  }
+
+  enableFreeModels(): void {
+    const freeModelIds = this.allModelsSignal()
+      .filter((model) => model.label.toLowerCase().includes('(free)'))
+      .map((model) => model.id);
+
+    if (freeModelIds.length === 0) {
+      return;
+    }
+
+    this.disabledModelIds.update((current) => {
+      const next = new Set(current);
+      freeModelIds.forEach((id) => next.delete(id));
+      const snapshot = Array.from(next);
+      this.persistDisabledModelIds(snapshot);
+      return snapshot;
+    });
+  }
+
+  setDefaultModel(modelId: string | null): void {
+    if (modelId && !this.allModelsSignal().some((model) => model.id === modelId)) {
+      return;
+    }
+    this.defaultModelId.set(modelId);
+    this.persistPreferences();
+  }
+
+  togglePinModel(modelId: string): void {
+    if (!this.allModelsSignal().some((model) => model.id === modelId)) {
+      return;
+    }
+    this.pinnedModelIds.update((current) => {
+      const next = new Set(current);
+      if (next.has(modelId)) {
+        next.delete(modelId);
+      } else {
+        next.add(modelId);
+      }
+      const snapshot = Array.from(next);
+      this.persistPinnedModelIds(snapshot);
+      return snapshot;
+    });
+  }
+
+  isPinned(modelId: string): boolean {
+    return this.pinnedModelIds().includes(modelId);
+  }
+
+  isDefault(modelId: string): boolean {
+    return this.defaultModelId() === modelId;
+  }
+
   streamModel(
     modelId: string,
     turns: ChatTurn[],
@@ -118,6 +217,25 @@ export class ChatAdaptersService {
     }
 
     return this.openrouterAdapter.streamChat(turns, {
+      model: model.adapterModelId,
+      maxTokens: opts.maxTokens,
+      temperature: opts.temperature,
+      system: opts.system
+    });
+  }
+
+  generateText(
+    modelId: string,
+    turns: ChatTurn[],
+    opts: { maxTokens?: number; temperature?: number; system?: string }
+  ): Promise<string> {
+    const model = this.getModelById(modelId);
+    if (model?.adapterId !== 'openrouter') {
+      // In the future, this could be a switch statement for multiple adapters
+      throw new Error(`Adapter for model ${modelId} not found or not supported.`);
+    }
+
+    return this.openrouterAdapter.generateText(turns, {
       model: model.adapterModelId,
       maxTokens: opts.maxTokens,
       temperature: opts.temperature,
@@ -140,11 +258,55 @@ export class ChatAdaptersService {
     }
   }
 
+  private hydrateDefaultModelId(): string | null {
+    const storage = this.getStorage();
+    if (!storage) return null;
+
+    try {
+      const raw = storage.getItem(MODEL_PREFERENCES_KEY);
+      if (!raw) return null;
+
+      const parsed = JSON.parse(raw) as Partial<ModelPreferencesSnapshot>;
+      return typeof parsed.defaultModelId === 'string' ? parsed.defaultModelId : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private hydratePinnedModelIds(): string[] {
+    const storage = this.getStorage();
+    if (!storage) return [];
+
+    try {
+      const raw = storage.getItem(MODEL_PREFERENCES_KEY);
+      if (!raw) return [];
+
+      const parsed = JSON.parse(raw) as Partial<ModelPreferencesSnapshot>;
+      return Array.isArray(parsed.pinnedModelIds) ? parsed.pinnedModelIds : [];
+    } catch {
+      return [];
+    }
+  }
+
   private persistDisabledModelIds(ids: string[]): void {
+    this.persistPreferences({ disabledModelIds: ids });
+  }
+
+  private persistPinnedModelIds(ids: string[]): void {
+    this.persistPreferences({ pinnedModelIds: ids });
+  }
+
+  private persistPreferences(updates?: Partial<ModelPreferencesSnapshot>): void {
     const storage = this.getStorage();
     if (!storage) return;
 
-    const payload: ModelPreferencesSnapshot = { disabledModelIds: ids };
+    const current: ModelPreferencesSnapshot = {
+      disabledModelIds: this.disabledModelIds(),
+      defaultModelId: this.defaultModelId() ?? undefined,
+      pinnedModelIds: this.pinnedModelIds()
+    };
+
+    const payload: ModelPreferencesSnapshot = { ...current, ...updates };
     try {
       storage.setItem(MODEL_PREFERENCES_KEY, JSON.stringify(payload));
     } catch {

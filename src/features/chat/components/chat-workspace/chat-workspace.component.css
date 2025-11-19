@@ -18,6 +18,11 @@
   margin: 0;
   font-size: 1.25rem;
   font-weight: 600;
+  transition: color var(--transition-base);
+}
+
+.workspace__title:hover {
+  color: var(--color-brand);
 }
 
 .workspace__subtitle {

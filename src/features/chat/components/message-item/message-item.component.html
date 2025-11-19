@@ -55,6 +55,18 @@
     </div>
   }
 
+  @if (status(); as currentStatus) {
+    <section
+      class="message__status"
+      [class.message__status--error]="currentStatus.kind === 'error'"
+    >
+      <p class="message__status-title">{{ currentStatus.title }}</p>
+      @if (currentStatus.detail) {
+        <p class="message__status-detail">{{ currentStatus.detail }}</p>
+      }
+    </section>
+  }
+
   @if (isEditing()) {
     <section class="message__edit">
       <textarea

@@ -4,6 +4,8 @@ import { PromptDialogComponent } from '@shared/ui/prompt-dialog/prompt-dialog.co
 import { ConfirmDialogComponent } from '@shared/ui/confirm-dialog/confirm-dialog.component';
 import { AlertDialogComponent } from '@shared/ui/alert-dialog/alert-dialog.component';
 import { ThreadSettingsComponent, ThreadSettings } from '@features/chat/components/thread-settings/thread-settings.component';
+import { MetadataDialogComponent, MetadataDialogResult } from '@features/chat/components/metadata-dialog/metadata-dialog.component';
+import { ChatMessage } from '@models/chat';
 
 export interface PromptConfig {
   title: string;
@@ -87,6 +89,31 @@ export class DialogService {
     dialog.initialTemperature = config.temperature;
     dialog.systemPrompt.set(config.systemPrompt ?? '');
     dialog.temperature.set(config.temperature);
+
+    const result = await firstValueFrom(dialog.result$);
+    this.destroyDialog(componentRef);
+    return result;
+  }
+
+  async metadataDialog(config: {
+    threadId: string;
+    initialTitle?: string;
+    initialTags?: string[];
+    initialSummary?: string;
+    messages: ChatMessage[];
+  }): Promise<MetadataDialogResult | null> {
+    const componentRef = this.createDialogComponent(MetadataDialogComponent);
+    const dialog = componentRef.instance;
+    
+    dialog.threadId = config.threadId;
+    dialog.initialTitle = config.initialTitle ?? '';
+    dialog.initialTags = config.initialTags ?? [];
+    dialog.initialSummary = config.initialSummary ?? '';
+    dialog.messages = config.messages;
+    
+    dialog.titleValue.set(config.initialTitle ?? '');
+    dialog.tagsValue.set(config.initialTags ?? []);
+    dialog.summaryValue.set(config.initialSummary ?? '');
 
     const result = await firstValueFrom(dialog.result$);
     this.destroyDialog(componentRef);

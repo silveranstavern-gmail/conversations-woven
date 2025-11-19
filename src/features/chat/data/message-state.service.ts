@@ -33,6 +33,10 @@ export class MessageStateService {
     await this.loadMessagesForThread(this.threads.selectedThreadId());
   }
 
+  async getMessagesForThread(threadId: Id): Promise<ChatMessage[]> {
+    return await this.idb.listMessages(threadId);
+  }
+
   setActiveMessage(id: Id | null): void {
     if (!id) {
       this.activeMessageIdSignal.set(null);
@@ -135,7 +139,9 @@ export class MessageStateService {
   buildChatTurns(threadId: Id): ChatTurn[] {
     return this.messages()
       .filter((message) => message.threadId === threadId)
+      .filter((message) => message.state !== 'failed')
       .filter((message) => message.role !== 'assistant' || message.state === 'complete')
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
       .map((message) => ({
         role: message.role,
         content: message.rawMd ?? ''
@@ -154,6 +160,7 @@ export class MessageStateService {
     const idSet = new Set(ids);
     const filteredMessages = this.messages()
       .filter((message) => message.threadId === threadId && idSet.has(message.id))
+      .filter((message) => message.state !== 'failed')
       .filter((message) => message.role !== 'assistant' || message.state === 'complete');
 
     // Sort by createdAt timestamp

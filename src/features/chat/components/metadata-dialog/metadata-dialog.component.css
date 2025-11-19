@@ -1,0 +1,236 @@
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.dialog-container {
+  background: var(--surface-card, #ffffff);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  min-width: 500px;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.2s ease-out;
+}
+
+.dialog-header {
+  padding: 24px 24px 16px;
+}
+
+.dialog-title {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.dialog-message {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary, #666666);
+}
+
+.dialog-body {
+  padding: 0 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+}
+
+.dialog-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dialog-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary, #1a1a1a);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dialog-label-hint {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-secondary, #666666);
+}
+
+.dialog-input {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  border: 1px solid var(--border-color, #d0d0d0);
+  border-radius: 6px;
+  background: var(--surface-background, #ffffff);
+  color: var(--text-primary, #1a1a1a);
+  transition: border-color 0.2s;
+}
+
+.dialog-input:focus {
+  outline: none;
+  border-color: var(--primary-color, #0066cc);
+}
+
+.dialog-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  border: 1px solid var(--border-color, #d0d0d0);
+  border-radius: 6px;
+  background: var(--surface-background, #ffffff);
+  color: var(--text-primary, #1a1a1a);
+  transition: border-color 0.2s;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.dialog-textarea:focus {
+  outline: none;
+  border-color: var(--primary-color, #0066cc);
+}
+
+.tags-input-container {
+  width: 100%;
+}
+
+.tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color, #d0d0d0);
+  border-radius: 6px;
+  background: var(--surface-background, #ffffff);
+  min-height: 42px;
+  align-items: center;
+}
+
+.tags-list:focus-within {
+  border-color: var(--primary-color, #0066cc);
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--surface-secondary, #f5f5f5);
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.tag-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--text-secondary, #666666);
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.tag-remove:hover {
+  color: var(--text-primary, #1a1a1a);
+}
+
+.tags-input {
+  flex: 1;
+  min-width: 120px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  color: var(--text-primary, #1a1a1a);
+  padding: 0;
+}
+
+.tags-input::placeholder {
+  color: var(--text-secondary, #666666);
+}
+
+.dialog-footer {
+  padding: 16px 24px 24px;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  border-top: 1px solid var(--border-color, #e0e0e0);
+}
+
+.dialog-button {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s, opacity 0.2s;
+}
+
+.dialog-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dialog-button--secondary {
+  background: var(--surface-secondary, #f5f5f5);
+  color: var(--text-primary, #1a1a1a);
+}
+
+.dialog-button--secondary:hover:not(:disabled) {
+  background: var(--surface-hover, #e8e8e8);
+}
+
+.dialog-button--primary {
+  background: var(--primary-color, #0066cc);
+  color: white;
+}
+
+.dialog-button--primary:hover:not(:disabled) {
+  background: var(--primary-hover, #0052a3);
+  opacity: 0.9;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+

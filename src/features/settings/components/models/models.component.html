@@ -10,38 +10,96 @@
         {{ enabledCount() }} of {{ totalCount() }} visible · {{ disabledCount() }} hidden
       </p>
     </div>
+    <div class="models__search">
+      <label>
+        <span class="visually-hidden">Search models</span>
+        <input
+          type="search"
+          placeholder="Search models..."
+          [value]="searchTerm()"
+          (input)="handleSearchChange($event)"
+          autocomplete="off"
+        />
+      </label>
+    </div>
 
-    <button
-      type="button"
-      class="ghost-button"
-      (click)="handleEnableAll()"
-      [disabled]="disabledCount() === 0"
-    >
-      Enable all
-    </button>
+    <div class="models__header-actions">
+      <button
+        type="button"
+        class="ghost-button"
+        (click)="handleDisableAll()"
+        [disabled]="enabledCount() === 0"
+      >
+        Disable all
+      </button>
+      <button
+        type="button"
+        class="ghost-button"
+        (click)="handleEnableFree()"
+        [disabled]="freeModelsCount() === 0 || enabledFreeCount() === freeModelsCount()"
+      >
+        Enable free
+      </button>
+      <button
+        type="button"
+        class="ghost-button"
+        (click)="handleEnableAll()"
+        [disabled]="disabledCount() === 0"
+      >
+        Enable all
+      </button>
+    </div>
   </header>
 
   <div class="models__grid">
-    @for (model of catalog(); track trackByModelId($index, model)) {
+    @for (model of filteredCatalog(); track trackByModelId($index, model)) {
       <article class="models__card surface-card" [class.models__card--disabled]="!model.enabled">
         <div class="models__card-header">
           <div>
             <p class="models__card-title">
+              @if (isDefault(model.id)) {
+                <span class="models__badge-default" title="Default model">⭐</span>
+              }
+              @if (isPinned(model.id)) {
+                <span class="models__badge-pinned" title="Pinned">📌</span>
+              }
               {{ model.label }}
             </p>
             <p class="text-muted small">{{ model.adapterLabel }}</p>
           </div>
 
-          <label class="models__toggle">
-            <span>{{ model.enabled ? 'Visible' : 'Hidden' }}</span>
-            <input
-              type="checkbox"
-              role="switch"
-              [checked]="model.enabled"
-              (change)="handleToggleModel(model.id, $event)"
-              aria-label="Toggle {{ model.label }}"
-            />
-          </label>
+          <div class="models__card-actions">
+            <div class="models__action-buttons">
+              <button
+                type="button"
+                class="ghost-button ghost-button--sm"
+                [class.active]="isDefault(model.id)"
+                (click)="handleSetDefault(model.id)"
+                [title]="isDefault(model.id) ? 'Remove as default' : 'Set as default'"
+              >
+                {{ isDefault(model.id) ? 'Default' : 'Set Default' }}
+              </button>
+              <button
+                type="button"
+                class="ghost-button ghost-button--sm"
+                [class.active]="isPinned(model.id)"
+                (click)="handleTogglePin(model.id)"
+                [title]="isPinned(model.id) ? 'Unpin' : 'Pin'"
+              >
+                {{ isPinned(model.id) ? 'Pinned' : 'Pin' }}
+              </button>
+            </div>
+            <label class="models__toggle">
+              <span>{{ model.enabled ? 'Visible' : 'Hidden' }}</span>
+              <input
+                type="checkbox"
+                role="switch"
+                [checked]="model.enabled"
+                (change)="handleToggleModel(model.id, $event)"
+                aria-label="Toggle {{ model.label }}"
+              />
+            </label>
+          </div>
         </div>
 
         <div class="models__meta">
@@ -55,11 +113,39 @@
             <span class="badge" [class.models__badge--off]="!model.capabilities.jsonMode">
               JSON
             </span>
+            @if (model.details?.architecture?.input_modalities?.includes('image')) {
+              <span class="badge">Vision</span>
+            }
+            @if (model.details?.architecture?.input_modalities?.includes('video')) {
+              <span class="badge">Video</span>
+            }
+            @if (model.details?.architecture?.input_modalities?.includes('audio')) {
+              <span class="badge">Audio</span>
+            }
           </div>
           <p class="text-muted small">
-            Max {{ model.capabilities.maxTokens | number: '1.0-0' }} tokens
+            Max {{ model.details?.contextLength | number: '1.0-0' }} tokens
           </p>
         </div>
+
+        @if(model.details) {
+          <div class="models__pricing">
+            <p class="models__pricing-title">Pricing (per million tokens)</p>
+            <div class="models__pricing-details">
+              <span>Prompt: <strong>${{ model.details.pricing.prompt * 1000000 | number:'1.2-2' }}</strong></span>
+              <span>Completion: <strong>${{ model.details.pricing.completion * 1000000 | number:'1.2-2' }}</strong></span>
+              @if (model.details.pricing.request !== 0) {
+                <span>Request: <strong>${{ model.details.pricing.request * 1000 | number:'1.2-2' }}/1k</strong></span>
+              }
+            </div>
+          </div>
+        }
+
+        @if(model.details && model.details.description) {
+          <p class="models__description text-muted small" [title]="model.details.description">
+            {{ model.details.description | slice:0:150 }}{{ model.details.description.length > 150 ? '...' : '' }}
+          </p>
+        }
       </article>
     }
   </div>

@@ -1,6 +1,8 @@
 import { DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { ChatModelOption } from '../../data/chat-adapters.service';
+import { UserPreferencesService } from '@core/services/preference/user-preferences.service';
+import { ModelSelectorComponent } from '@shared/ui/model-selector/model-selector.component';
 
 export interface ComposerSubmitPayload {
   content: string;
@@ -10,12 +12,14 @@ export interface ComposerSubmitPayload {
 @Component({
   selector: 'app-composer',
   standalone: true,
-  imports: [DecimalPipe],
+  imports: [DecimalPipe, ModelSelectorComponent],
   templateUrl: './composer.component.html',
   styleUrl: './composer.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ComposerComponent {
+  private readonly preferences = inject(UserPreferencesService);
+
   public readonly disabled = input(false);
   public readonly models = input<ChatModelOption[]>([]);
   public readonly selectedModelIdInput = input<string | null>(null, { alias: 'selectedModelId' });
@@ -28,6 +32,11 @@ export class ComposerComponent {
   protected readonly activeModel = computed(() => {
     const currentId = this.selectedModelId();
     return this.models().find((option) => option.id === currentId) ?? null;
+  });
+  protected readonly sendHotkey = this.preferences.sendHotkey;
+  protected readonly placeholderText = computed(() => {
+    const mode = this.sendHotkey();
+    return mode === 'enter' ? 'Enter to send, Shift+Enter for new line' : 'Ctrl/⌘ + Enter to send';
   });
 
   constructor() {
@@ -48,6 +57,7 @@ export class ComposerComponent {
 
       const current = this.selectedModelId();
       if (!current || !options.some((option) => option.id === current)) {
+        // Use first model (which is already sorted: default first, then pinned, then rest)
         this.selectedModelId.set(first);
       }
     });
@@ -66,23 +76,30 @@ export class ComposerComponent {
   }
 
   protected onKeydown(event: KeyboardEvent): void {
-    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
-      event.preventDefault();
-      this.onSubmit();
+    const hotkeyMode = this.sendHotkey();
+    
+    if (hotkeyMode === 'enter') {
+      // Enter sends, Shift+Enter creates new line
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        this.onSubmit();
+      }
+      // Shift+Enter is allowed to create new line (default behavior)
+    } else {
+      // Ctrl/Cmd+Enter sends (original behavior)
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+        event.preventDefault();
+        this.onSubmit();
+      }
     }
   }
 
-  protected onModelChange(event: Event): void {
-    const select = event.target as HTMLSelectElement | null;
-    if (!select) {
+  protected onModelChange(modelId: string): void {
+    if (!modelId || modelId === this.selectedModelId()) {
       return;
     }
-    const next = select.value || null;
-    if (!next || next === this.selectedModelId()) {
-      return;
-    }
-    this.selectedModelId.set(next);
-    this.modelSelected.emit(next);
+    this.selectedModelId.set(modelId);
+    this.modelSelected.emit(modelId);
   }
 
   protected onDraftInput(event: Event): void {

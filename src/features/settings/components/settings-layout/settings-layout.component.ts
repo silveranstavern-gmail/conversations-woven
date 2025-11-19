@@ -27,6 +27,11 @@ export class SettingsLayoutComponent {
       path: 'models'
     },
     {
+      label: 'System Prompts',
+      description: 'Customize system prompts and model settings for different use cases.',
+      path: 'system-prompts'
+    },
+    {
       label: 'Backup & Restore',
       description: 'Export portable bundles and preview imports safely.',
       path: 'backup'

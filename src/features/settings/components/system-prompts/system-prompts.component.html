@@ -1,0 +1,176 @@
+<header class="settings-section__header">
+  <div>
+    <p class="settings-section__eyebrow">Configuration</p>
+    <h2>System prompts</h2>
+    <p class="text-muted">
+      Customize system prompts and model settings for different use cases. Changes are saved automatically.
+    </p>
+  </div>
+</header>
+
+<section class="settings-section__body system-prompts">
+  <article class="surface-card system-prompts__use-case-selector">
+    <label>
+      <span>Use case</span>
+      <select [value]="selectedUseCase()" (change)="onUseCaseChange($any($event.target).value)">
+        <option value="compactor">Compactor</option>
+        <option value="metadata">Metadata Generator</option>
+      </select>
+    </label>
+  </article>
+
+  @if (selectedUseCase() === 'compactor') {
+    <article class="surface-card system-prompts__settings">
+      <div class="system-prompts__header">
+        <h3>Compactor settings</h3>
+        <button type="button" class="ghost-button ghost-button--sm" (click)="restoreToDefaults()">
+          Restore to defaults
+        </button>
+      </div>
+
+      <div class="system-prompts__field">
+        <label>
+          <span>System prompt</span>
+          <textarea
+            rows="8"
+            [value]="compactor().prompt"
+            (input)="onPromptChange($event)"
+            placeholder="Enter system prompt..."
+          ></textarea>
+        </label>
+      </div>
+
+      <div class="system-prompts__controls-grid">
+        <div class="system-prompts__field">
+          <label>
+            <span>
+              Preferred model
+              <span
+                class="help-tooltip"
+                title="Default uses the same model that is currently selected in chat"
+              >
+                ℹ️
+              </span>
+            </span>
+            <app-model-selector
+              [customOptions]="defaultModelOption"
+              [selectedModelId]="compactor().modelId"
+              (modelSelected)="onModelChange($event)"
+            />
+          </label>
+          @if (compactor().modelId === 'default' && effectiveModelLabel()) {
+            <p class="text-muted small">
+              Currently using: {{ effectiveModelLabel() }}
+            </p>
+          }
+        </div>
+
+        <div class="system-prompts__field">
+          <label>
+            <span>Max tokens</span>
+            <input
+              type="number"
+              min="100"
+              max="100000"
+              step="100"
+              [value]="compactor().maxTokens"
+              (input)="onMaxTokensChange($event)"
+            />
+          </label>
+        </div>
+
+        <div class="system-prompts__field">
+          <label>
+            <span>Temperature</span>
+            <input
+              type="number"
+              min="0"
+              max="2"
+              step="0.1"
+              [value]="compactor().temperature"
+              (input)="onTemperatureChange($event)"
+            />
+          </label>
+        </div>
+      </div>
+    </article>
+  }
+
+  @if (selectedUseCase() === 'metadata') {
+    <article class="surface-card system-prompts__settings">
+      <div class="system-prompts__header">
+        <h3>Metadata Generator settings</h3>
+        <button type="button" class="ghost-button ghost-button--sm" (click)="restoreMetadataToDefaults()">
+          Restore to defaults
+        </button>
+      </div>
+
+      <div class="system-prompts__field">
+        <label>
+          <span>System prompt</span>
+          <textarea
+            rows="8"
+            [value]="metadata().prompt"
+            (input)="onMetadataPromptChange($event)"
+            placeholder="Enter system prompt..."
+          ></textarea>
+        </label>
+      </div>
+
+      <div class="system-prompts__controls-grid">
+        <div class="system-prompts__field">
+          <label>
+            <span>
+              Preferred model
+              <span
+                class="help-tooltip"
+                title="Default uses the same model that is currently selected in chat"
+              >
+                ℹ️
+              </span>
+            </span>
+            <app-model-selector
+              [customOptions]="defaultModelOption"
+              [selectedModelId]="metadata().modelId"
+              (modelSelected)="onMetadataModelChange($event)"
+            />
+          </label>
+          @if (metadata().modelId === 'default' && effectiveModelLabel()) {
+            <p class="text-muted small">
+              Currently using: {{ effectiveModelLabel() }}
+            </p>
+          }
+        </div>
+
+        <div class="system-prompts__field">
+          <label>
+            <span>Max tokens</span>
+            <input
+              type="number"
+              min="100"
+              max="100000"
+              step="100"
+              [value]="metadata().maxTokens"
+              (input)="onMetadataMaxTokensChange($event)"
+            />
+          </label>
+        </div>
+
+        <div class="system-prompts__field">
+          <label>
+            <span>Temperature</span>
+            <input
+              type="number"
+              min="0"
+              max="2"
+              step="0.1"
+              [value]="metadata().temperature"
+              (input)="onMetadataTemperatureChange($event)"
+            />
+          </label>
+        </div>
+      </div>
+    </article>
+  }
+</section>
+
