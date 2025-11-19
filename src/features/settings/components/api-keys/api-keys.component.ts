@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { SettingsSectionComponent } from '../ui/settings-section/settings-section.component';
 import { KeychainService } from '@core/services/keychain.service';
+import { ButtonDirective } from '@shared/ui/button/button.directive';
 
 interface ProviderDefinition {
   id: string;
@@ -12,7 +13,7 @@ interface ProviderDefinition {
 @Component({
   selector: 'app-api-keys',
   standalone: true,
-  imports: [SettingsSectionComponent],
+  imports: [SettingsSectionComponent, ButtonDirective],
   templateUrl: './api-keys.component.html',
   styleUrl: './api-keys.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush

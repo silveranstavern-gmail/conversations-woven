@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output, signal } f
 import { DatePipe } from '@angular/common';
 import { ChatMessage, Id } from '@models/chat';
 import { MarkdownRendererComponent } from '@shared/ui/markdown-renderer/markdown-renderer.component';
+import { ButtonDirective } from '@shared/ui/button/button.directive';
 
 type ViewMode = 'rendered' | 'raw';
 type MessageViewStatus = {
@@ -13,7 +14,7 @@ type MessageViewStatus = {
 @Component({
   selector: 'app-message-item',
   standalone: true,
-  imports: [DatePipe, MarkdownRendererComponent],
+  imports: [DatePipe, MarkdownRendererComponent, ButtonDirective],
   templateUrl: './message-item.component.html',
   styleUrl: './message-item.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush

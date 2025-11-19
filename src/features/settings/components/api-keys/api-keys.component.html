@@ -8,7 +8,7 @@
     <h3>Keychain</h3>
     @if (isUnlocked()) {
       <p class="text-muted">Keychain unlocked for this session.</p>
-      <button type="button" class="ghost-button" (click)="handleLock()">Lock</button>
+      <button type="button" appButton variant="ghost" (click)="handleLock()">Lock</button>
     } @else {
       <label>
         <span>Passphrase</span>
@@ -22,7 +22,7 @@
       @if (unlockError()) {
         <p class="form-error">{{ unlockError() }}</p>
       }
-      <button type="button" class="ghost-button" (click)="handleUnlock()">Unlock</button>
+      <button type="button" appButton variant="ghost" (click)="handleUnlock()">Unlock</button>
       <p class="text-muted small">
         If this is your first time storing keys, choose any passphrase you like. Remember it — we
         cannot recover lost passphrases.
@@ -62,12 +62,14 @@
         </label>
 
         <div class="provider-card__actions">
-          <a class="ghost-button ghost-button--sm" [href]="provider.docUrl" target="_blank" rel="noopener noreferrer">
+          <a appButton variant="ghost" size="sm" [href]="provider.docUrl" target="_blank" rel="noopener noreferrer">
             Docs
           </a>
           <button
             type="button"
-            class="ghost-button ghost-button--sm"
+            appButton
+            variant="ghost"
+            size="sm"
             [disabled]="statusFor(provider.id) === 'locked'"
             (click)="handleValidate(provider.id)"
           >
@@ -75,7 +77,9 @@
           </button>
           <button
             type="button"
-            class="ghost-button ghost-button--sm"
+            appButton
+            variant="ghost"
+            size="sm"
             [disabled]="statusFor(provider.id) === 'locked'"
             (click)="handleSave(provider.id)"
           >
@@ -83,7 +87,9 @@
           </button>
           <button
             type="button"
-            class="ghost-button ghost-button--sm ghost-button--danger"
+            appButton
+            variant="danger"
+            size="sm"
             [disabled]="!isUnlocked() || statusFor(provider.id) === 'locked'"
             (click)="handleRemove(provider.id)"
           >

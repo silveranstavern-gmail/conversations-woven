@@ -12,19 +12,18 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ChatThread, Id } from '@models/chat';
-import { FolderStateService } from '../../data/folder-state.service';
 import { ChatThreadsService } from '../../data/chat-threads.service';
 import { DialogService } from '@core/services/dialog.service';
+import { ButtonDirective } from '@shared/ui/button/button.directive';
 
 @Component({
   selector: 'app-thread-list',
-  imports: [DatePipe, RouterLink],
+  imports: [DatePipe, RouterLink, ButtonDirective],
   templateUrl: './thread-list.component.html',
   styleUrl: './thread-list.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ThreadListComponent {
-  private readonly folderService = inject(FolderStateService);
   private readonly threadsService = inject(ChatThreadsService);
   private readonly dialogService = inject(DialogService);
 
@@ -44,9 +43,6 @@ export class ThreadListComponent {
   protected readonly term = signal('');
   protected readonly selectedIds = signal<Id[]>([]);
   protected readonly openMenuThreadId = signal<Id | null>(null);
-
-  protected readonly folders = this.folderService.folders;
-  protected readonly expandedFolderIds = this.folderService.expandedFolderIds;
 
   protected readonly sortedThreads = computed(() =>
     [...this.threads()].sort((a, b) => {
@@ -68,23 +64,6 @@ export class ThreadListComponent {
       const matchesTags = thread.tags?.some((tag) => tag.toLowerCase().includes(filter));
       return matchesTitle || matchesTags;
     });
-  });
-
-  protected readonly uncategorizedThreads = computed(() =>
-    this.filteredThreads().filter((t) => !t.folderId)
-  );
-
-  protected readonly threadsByFolder = computed(() => {
-    const map = new Map<Id, ChatThread[]>();
-    for (const thread of this.filteredThreads()) {
-      if (thread.folderId) {
-        if (!map.has(thread.folderId)) {
-          map.set(thread.folderId, []);
-        }
-        map.get(thread.folderId)!.push(thread);
-      }
-    }
-    return map;
   });
 
   protected readonly pinnedCount = computed(
@@ -237,117 +216,6 @@ export class ThreadListComponent {
     } else {
       this.onClearSelection();
     }
-  }
-
-  protected async onCreateFolder(): Promise<void> {
-    const name = await this.dialogService.prompt({
-      title: 'New Folder',
-      message: 'Enter a name for the folder',
-      placeholder: 'Folder name'
-    });
-    if (!name || !name.trim()) {
-      return;
-    }
-    try {
-      await this.folderService.createFolder(name);
-    } catch (error) {
-      await this.dialogService.alert({
-        title: 'Error',
-        message: error instanceof Error ? error.message : 'Failed to create folder'
-      });
-    }
-  }
-
-  protected onToggleFolderExpansion(folderId: Id): void {
-    this.folderService.toggleFolderExpansion(folderId);
-  }
-
-  protected async onRenameFolder(event: Event, folderId: Id): Promise<void> {
-    event.stopPropagation();
-    const folder = this.folderService.folders().find((f) => f.id === folderId);
-    if (!folder) {
-      return;
-    }
-    const newName = await this.dialogService.prompt({
-      title: 'Rename Folder',
-      message: 'Enter a new name for the folder',
-      initialValue: folder.name
-    });
-    if (!newName || newName.trim() === folder.name) {
-      return;
-    }
-    try {
-      await this.folderService.renameFolder(folderId, newName);
-    } catch (error) {
-      await this.dialogService.alert({
-        title: 'Error',
-        message: error instanceof Error ? error.message : 'Failed to rename folder'
-      });
-    }
-  }
-
-  protected async onDeleteFolder(event: Event, folderId: Id): Promise<void> {
-    event.stopPropagation();
-    const folder = this.folderService.folders().find((f) => f.id === folderId);
-    if (!folder) {
-      return;
-    }
-    const threadsInFolder = this.threads().filter((t) => t.folderId === folderId);
-    const confirmed = await this.dialogService.confirm({
-      title: 'Delete Folder',
-      message: `Are you sure you want to delete the folder "${folder.name}"? All ${threadsInFolder.length} thread${threadsInFolder.length === 1 ? '' : 's'} inside will become uncategorized.`,
-      danger: true,
-      confirmLabel: 'Delete'
-    });
-    if (!confirmed) {
-      return;
-    }
-    try {
-      // Move all threads in this folder to uncategorized (null folderId)
-      for (const thread of threadsInFolder) {
-        await this.threadsService.moveThreadToFolder(thread.id, null);
-      }
-      await this.folderService.deleteFolder(folderId);
-    } catch (error) {
-      await this.dialogService.alert({
-        title: 'Error',
-        message: error instanceof Error ? error.message : 'Failed to delete folder'
-      });
-    }
-  }
-
-  // TODO: Move to Folder is not implemented yet, will be part of Advanced Features not found in main conversation list
-  protected async onMoveThreadToFolder(event: Event, threadId: Id): Promise<void> {
-    event.stopPropagation();
-    this.closeMenu();
-    const folders = this.folderService.folders();
-    const currentFolderId = this.threads().find((t) => t.id === threadId)?.folderId ?? null;
-
-    // Create a simple selection dialog
-    const folderOptions = [
-      { id: null, name: 'Uncategorized' },
-      ...folders.map((f) => ({ id: f.id, name: f.name }))
-    ];
-
-    // For now, we'll use a simple prompt-based approach
-    // In a more sophisticated UI, this could be a dropdown or modal
-    const selectedIndex = await this.dialogService.prompt({
-      title: 'Move to Folder',
-      message: `Select folder (0-${folderOptions.length - 1}):\n${folderOptions.map((f, i) => `${i}: ${f.name}`).join('\n')}`,
-      initialValue: currentFolderId ? folderOptions.findIndex((f) => f.id === currentFolderId)?.toString() ?? '0' : '0'
-    });
-
-    if (selectedIndex === null) {
-      return;
-    }
-
-    const index = parseInt(selectedIndex, 10);
-    if (isNaN(index) || index < 0 || index >= folderOptions.length) {
-      return;
-    }
-
-    const selectedFolder = folderOptions[index];
-    await this.threadsService.moveThreadToFolder(threadId, selectedFolder.id);
   }
 
   private updateSelection(threadId: Id, selected: boolean): void {

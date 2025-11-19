@@ -16,7 +16,8 @@
       @for (option of themeOptions; track option) {
         <button
           type="button"
-          class="ghost-button"
+          appButton
+          variant="ghost"
           [class.active]="themePreference() === option"
           (click)="onThemeChange(option)"
         >
@@ -54,7 +55,8 @@
       @for (option of hotkeyOptions; track option) {
         <button
           type="button"
-          class="ghost-button"
+          appButton
+          variant="ghost"
           [class.active]="sendHotkey() === option"
           (click)="onHotkeyChange(option)"
         >

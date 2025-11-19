@@ -26,7 +26,8 @@
     <div class="models__header-actions">
       <button
         type="button"
-        class="ghost-button"
+        appButton
+        variant="ghost"
         (click)="handleDisableAll()"
         [disabled]="enabledCount() === 0"
       >
@@ -34,7 +35,8 @@
       </button>
       <button
         type="button"
-        class="ghost-button"
+        appButton
+        variant="ghost"
         (click)="handleEnableFree()"
         [disabled]="freeModelsCount() === 0 || enabledFreeCount() === freeModelsCount()"
       >
@@ -42,7 +44,8 @@
       </button>
       <button
         type="button"
-        class="ghost-button"
+        appButton
+        variant="ghost"
         (click)="handleEnableAll()"
         [disabled]="disabledCount() === 0"
       >
@@ -72,7 +75,9 @@
             <div class="models__action-buttons">
               <button
                 type="button"
-                class="ghost-button ghost-button--sm"
+                appButton
+                variant="ghost"
+                size="sm"
                 [class.active]="isDefault(model.id)"
                 (click)="handleSetDefault(model.id)"
                 [title]="isDefault(model.id) ? 'Remove as default' : 'Set as default'"
@@ -81,7 +86,9 @@
               </button>
               <button
                 type="button"
-                class="ghost-button ghost-button--sm"
+                appButton
+                variant="ghost"
+                size="sm"
                 [class.active]="isPinned(model.id)"
                 (click)="handleTogglePin(model.id)"
                 [title]="isPinned(model.id) ? 'Unpin' : 'Pin'"

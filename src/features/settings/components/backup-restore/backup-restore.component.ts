@@ -3,11 +3,12 @@ import { BackupService, ChatBackupBundle } from '@core/services/persistence/back
 import { ChatThreadsService } from '@features/chat/data/chat-threads.service';
 import { MessageStateService } from '@features/chat/data/message-state.service';
 import { SettingsSectionComponent } from '../ui/settings-section/settings-section.component';
+import { ButtonDirective } from '@shared/ui/button/button.directive';
 
 @Component({
   selector: 'app-backup-restore',
   standalone: true,
-  imports: [SettingsSectionComponent],
+  imports: [SettingsSectionComponent, ButtonDirective],
   templateUrl: './backup-restore.component.html',
   styleUrl: './backup-restore.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush

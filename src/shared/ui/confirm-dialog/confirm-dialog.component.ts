@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { Subject } from 'rxjs';
 import { DialogShellComponent } from '../dialog-shell/dialog-shell.component';
+import { ButtonDirective } from '../button/button.directive';
 
 @Component({
   selector: 'app-confirm-dialog',
   standalone: true,
-  imports: [DialogShellComponent],
+  imports: [DialogShellComponent, ButtonDirective],
   templateUrl: './confirm-dialog.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })

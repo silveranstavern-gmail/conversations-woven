@@ -19,7 +19,9 @@
         </label>
         <button
           type="button"
-          class="ghost-button ghost-button--sm"
+          appButton
+          variant="ghost"
+          size="sm"
           (click)="handleOpenSettings()"
           title="Thread settings"
         >
@@ -27,12 +29,14 @@
         </button>
         <button
           type="button"
-          class="ghost-button ghost-button--sm"
+          appButton
+          variant="ghost"
+          size="sm"
           (click)="handleExportThread()"
           [disabled]="messages().length === 0"
         >
           Export
-        </button>
+</button>
       </div>
     </header>
 
@@ -46,19 +50,23 @@
               {{ selectionCount() }} message{{ selectionCount() === 1 ? '' : 's' }} selected
             </p>
             <div class="workspace__selection-actions">
-              <button type="button" class="ghost-button ghost-button--sm" (click)="handleSelectAll()">
+              <button type="button" appButton variant="ghost" size="sm" (click)="handleSelectAll()">
                 Select all
               </button>
               <button
                 type="button"
-                class="ghost-button ghost-button--sm"
+                appButton
+                variant="ghost"
+                size="sm"
                 (click)="handleCopySelection()"
               >
                 Copy
               </button>
               <button
                 type="button"
-                class="ghost-button ghost-button--sm"
+                appButton
+                variant="ghost"
+                size="sm"
                 (click)="handleCompactSelection()"
                 [disabled]="!canCompactSelection()"
               >
@@ -66,13 +74,15 @@
               </button>
               <button
                 type="button"
-                class="ghost-button ghost-button--sm ghost-button--danger"
+                appButton
+                variant="danger"
+                size="sm"
                 (click)="handleDeleteSelected()"
               >
                 Delete
               </button>
-              <button type="button" class="ghost-button ghost-button--sm" (click)="handleClearSelection()">
-                Clear
+              <button type="button" appButton variant="ghost" size="sm" (click)="handleClearSelection()">
+Clear
               </button>
             </div>
           </div>

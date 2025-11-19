@@ -151,6 +151,11 @@
   fill: currentColor;
 }
 
+/* Fix upside down pin icon */
+.thread-list__status-icon--pin svg {
+  transform: rotate(180deg);
+}
+
 .thread-list__item-content {
   flex: 1;
   min-width: 0;

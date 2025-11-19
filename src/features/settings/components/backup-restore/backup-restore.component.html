@@ -11,12 +11,13 @@
       accept="application/json"
       (change)="handleImportSelected($event)"
     />
-    <button type="button" class="ghost-button" (click)="handleExport()" [disabled]="isProcessing()">
+    <button type="button" appButton variant="ghost" (click)="handleExport()" [disabled]="isProcessing()">
       Export bundle
     </button>
     <button
       type="button"
-      class="ghost-button"
+      appButton
+      variant="ghost"
       (click)="triggerImport(fileInput)"
       [disabled]="isProcessing()"
     >

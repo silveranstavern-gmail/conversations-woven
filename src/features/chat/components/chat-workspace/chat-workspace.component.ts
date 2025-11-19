@@ -9,10 +9,11 @@ import { ChatActionsService } from '../../data/chat-actions.service';
 import { ChatAdaptersService } from '../../data/chat-adapters.service';
 import { ChatThreadsService } from '../../data/chat-threads.service';
 import { DialogService } from '@core/services/dialog.service';
+import { ButtonDirective } from '@shared/ui/button/button.directive';
 
 @Component({
   selector: 'app-chat-workspace',
-  imports: [MessageListComponent, ComposerComponent],
+  imports: [MessageListComponent, ComposerComponent, ButtonDirective],
   templateUrl: './chat-workspace.component.html',
   styleUrl: './chat-workspace.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush

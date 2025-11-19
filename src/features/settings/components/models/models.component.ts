@@ -4,10 +4,11 @@ import {
   ChatAdaptersService,
   ChatModelVisibilityOption
 } from '@features/chat/data/chat-adapters.service';
+import { ButtonDirective } from '@shared/ui/button/button.directive';
 
 @Component({
   selector: 'app-settings-models',
-  imports: [DecimalPipe, SlicePipe],
+  imports: [DecimalPipe, SlicePipe, ButtonDirective],
   templateUrl: './models.component.html',
   styleUrl: './models.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush

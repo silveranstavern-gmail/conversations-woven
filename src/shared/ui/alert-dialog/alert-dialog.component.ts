@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { Subject } from 'rxjs';
 import { DialogShellComponent } from '../dialog-shell/dialog-shell.component';
+import { ButtonDirective } from '../button/button.directive';
 
 @Component({
   selector: 'app-alert-dialog',
   standalone: true,
-  imports: [DialogShellComponent],
+  imports: [DialogShellComponent, ButtonDirective],
   templateUrl: './alert-dialog.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })

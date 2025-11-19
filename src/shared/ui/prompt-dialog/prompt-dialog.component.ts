@@ -9,11 +9,12 @@ import {
 } from '@angular/core';
 import { Subject } from 'rxjs';
 import { DialogShellComponent } from '../dialog-shell/dialog-shell.component';
+import { ButtonDirective } from '../button/button.directive';
 
 @Component({
   selector: 'app-prompt-dialog',
   standalone: true,
-  imports: [DialogShellComponent],
+  imports: [DialogShellComponent, ButtonDirective],
   templateUrl: './prompt-dialog.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })

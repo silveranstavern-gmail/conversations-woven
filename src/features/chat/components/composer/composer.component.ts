@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, input, ou
 import { ChatModelOption } from '../../data/chat-adapters.service';
 import { UserPreferencesService } from '@core/services/preference/user-preferences.service';
 import { ModelSelectorComponent } from '@shared/ui/model-selector/model-selector.component';
+import { ButtonDirective } from '@shared/ui/button/button.directive';
 
 export interface ComposerSubmitPayload {
   content: string;
@@ -12,7 +13,7 @@ export interface ComposerSubmitPayload {
 @Component({
   selector: 'app-composer',
   standalone: true,
-  imports: [DecimalPipe, ModelSelectorComponent],
+  imports: [DecimalPipe, ModelSelectorComponent, ButtonDirective],
   templateUrl: './composer.component.html',
   styleUrl: './composer.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush

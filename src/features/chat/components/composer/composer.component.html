@@ -45,7 +45,8 @@
   <div class="composer__actions">
     <button
       type="button"
-      class="btn btn-primary"
+      appButton
+      variant="primary"
       [disabled]="disabled() || !selectedModelId()"
       (click)="onSubmit()"
     >

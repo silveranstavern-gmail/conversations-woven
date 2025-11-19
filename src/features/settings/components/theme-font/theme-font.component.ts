@@ -1,12 +1,13 @@
 import { DecimalPipe, DOCUMENT, TitleCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
 import { UserPreferencesService, SendHotkeyMode } from '@core/services/preference/user-preferences.service';
+import { ButtonDirective } from '@shared/ui/button/button.directive';
 
 type ThemePreference = 'system' | 'light' | 'dark';
 
 @Component({
   selector: 'app-theme-font',
-  imports: [TitleCasePipe, DecimalPipe],
+  imports: [TitleCasePipe, DecimalPipe, ButtonDirective],
   templateUrl: './theme-font.component.html',
   styleUrl: './theme-font.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush

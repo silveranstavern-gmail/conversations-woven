@@ -61,7 +61,8 @@
   <div class="dialog-footer-content">
     <button
       type="button"
-      class="dialog-button dialog-button--secondary"
+      appButton
+      variant="secondary"
       (click)="handleGenerate()"
       [disabled]="isGenerating() || !threadId || messages.length === 0"
     >
@@ -71,10 +72,10 @@
         Generate
       }
     </button>
-    <button type="button" class="dialog-button dialog-button--secondary" (click)="handleCancel()">
+    <button type="button" appButton variant="secondary" (click)="handleCancel()">
       Cancel
     </button>
-    <button type="button" class="dialog-button dialog-button--primary" (click)="handleConfirm()">
+    <button type="button" appButton variant="primary" (click)="handleConfirm()">
       Save
     </button>
   </div>

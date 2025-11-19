@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { Subject } from 'rxjs';
 import { DialogShellComponent } from '@shared/ui/dialog-shell/dialog-shell.component';
+import { ButtonDirective } from '@shared/ui/button/button.directive';
 
 export interface ThreadSettings {
   systemPrompt?: string;
@@ -10,7 +11,7 @@ export interface ThreadSettings {
 @Component({
   selector: 'app-thread-settings',
   standalone: true,
-  imports: [DialogShellComponent],
+  imports: [DialogShellComponent, ButtonDirective],
   templateUrl: './thread-settings.component.html',
   styleUrl: './thread-settings.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush

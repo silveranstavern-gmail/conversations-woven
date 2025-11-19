@@ -1,4 +1,4 @@
-<app-dialog-shell [title]="title" message="Configure system prompt and temperature for this thread" (cancel)="handleCancel()">
+<app-dialog-shell [title]="title" message="Configure system prompt and temperature for this thread" width="500px" (cancel)="handleCancel()">
   <div class="dialog-body-content">
       <div class="dialog-field">
         <label class="dialog-label" for="system-prompt">
@@ -37,10 +37,10 @@
       </div>
   </div>
   <div class="dialog-footer-content">
-    <button type="button" class="dialog-button dialog-button--secondary" (click)="handleCancel()">
+    <button type="button" appButton variant="secondary" (click)="handleCancel()">
       Cancel
     </button>
-    <button type="button" class="dialog-button dialog-button--primary" (click)="handleConfirm()">
+    <button type="button" appButton variant="primary" (click)="handleConfirm()">
       Save
     </button>
   </div>

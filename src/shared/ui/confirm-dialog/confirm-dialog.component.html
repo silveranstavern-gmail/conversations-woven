@@ -1,11 +1,12 @@
 <app-dialog-shell [title]="title" [message]="message" (cancel)="handleCancel()">
   <div class="dialog-footer-content">
-    <button type="button" class="dialog-button dialog-button--secondary" (click)="handleCancel()">
+    <button type="button" appButton variant="secondary" (click)="handleCancel()">
       {{ cancelLabel }}
     </button>
     <button
       type="button"
-      [class]="'dialog-button ' + (danger ? 'dialog-button--danger' : 'dialog-button--primary')"
+      appButton
+      [variant]="danger ? 'danger' : 'primary'"
       (click)="handleConfirm()"
     >
       {{ confirmLabel }}
