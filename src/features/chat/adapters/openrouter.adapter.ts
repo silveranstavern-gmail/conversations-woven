@@ -29,7 +29,7 @@ export class OpenRouterAdapter implements LlmAdapter {
       apiKey: apiKey,
       defaultHeaders: {
         'HTTP-Referer': 'http://localhost:4200', // Replace with your actual site URL in production
-        'X-Title': 'Advanced LLM Chat' // Replace with your app name
+        'X-Title': 'Conversations Woven' // Replace with your app name
       },
       dangerouslyAllowBrowser: true
     });
@@ -125,7 +125,7 @@ export class OpenRouterAdapter implements LlmAdapter {
       apiKey: apiKey,
       defaultHeaders: {
         'HTTP-Referer': 'http://localhost:4200',
-        'X-Title': 'Advanced LLM Chat'
+        'X-Title': 'Conversations Woven'
       },
       dangerouslyAllowBrowser: true
     });

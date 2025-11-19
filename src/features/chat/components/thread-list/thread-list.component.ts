@@ -316,6 +316,7 @@ export class ThreadListComponent {
     }
   }
 
+  // TODO: Move to Folder is not implemented yet, will be part of Advanced Features not found in main conversation list
   protected async onMoveThreadToFolder(event: Event, threadId: Id): Promise<void> {
     event.stopPropagation();
     this.closeMenu();

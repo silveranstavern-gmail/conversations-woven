@@ -26,24 +26,6 @@ export class ApiKeysComponent {
       label: 'OpenRouter',
       scopes: ['chat', 'models:read'],
       docUrl: 'https://openrouter.ai/keys'
-    },
-    {
-      id: 'openai',
-      label: 'OpenAI',
-      scopes: ['chat.completions', 'responses'],
-      docUrl: 'https://platform.openai.com/account/api-keys'
-    },
-    {
-      id: 'anthropic',
-      label: 'Anthropic',
-      scopes: ['messages', 'beta prompt cache'],
-      docUrl: 'https://console.anthropic.com/account/keys'
-    },
-    {
-      id: 'azure-openai',
-      label: 'Azure OpenAI',
-      scopes: ['chat', 'embeddings'],
-      docUrl: 'https://portal.azure.com/'
     }
   ]);
 

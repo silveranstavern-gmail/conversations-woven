@@ -142,9 +142,9 @@
                 </button>
                 @if (openMenuThreadId() === thread.id) {
                   <div class="thread-list__item-menu" (click)="$event.stopPropagation()">
-                    <button type="button" class="ghost-button ghost-button--sm" (click)="onMoveThreadToFolder($event, thread.id)">
+                    <!-- <button type="button" class="ghost-button ghost-button--sm" (click)="onMoveThreadToFolder($event, thread.id)">
                       Move to Folder
-                    </button>
+                    </button> -->
                     <button type="button" class="ghost-button ghost-button--sm" (click)="onRenameThread($event, thread.id)">
                       Rename
                     </button>
@@ -256,9 +256,9 @@
                 </button>
                 @if (openMenuThreadId() === thread.id) {
                   <div class="thread-list__item-menu" (click)="$event.stopPropagation()">
-                    <button type="button" class="ghost-button ghost-button--sm" (click)="onMoveThreadToFolder($event, thread.id)">
+                    <!-- <button type="button" class="ghost-button ghost-button--sm" (click)="onMoveThreadToFolder($event, thread.id)">
                       Move to Folder
-                    </button>
+                    </button> -->
                     <button type="button" class="ghost-button ghost-button--sm" (click)="onRenameThread($event, thread.id)">
                       Rename
                     </button>
