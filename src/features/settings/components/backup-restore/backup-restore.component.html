@@ -1,19 +1,16 @@
-<header class="settings-section__header">
-  <input
-    #fileInput
-    type="file"
-    class="visually-hidden"
-    accept="application/json"
-    (change)="handleImportSelected($event)"
-  />
-  <div>
-    <p class="settings-section__eyebrow">Data safety</p>
-    <h2>Backup & restore</h2>
-    <p class="text-muted">
-      Export bundles omit raw provider keys and respect local encryption policies.
-    </p>
-  </div>
-  <div class="settings-section__actions">
+<app-settings-section
+  eyebrow="Data safety"
+  heading="Backup & restore"
+  description="Export bundles omit raw provider keys and respect local encryption policies."
+>
+  <div class="settings-section__actions-content">
+    <input
+      #fileInput
+      type="file"
+      class="visually-hidden"
+      accept="application/json"
+      (change)="handleImportSelected($event)"
+    />
     <button type="button" class="ghost-button" (click)="handleExport()" [disabled]="isProcessing()">
       Export bundle
     </button>
@@ -26,20 +23,21 @@
       Import bundle
     </button>
   </div>
-</header>
+  <div class="settings-section__body-content">
+    @if (statusMessage()) {
+      <p class="text-muted small">{{ statusMessage() }}</p>
+    }
+    @if (errorMessage()) {
+      <p class="form-error">{{ errorMessage() }}</p>
+    }
 
-@if (statusMessage()) {
-  <p class="text-muted small">{{ statusMessage() }}</p>
-}
-@if (errorMessage()) {
-  <p class="form-error">{{ errorMessage() }}</p>
-}
-
-<section class="backup-cards">
+    <section class="backup-cards">
   @for (step of steps; track step.title) {
     <article class="surface-card backup-card">
       <h3>{{ step.title }}</h3>
       <p>{{ step.detail }}</p>
     </article>
-  }
-</section>
+    }
+    </section>
+  </div>
+</app-settings-section>

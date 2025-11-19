@@ -1,9 +1,17 @@
 import { inject, Injectable } from '@angular/core';
+
 import type { ChatMessage, Id } from '@models/chat';
+
 import { CompactionSnapshot, IdbService } from '@core/services/persistence/idb.service';
+
 import { SummarizerService } from '@core/services/summarizer.service';
+
+import { DialogService } from '@core/services/dialog.service';
+
 import { ChatThreadsService } from './chat-threads.service';
+
 import { MessageStateService } from './message-state.service';
+
 import { SelectionStateService } from './selection-state.service';
 
 @Injectable({
@@ -15,6 +23,7 @@ export class ChatActionsService {
   private readonly summarizer = inject(SummarizerService);
   private readonly messageState = inject(MessageStateService);
   private readonly selectionState = inject(SelectionStateService);
+  private readonly dialog = inject(DialogService);
 
   async branchFromMessage(messageId: Id): Promise<void> {
     const thread = this.threads.activeThread();
@@ -61,34 +70,83 @@ export class ChatActionsService {
   async compactSelection(): Promise<void> {
     const threadId = this.threads.selectedThreadId();
     const selection = this.selectionState.selectedMessageIds();
-    if (!threadId || selection.length < 2) {
+    
+    if (!threadId) {
+      console.warn('[ChatActions] Compaction aborted: No active thread selected.');
       return;
     }
+    
+    if (selection.length < 2) {
+      console.warn('[ChatActions] Compaction aborted: Fewer than 2 messages selected.');
+      return;
+    }
+    
     const ordered = this.messageState.getMessagesInOrder(selection);
-    if (ordered.length !== selection.length || !this.isSelectionContiguous(ordered)) {
+    
+    if (ordered.length !== selection.length) {
+      console.warn('[ChatActions] Compaction aborted: Selection mismatch (phantom IDs detected).');
+      // Attempt to repair state
+      this.selectionState.syncSelectionWithMessages(this.messageState.messages());
       return;
     }
+
+    if (!this.isSelectionContiguous(ordered)) {
+      console.warn('[ChatActions] Compaction aborted: Selection is not contiguous.');
+      await this.dialog.alert({
+        title: 'Cannot Compact',
+        message: 'Please select a continuous range of messages to compact. You cannot skip messages in the middle.'
+      });
+      return;
+    }
+    
     const hasIncomplete = ordered.some((message) => message.state !== 'complete');
     if (hasIncomplete) {
+      console.warn('[ChatActions] Compaction aborted: Selection contains incomplete/failed messages.');
+      await this.dialog.alert({
+        title: 'Cannot Compact',
+        message: 'Some selected messages are not in a "complete" state (e.g. they are still sending, streaming, or have failed).'
+      });
       return;
     }
+    
     const includesCompacted = ordered.some((message) => message.compactedFrom?.length);
     if (includesCompacted) {
+      console.warn('[ChatActions] Compaction aborted: Selection includes existing compactions.');
+      await this.dialog.alert({
+        title: 'Cannot Compact',
+        message: 'Your selection includes a message that is already compacted. Please restore it before compacting again.'
+      });
       return;
     }
-    const summary = await this.summarizer.summarize(ordered);
-    const compacted = this.buildCompactedMessage(threadId, ordered, summary);
-    const nextMessages = this.composeMessagesWithCompaction(ordered, compacted);
-    const snapshot: CompactionSnapshot = {
-      threadId,
-      messageIds: ordered.map((message) => message.id),
-      messages: ordered.map((message) => this.cloneForSnapshot(message)),
-      createdAt: new Date().toISOString()
-    };
-    await this.messageState.bulkReplaceMessages(threadId, nextMessages);
-    await this.idb.saveCompactionSnapshot(compacted.id, snapshot);
-    await this.threads.touchThread(threadId);
-    this.selectionState.setSelectedIds([compacted.id]);
+
+    console.log(`[ChatActions] Starting compaction for ${ordered.length} messages...`);
+    
+    try {
+      const summary = await this.summarizer.summarize(ordered);
+      console.log('[ChatActions] Summary generated, applying changes...');
+
+      const compacted = this.buildCompactedMessage(threadId, ordered, summary);
+      const nextMessages = this.composeMessagesWithCompaction(ordered, compacted);
+      const snapshot: CompactionSnapshot = {
+        threadId,
+        messageIds: ordered.map((message) => message.id),
+        messages: ordered.map((message) => this.cloneForSnapshot(message)),
+        createdAt: new Date().toISOString()
+      };
+      
+      await this.messageState.bulkReplaceMessages(threadId, nextMessages);
+      await this.idb.saveCompactionSnapshot(compacted.id, snapshot);
+      await this.threads.touchThread(threadId);
+      this.selectionState.setSelectedIds([compacted.id]);
+      
+      console.log('[ChatActions] Compaction complete.');
+    } catch (error) {
+      console.error('[ChatActions] Compaction failed unexpectedly:', error);
+      await this.dialog.alert({
+        title: 'Compaction Error',
+        message: 'An unexpected error occurred while compacting messages.'
+      });
+    }
   }
 
   async uncompactMessage(messageId: Id): Promise<void> {
@@ -98,6 +156,7 @@ export class ChatActionsService {
     }
     const snapshot = await this.idb.loadCompactionSnapshot(messageId);
     if (!snapshot) {
+      console.warn(`[ChatActions] Restore failed: No snapshot found for message ${messageId}`);
       return;
     }
     const threadId = placeholder.threadId;

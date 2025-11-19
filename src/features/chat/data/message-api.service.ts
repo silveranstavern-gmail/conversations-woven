@@ -94,6 +94,7 @@ export class MessageApiService {
       });
       let workingAssistant = assistantMessage;
       let hasContent = false;
+      let lastSaved = Date.now();
 
       for await (const chunk of stream) {
         const patch: Partial<ChatMessage> = {
@@ -111,9 +112,17 @@ export class MessageApiService {
           patch.tokensOut = chunk.usage.completionTokens;
         }
 
-        const updated = await this.messageState.updateMessage(assistantMessage.id, patch);
+        // Update signal immediately for UI responsiveness
+        const updated = this.messageState.updateMessageSignal(assistantMessage.id, patch);
         if (updated) {
           workingAssistant = updated;
+        }
+
+        // Only write to IDB if 1 second has passed OR if chunk is done
+        const now = Date.now();
+        if (chunk.done || now - lastSaved > 1000) {
+          await this.messageState.upsertMessage(workingAssistant);
+          lastSaved = now;
         }
       }
 

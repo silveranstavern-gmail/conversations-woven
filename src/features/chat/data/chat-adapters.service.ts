@@ -1,6 +1,5 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { LlmCapabilities, LlmModelDescriptor, ChatTurn } from '../adapters/llm-adapter';
-import { OpenRouterAdapter } from '../adapters/openrouter.adapter';
+import { LlmCapabilities, LlmModelDescriptor, ChatTurn, LLM_ADAPTER_TOKEN } from '../adapters/llm-adapter';
 import { ModelCardData } from '@features/settings/components/models/model-card.model';
 
 export interface ChatModelOption {
@@ -29,7 +28,7 @@ const MODEL_PREFERENCES_KEY = 'model-preferences';
   providedIn: 'root'
 })
 export class ChatAdaptersService {
-  private readonly openrouterAdapter = inject(OpenRouterAdapter);
+  private readonly adapters = inject(LLM_ADAPTER_TOKEN);
 
   private readonly allModelsSignal = signal<ChatModelOption[]>([]);
 
@@ -212,11 +211,16 @@ export class ChatAdaptersService {
     opts: { maxTokens?: number; temperature?: number; system?: string }
   ) {
     const model = this.getModelById(modelId);
-    if (model?.adapterId !== 'openrouter') {
-      throw new Error(`Adapter for model ${modelId} not found or not supported.`);
+    if (!model) {
+      throw new Error(`Model ${modelId} not found.`);
     }
 
-    return this.openrouterAdapter.streamChat(turns, {
+    const adapter = this.adapters.find(a => a.id === model.adapterId);
+    if (!adapter) {
+      throw new Error(`Adapter for model ${modelId} (adapterId: ${model.adapterId}) not found.`);
+    }
+
+    return adapter.streamChat(turns, {
       model: model.adapterModelId,
       maxTokens: opts.maxTokens,
       temperature: opts.temperature,
@@ -230,12 +234,16 @@ export class ChatAdaptersService {
     opts: { maxTokens?: number; temperature?: number; system?: string }
   ): Promise<string> {
     const model = this.getModelById(modelId);
-    if (model?.adapterId !== 'openrouter') {
-      // In the future, this could be a switch statement for multiple adapters
-      throw new Error(`Adapter for model ${modelId} not found or not supported.`);
+    if (!model) {
+      throw new Error(`Model ${modelId} not found.`);
     }
 
-    return this.openrouterAdapter.generateText(turns, {
+    const adapter = this.adapters.find(a => a.id === model.adapterId);
+    if (!adapter) {
+      throw new Error(`Adapter for model ${modelId} (adapterId: ${model.adapterId}) not found.`);
+    }
+
+    return adapter.generateText(turns, {
       model: model.adapterModelId,
       maxTokens: opts.maxTokens,
       temperature: opts.temperature,

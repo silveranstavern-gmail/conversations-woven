@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { Subject } from 'rxjs';
+import { DialogShellComponent } from '../dialog-shell/dialog-shell.component';
 
 @Component({
   selector: 'app-confirm-dialog',
   standalone: true,
+  imports: [DialogShellComponent],
   templateUrl: './confirm-dialog.component.html',
-  styleUrl: './confirm-dialog.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ConfirmDialogComponent {

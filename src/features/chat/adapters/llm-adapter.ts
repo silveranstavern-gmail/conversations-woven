@@ -1,3 +1,5 @@
+import { InjectionToken } from '@angular/core';
+
 export interface StreamChunk {
   deltaText?: string;
   done?: boolean;
@@ -40,3 +42,5 @@ export interface LlmAdapter {
     opts: { model: string; maxTokens?: number; temperature?: number; system?: string }
   ): Promise<string>;
 }
+
+export const LLM_ADAPTER_TOKEN = new InjectionToken<LlmAdapter[]>('LLM_ADAPTER_TOKEN');

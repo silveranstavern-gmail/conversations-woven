@@ -1,14 +1,9 @@
-<header class="settings-section__header">
-  <div>
-    <p class="settings-section__eyebrow">Configuration</p>
-    <h2>System prompts</h2>
-    <p class="text-muted">
-      Customize system prompts and model settings for different use cases. Changes are saved automatically.
-    </p>
-  </div>
-</header>
-
-<section class="settings-section__body system-prompts">
+<app-settings-section
+  eyebrow="Configuration"
+  heading="System prompts"
+  description="Customize system prompts and model settings for different use cases. Changes are saved automatically."
+>
+  <section class="settings-section__body-content system-prompts">
   <article class="surface-card system-prompts__use-case-selector">
     <label>
       <span>Use case</span>
@@ -171,6 +166,7 @@
         </div>
       </div>
     </article>
-  }
-</section>
+    }
+  </section>
+</app-settings-section>
 

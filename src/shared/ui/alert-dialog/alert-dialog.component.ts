@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { Subject } from 'rxjs';
+import { DialogShellComponent } from '../dialog-shell/dialog-shell.component';
 
 @Component({
   selector: 'app-alert-dialog',
   standalone: true,
+  imports: [DialogShellComponent],
   templateUrl: './alert-dialog.component.html',
-  styleUrl: './alert-dialog.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AlertDialogComponent {
@@ -18,6 +19,10 @@ export class AlertDialogComponent {
   protected handleConfirm(): void {
     this.result$.next();
     this.result$.complete();
+  }
+
+  protected handleCancel(): void {
+    this.handleConfirm();
   }
 
   protected handleKeydown(event: KeyboardEvent): void {

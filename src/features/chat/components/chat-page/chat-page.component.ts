@@ -29,46 +29,16 @@ export class ChatPageComponent {
   protected readonly isReady = this.threadsService.isReady;
 
   constructor() {
-    // Sync route param to service
+    // Sync route param to service for UI highlighting only
+    // Navigation should only happen via RouterLink or explicit router.navigate calls
     effect(() => {
       const routeThreadId = this.threadId();
-      const currentSelectedId = this.threadsService.selectedThreadId();
-      
       if (routeThreadId) {
+        // Update service selection for UI highlighting, but don't let service drive navigation
         const exists = this.threads().some((thread) => thread.id === routeThreadId);
-        if (exists && routeThreadId !== currentSelectedId) {
-          // Route has a valid thread ID that differs from current selection - update service
+        if (exists) {
           this.threadsService.selectThread(routeThreadId);
-        } else if (!exists) {
-          // Thread doesn't exist, navigate to root or first available thread
-          const firstThread = this.threads()[0];
-          if (firstThread) {
-            void this.router.navigate(['/chat', firstThread.id], { replaceUrl: true });
-          } else {
-            void this.router.navigate(['/chat'], { replaceUrl: true });
-          }
         }
-      } else {
-        // No threadId in route - select first thread if available, otherwise clear selection
-        const firstThread = this.threads()[0];
-        if (firstThread && firstThread.id !== currentSelectedId) {
-          void this.router.navigate(['/chat', firstThread.id], { replaceUrl: true });
-        } else if (!firstThread && currentSelectedId !== null) {
-          this.threadsService.selectThread(null);
-        }
-      }
-    });
-
-    // Sync service selection to route (when thread is created or selected programmatically)
-    effect(() => {
-      const selectedId = this.threadsService.selectedThreadId();
-      const routeThreadId = this.threadId();
-      // Only navigate if service selection differs from route and we're not already navigating
-      if (selectedId && selectedId !== routeThreadId) {
-        void this.router.navigate(['/chat', selectedId], { replaceUrl: true });
-      } else if (!selectedId && routeThreadId) {
-        // Service cleared selection but route still has a threadId - navigate to root
-        void this.router.navigate(['/chat'], { replaceUrl: true });
       }
     });
   }

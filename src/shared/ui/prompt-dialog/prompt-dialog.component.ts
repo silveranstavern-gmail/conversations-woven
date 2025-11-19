@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { Subject } from 'rxjs';
+import { DialogShellComponent } from '../dialog-shell/dialog-shell.component';
 
 @Component({
   selector: 'app-prompt-dialog',
   standalone: true,
+  imports: [DialogShellComponent],
   templateUrl: './prompt-dialog.component.html',
-  styleUrl: './prompt-dialog.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PromptDialogComponent {

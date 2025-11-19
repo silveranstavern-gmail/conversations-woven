@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { Subject } from 'rxjs';
 import { MetadataGeneratorService, GeneratedMetadata } from '@core/services/metadata-generator.service';
 import { ChatMessage } from '@models/chat';
+import { DialogShellComponent } from '@shared/ui/dialog-shell/dialog-shell.component';
 
 export interface MetadataDialogResult {
   title: string;
@@ -12,8 +13,8 @@ export interface MetadataDialogResult {
 @Component({
   selector: 'app-metadata-dialog',
   standalone: true,
+  imports: [DialogShellComponent],
   templateUrl: './metadata-dialog.component.html',
-  styleUrl: './metadata-dialog.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MetadataDialogComponent {

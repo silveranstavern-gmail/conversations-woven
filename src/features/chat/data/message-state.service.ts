@@ -54,24 +54,51 @@ export class MessageStateService {
     this.messagesSignal.update((current) => {
       const index = current.findIndex((item) => item.id === message.id);
       if (index >= 0) {
+        // Message exists: update in place, don't sort
         const clone = [...current];
         clone[index] = message;
-        nextMessages = clone.sort(
-          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-        );
+        nextMessages = clone;
         return nextMessages;
       }
       if (message.threadId !== this.threads.selectedThreadId()) {
+        // Message belongs to different thread: don't add
         nextMessages = current;
         return nextMessages;
       }
-      nextMessages = [...current, message].sort(
-        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-      );
+      // New message: append to end (assuming new messages are always newest)
+      // Don't sort here - sorting only happens in loadMessagesForThread
+      nextMessages = [...current, message];
       return nextMessages;
     });
     await this.syncThreadCount(message.threadId);
     this.activeMessageIdSignal.set(message.id);
+  }
+
+  /**
+   * Updates the message signal immediately without writing to IDB.
+   * Used for streaming updates to keep UI responsive.
+   */
+  updateMessageSignal(id: Id, patch: Partial<ChatMessage>): ChatMessage | null {
+    const existing = this.messages().find((message) => message.id === id);
+    if (!existing) {
+      return null;
+    }
+    const next: ChatMessage = {
+      ...existing,
+      ...patch,
+      revision: existing.revision + 1
+    };
+    this.messagesSignal.update((current) => {
+      const index = current.findIndex((item) => item.id === id);
+      if (index >= 0) {
+        const clone = [...current];
+        clone[index] = next;
+        // Don't sort here - sorting happens in upsertMessage
+        return clone;
+      }
+      return current;
+    });
+    return next;
   }
 
   async updateMessage(id: Id, patch: Partial<ChatMessage>): Promise<ChatMessage | null> {

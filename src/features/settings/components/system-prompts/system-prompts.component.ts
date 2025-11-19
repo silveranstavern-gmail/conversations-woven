@@ -4,10 +4,12 @@ import { ChatAdaptersService } from '@features/chat/data/chat-adapters.service';
 import { ChatThreadsService } from '@features/chat/data/chat-threads.service';
 import { ModelSelectorComponent } from '@shared/ui/model-selector/model-selector.component';
 import { UserPreferencesService, SystemPromptUseCase } from '@core/services/preference/user-preferences.service';
+import { SettingsSectionComponent } from '../ui/settings-section/settings-section.component';
 
 @Component({
   selector: 'app-system-prompts',
-  imports: [ModelSelectorComponent],
+  standalone: true,
+  imports: [ModelSelectorComponent, SettingsSectionComponent],
   templateUrl: './system-prompts.component.html',
   styleUrl: './system-prompts.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush

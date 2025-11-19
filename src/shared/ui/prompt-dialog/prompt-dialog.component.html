@@ -1,30 +1,22 @@
-<div class="dialog-overlay" (click)="handleCancel()">
-  <div class="dialog-container" (click)="$event.stopPropagation()">
-    <div class="dialog-header">
-      <h2 class="dialog-title">{{ title }}</h2>
-      @if (message) {
-        <p class="dialog-message">{{ message }}</p>
-      }
-    </div>
-    <div class="dialog-body">
-      <input
-        [type]="inputType"
-        class="dialog-input"
-        [value]="inputValue()"
-        [placeholder]="placeholder"
-        (input)="inputValue.set($any($event.target).value)"
-        (keydown)="handleKeydown($event)"
-        autofocus
-      />
-    </div>
-    <div class="dialog-footer">
-      <button type="button" class="dialog-button dialog-button--secondary" (click)="handleCancel()">
-        {{ cancelLabel }}
-      </button>
-      <button type="button" class="dialog-button dialog-button--primary" (click)="handleConfirm()">
-        {{ confirmLabel }}
-      </button>
-    </div>
+<app-dialog-shell [title]="title" [message]="message" (cancel)="handleCancel()">
+  <div class="dialog-body-content">
+    <input
+      [type]="inputType"
+      class="dialog-input"
+      [value]="inputValue()"
+      [placeholder]="placeholder"
+      (input)="inputValue.set($any($event.target).value)"
+      (keydown)="handleKeydown($event)"
+      autofocus
+    />
   </div>
-</div>
+  <div class="dialog-footer-content">
+    <button type="button" class="dialog-button dialog-button--secondary" (click)="handleCancel()">
+      {{ cancelLabel }}
+    </button>
+    <button type="button" class="dialog-button dialog-button--primary" (click)="handleConfirm()">
+      {{ confirmLabel }}
+    </button>
+  </div>
+</app-dialog-shell>
 

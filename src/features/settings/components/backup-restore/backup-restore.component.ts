@@ -1,10 +1,13 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { BackupService, ChatBackupBundle } from '@core/services/persistence/backup.service';
 import { ChatThreadsService } from '@features/chat/data/chat-threads.service';
-import { ActiveChatService } from '@features/chat/data/active-chat.service';
+import { MessageStateService } from '@features/chat/data/message-state.service';
+import { SettingsSectionComponent } from '../ui/settings-section/settings-section.component';
 
 @Component({
   selector: 'app-backup-restore',
+  standalone: true,
+  imports: [SettingsSectionComponent],
   templateUrl: './backup-restore.component.html',
   styleUrl: './backup-restore.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -12,7 +15,7 @@ import { ActiveChatService } from '@features/chat/data/active-chat.service';
 export class BackupRestoreComponent {
   private readonly backup = inject(BackupService);
   private readonly threads = inject(ChatThreadsService);
-  private readonly activeChat = inject(ActiveChatService);
+  private readonly messageState = inject(MessageStateService);
 
   protected readonly isProcessing = signal(false);
   protected readonly statusMessage = signal('');
@@ -77,7 +80,7 @@ export class BackupRestoreComponent {
       const data = JSON.parse(text) as ChatBackupBundle;
       await this.backup.importBundle(data);
       await this.threads.reloadFromStore();
-      await this.activeChat.reloadActiveThread();
+      await this.messageState.reloadActiveThread();
       this.statusMessage.set('Import complete.');
     } catch {
       this.errorMessage.set('Import failed. Ensure the file is a valid backup.');

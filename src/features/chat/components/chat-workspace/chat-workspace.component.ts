@@ -2,10 +2,12 @@ import { ChangeDetectionStrategy, Component, computed, inject, input } from '@an
 import { ChatMessage, ChatThread, Id } from '@models/chat';
 import { MessageListComponent } from '../message-list/message-list.component';
 import { ComposerComponent, ComposerSubmitPayload } from '../composer/composer.component';
-import { ActiveChatService } from '../../data/active-chat.service';
+import { MessageStateService } from '../../data/message-state.service';
+import { SelectionStateService } from '../../data/selection-state.service';
+import { MessageApiService } from '../../data/message-api.service';
+import { ChatActionsService } from '../../data/chat-actions.service';
 import { ChatAdaptersService } from '../../data/chat-adapters.service';
 import { ChatThreadsService } from '../../data/chat-threads.service';
-import { SelectionStateService } from '../../data/selection-state.service';
 import { DialogService } from '@core/services/dialog.service';
 
 @Component({
@@ -19,20 +21,22 @@ export class ChatWorkspaceComponent {
   public readonly thread = input<ChatThread | undefined>();
   public readonly hasThreads = input<boolean>(false);
 
-  private readonly activeChat = inject(ActiveChatService);
+  private readonly messageState = inject(MessageStateService);
+  private readonly selectionState = inject(SelectionStateService);
+  private readonly messageApi = inject(MessageApiService);
+  private readonly chatActions = inject(ChatActionsService);
   private readonly adapters = inject(ChatAdaptersService);
   private readonly threads = inject(ChatThreadsService);
-  private readonly selectionState = inject(SelectionStateService);
   private readonly dialogService = inject(DialogService);
 
-  protected readonly messages = this.activeChat.messages;
-  protected readonly activeMessageId = this.activeChat.activeMessageId;
-  protected readonly isLoading = this.activeChat.isLoading;
-  protected readonly isStreaming = this.activeChat.isStreaming;
+  protected readonly messages = this.messageState.messages;
+  protected readonly activeMessageId = this.messageState.activeMessageId;
+  protected readonly isLoading = this.messageState.isLoading;
+  protected readonly isStreaming = this.messageState.isStreaming;
   protected readonly models = this.adapters.models;
-  protected readonly selectedMessageIds = this.activeChat.selectedMessageIds;
-  protected readonly selectionCount = this.activeChat.selectionCount;
-  protected readonly hasSelection = this.activeChat.hasSelection;
+  protected readonly selectedMessageIds = this.selectionState.selectedMessageIds;
+  protected readonly selectionCount = this.selectionState.selectionCount;
+  protected readonly hasSelection = this.selectionState.hasSelection;
   protected readonly canCompactSelection = computed(
     () => this.selectionCount() >= 2 && !this.isLoading() && !this.isStreaming()
   );
@@ -80,11 +84,21 @@ export class ChatWorkspaceComponent {
   });
 
   protected handleDeleteMessage(messageId: Id): void {
-    void this.activeChat.deleteMessage(messageId);
+    const threadId = this.thread()?.id;
+    if (!threadId) {
+      return;
+    }
+    void this.messageState.deleteMessage(messageId).then(() => {
+      this.selectionState.syncSelectionWithMessages(this.messageState.messages());
+    });
   }
 
   protected handleComposerSubmit(payload: ComposerSubmitPayload): void {
-    void this.activeChat.sendUserMessage(payload.content, payload.modelId);
+    const threadId = this.thread()?.id;
+    if (!threadId) {
+      return;
+    }
+    void this.messageApi.sendUserMessage(payload.content, payload.modelId, threadId);
   }
 
   protected handleModelSelected(modelId: string): void {
@@ -105,38 +119,38 @@ export class ChatWorkspaceComponent {
   }
 
   protected handleBranchMessage(messageId: Id): void {
-    void this.activeChat.branchFromMessage(messageId);
+    void this.chatActions.branchFromMessage(messageId);
   }
 
   protected handleUpdateMessage(event: { id: Id; content: string }): void {
-    void this.activeChat.editMessageContent(event.id, event.content);
+    void this.chatActions.editMessageContent(event.id, event.content);
   }
 
   protected handleSelectionChange(event: { id: Id; selected: boolean; range: boolean }): void {
-    this.activeChat.setMessageSelection(event.id, {
+    this.selectionState.setMessageSelection(event.id, {
       selected: event.selected,
       range: event.range
     });
   }
 
   protected handleClearSelection(): void {
-    this.activeChat.clearSelection();
+    this.selectionState.clearSelection();
   }
 
   protected handleSelectAll(): void {
-    this.activeChat.selectAllMessages();
+    this.selectionState.selectAllMessages();
   }
 
   protected handleDeleteSelected(): void {
-    void this.activeChat.deleteSelectedMessages();
+    void this.chatActions.deleteSelectedMessages();
   }
 
   protected handleCompactSelection(): void {
-    void this.activeChat.compactSelection();
+    void this.chatActions.compactSelection();
   }
 
   protected handleRestoreCompaction(messageId: Id): void {
-    void this.activeChat.uncompactMessage(messageId);
+    void this.chatActions.uncompactMessage(messageId);
   }
 
   protected handleToggleContextSelection(): void {
