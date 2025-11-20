@@ -19,7 +19,7 @@
 
 .theme-options .ghost-button.active {
   background: var(--color-brand);
-  color: white;
+  color: var(--color-brand-contrast);
   border-color: var(--color-brand);
 }
 

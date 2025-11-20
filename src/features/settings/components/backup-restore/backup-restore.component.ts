@@ -4,11 +4,12 @@ import { ChatThreadsService } from '@features/chat/data/chat-threads.service';
 import { MessageStateService } from '@features/chat/data/message-state.service';
 import { SettingsSectionComponent } from '../ui/settings-section/settings-section.component';
 import { ButtonDirective } from '@shared/ui/button/button.directive';
+import { TooltipDirective } from '@shared/ui/tooltip/tooltip.directive';
 
 @Component({
   selector: 'app-backup-restore',
   standalone: true,
-  imports: [SettingsSectionComponent, ButtonDirective],
+  imports: [SettingsSectionComponent, ButtonDirective, TooltipDirective],
   templateUrl: './backup-restore.component.html',
   styleUrl: './backup-restore.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush

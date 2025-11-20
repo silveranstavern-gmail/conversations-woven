@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+@import './shared/ui/tooltip/tooltip.directive.css';
 
 :root {
   color-scheme: light;
@@ -43,6 +44,11 @@
   --color-text: oklch(20% 0.01 240);         /* Primary Text */
   --color-text-muted: oklch(55% 0.02 240);   /* Secondary Text */
   
+  /* Tooltips (Inverse of Base) */
+  --color-tooltip-bg: oklch(20% 0.02 240);       /* Dark Slate */
+  --color-tooltip-text: oklch(98% 0 0);          /* White */
+  --color-tooltip-border: oklch(20% 0.02 240);   /* Match BG (borderless look) */
+  
   /* Feedback */
   --color-danger: oklch(60% 0.15 20);
   --color-danger-bg: oklch(97% 0.05 20);
@@ -86,6 +92,11 @@
   /* Text */
   --color-text: oklch(95% 0.01 240);
   --color-text-muted: oklch(65% 0.02 240);
+
+  /* Tooltips (Inverse of Base) */
+  --color-tooltip-bg: oklch(90% 0.01 240);       /* Light Grey/White */
+  --color-tooltip-text: oklch(15% 0.02 240);     /* Dark Text */
+  --color-tooltip-border: oklch(90% 0.01 240);
 
   /* Feedback */
   --color-danger: oklch(70% 0.15 20);
@@ -187,6 +198,15 @@ button {
 .ui-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Allow tooltips on disabled buttons when wrapped in tooltip directive */
+.tooltip-wrapper .ui-btn:disabled {
+  pointer-events: auto;
+}
+
+.tooltip-wrapper .ui-btn:disabled:active {
   pointer-events: none;
 }
 

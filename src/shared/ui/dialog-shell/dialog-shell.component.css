@@ -4,7 +4,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: color-mix(in oklch, var(--color-base) 20%, black);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -13,10 +13,12 @@
 }
 
 .dialog-container {
-  background: var(--surface-card, #ffffff);
+  background: var(--color-surface);
   border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-  max-width: 90vw;
+  box-shadow: var(--shadow-md);
+  width: 600px;
+  max-width: 95vw;
+  height: auto;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -31,13 +33,13 @@
   margin: 0 0 8px;
   font-size: 20px;
   font-weight: 600;
-  color: var(--text-primary, #1a1a1a);
+  color: var(--color-text);
 }
 
 .dialog-message {
   margin: 0;
   font-size: 14px;
-  color: var(--text-secondary, #666666);
+  color: var(--color-text-muted);
   line-height: 1.5;
 }
 
@@ -68,16 +70,16 @@
   padding: 10px 12px;
   font-size: 14px;
   font-family: inherit;
-  border: 1px solid var(--border-color, #d0d0d0);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
-  background: var(--surface-background, #ffffff);
-  color: var(--text-primary, #1a1a1a);
+  background: var(--color-base);
+  color: var(--color-text);
   transition: border-color 0.2s;
 }
 
 .dialog-input:focus {
   outline: none;
-  border-color: var(--primary-color, #0066cc);
+  border-color: var(--color-brand);
 }
 
 .dialog-textarea {
@@ -85,10 +87,10 @@
   padding: 10px 12px;
   font-size: 14px;
   font-family: inherit;
-  border: 1px solid var(--border-color, #d0d0d0);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
-  background: var(--surface-background, #ffffff);
-  color: var(--text-primary, #1a1a1a);
+  background: var(--color-base);
+  color: var(--color-text);
   transition: border-color 0.2s;
   resize: vertical;
   min-height: 80px;
@@ -96,7 +98,7 @@
 
 .dialog-textarea:focus {
   outline: none;
-  border-color: var(--primary-color, #0066cc);
+  border-color: var(--color-brand);
 }
 
 .dialog-field {
@@ -108,7 +110,7 @@
 .dialog-label {
   font-size: 14px;
   font-weight: 500;
-  color: var(--text-primary, #1a1a1a);
+  color: var(--color-text);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -117,7 +119,7 @@
 .dialog-label-hint {
   font-size: 12px;
   font-weight: 400;
-  color: var(--text-secondary, #666666);
+  color: var(--color-text-muted);
 }
 
 @keyframes fadeIn {

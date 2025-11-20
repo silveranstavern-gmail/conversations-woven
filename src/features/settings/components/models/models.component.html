@@ -24,33 +24,39 @@
     </div>
 
     <div class="models__header-actions">
-      <button
-        type="button"
-        appButton
-        variant="ghost"
-        (click)="handleDisableAll()"
-        [disabled]="enabledCount() === 0"
-      >
-        Disable all
-      </button>
-      <button
-        type="button"
-        appButton
-        variant="ghost"
-        (click)="handleEnableFree()"
-        [disabled]="freeModelsCount() === 0 || enabledFreeCount() === freeModelsCount()"
-      >
-        Enable free
-      </button>
-      <button
-        type="button"
-        appButton
-        variant="ghost"
-        (click)="handleEnableAll()"
-        [disabled]="disabledCount() === 0"
-      >
-        Enable all
-      </button>
+      <span appTooltip [disabled]="enabledCount() === 0" [isEmpty]="enabledCount() === 0" message="No enabled models to disable" position="bottom" align="center" size="sm">
+        <button
+          type="button"
+          appButton
+          variant="ghost"
+          (click)="handleDisableAll()"
+          [disabled]="enabledCount() === 0"
+        >
+          Disable all
+        </button>
+      </span>
+      <span appTooltip [disabled]="freeModelsCount() === 0 || enabledFreeCount() === freeModelsCount()" [isEmpty]="freeModelsCount() === 0" message="No free models available or all free models are already enabled" position="bottom" align="center" size="md">
+        <button
+          type="button"
+          appButton
+          variant="ghost"
+          (click)="handleEnableFree()"
+          [disabled]="freeModelsCount() === 0 || enabledFreeCount() === freeModelsCount()"
+        >
+          Enable free
+        </button>
+      </span>
+      <span appTooltip [disabled]="disabledCount() === 0" [isEmpty]="disabledCount() === 0" message="No disabled models to enable" position="bottom" align="center" size="sm">
+        <button
+          type="button"
+          appButton
+          variant="ghost"
+          (click)="handleEnableAll()"
+          [disabled]="disabledCount() === 0"
+        >
+          Enable all
+        </button>
+      </span>
     </div>
   </header>
 

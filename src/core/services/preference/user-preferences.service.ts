@@ -40,12 +40,14 @@ export class UserPreferencesService {
 
   setTheme(theme: ThemePreference): void {
     this.themeSignal.set(theme);
+    this.applyThemeToDOM(theme);
     this.persist();
   }
 
   setFontScale(scale: number): void {
     const clamped = Math.min(1.5, Math.max(0.8, Number.isFinite(scale) ? scale : 1));
     this.fontScaleSignal.set(clamped);
+    this.applyFontScaleToDOM(clamped);
     this.persist();
   }
 
@@ -62,15 +64,24 @@ export class UserPreferencesService {
   private hydrateFromStorage(): void {
     const entry = this.getStorage()?.getItem(STORAGE_KEY);
     if (!entry) {
+      // Apply defaults immediately
+      this.applyThemeToDOM(DEFAULT_PREFERENCES.theme);
+      this.applyFontScaleToDOM(DEFAULT_PREFERENCES.fontScale);
       return;
     }
     try {
       const parsed = JSON.parse(entry) as Partial<PreferencesSnapshot>;
       if (parsed.theme === 'system' || parsed.theme === 'light' || parsed.theme === 'dark') {
         this.themeSignal.set(parsed.theme);
+        this.applyThemeToDOM(parsed.theme);
+      } else {
+        this.applyThemeToDOM(DEFAULT_PREFERENCES.theme);
       }
       if (typeof parsed.fontScale === 'number') {
         this.fontScaleSignal.set(parsed.fontScale);
+        this.applyFontScaleToDOM(parsed.fontScale);
+      } else {
+        this.applyFontScaleToDOM(DEFAULT_PREFERENCES.fontScale);
       }
       if (parsed.sendHotkey === 'enter' || parsed.sendHotkey === 'ctrl-enter') {
         this.sendHotkeySignal.set(parsed.sendHotkey);
@@ -79,8 +90,39 @@ export class UserPreferencesService {
         this.systemPromptsUseCaseSignal.set(parsed.systemPromptsUseCase);
       }
     } catch {
-      // ignore corrupt data
+      // ignore corrupt data, apply defaults
+      this.applyThemeToDOM(DEFAULT_PREFERENCES.theme);
+      this.applyFontScaleToDOM(DEFAULT_PREFERENCES.fontScale);
     }
+  }
+
+  private applyThemeToDOM(preference: ThemePreference): void {
+    if (typeof document === 'undefined') {
+      return;
+    }
+    const root = document.documentElement;
+    if (!root) {
+      return;
+    }
+
+    if (preference === 'system') {
+      // Detect system preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      root.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+    } else {
+      root.setAttribute('data-theme', preference);
+    }
+  }
+
+  private applyFontScaleToDOM(value: number): void {
+    if (typeof document === 'undefined') {
+      return;
+    }
+    const root = document.documentElement;
+    if (!root) {
+      return;
+    }
+    root.style.setProperty('--font-scale', value.toString());
   }
 
   private persist(): void {

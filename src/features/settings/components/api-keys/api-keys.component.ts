@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { SettingsSectionComponent } from '../ui/settings-section/settings-section.component';
 import { KeychainService } from '@core/services/keychain.service';
 import { ButtonDirective } from '@shared/ui/button/button.directive';
+import { TooltipDirective } from '@shared/ui/tooltip/tooltip.directive';
 
 interface ProviderDefinition {
   id: string;
@@ -13,7 +14,7 @@ interface ProviderDefinition {
 @Component({
   selector: 'app-api-keys',
   standalone: true,
-  imports: [SettingsSectionComponent, ButtonDirective],
+  imports: [SettingsSectionComponent, ButtonDirective, TooltipDirective],
   templateUrl: './api-keys.component.html',
   styleUrl: './api-keys.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -36,6 +37,7 @@ export class ApiKeysComponent {
   protected readonly providerMessages = signal<Record<string, string>>({});
 
   protected readonly isUnlocked = this.keychain.isUnlocked;
+  protected readonly storedProviders = this.keychain.storedProviders;
   protected readonly configuredProviders = computed(() =>
     new Set(this.keychain.storedProviders())
   );

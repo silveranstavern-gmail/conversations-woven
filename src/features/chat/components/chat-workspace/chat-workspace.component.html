@@ -27,16 +27,18 @@
         >
           ⚙️ Settings
         </button>
-        <button
-          type="button"
-          appButton
-          variant="ghost"
-          size="sm"
-          (click)="handleExportThread()"
-          [disabled]="messages().length === 0"
-        >
-          Export
-</button>
+        <span appTooltip [disabled]="messages().length === 0" [isEmpty]="messages().length === 0" message="No messages to export" position="bottom" align="center" size="sm">
+          <button
+            type="button"
+            appButton
+            variant="ghost"
+            size="sm"
+            (click)="handleExportThread()"
+            [disabled]="messages().length === 0"
+          >
+            Export
+          </button>
+        </span>
       </div>
     </header>
 
@@ -62,16 +64,18 @@
               >
                 Copy
               </button>
-              <button
-                type="button"
-                appButton
-                variant="ghost"
-                size="sm"
-                (click)="handleCompactSelection()"
-                [disabled]="!canCompactSelection()"
-              >
-                Compact
-              </button>
+              <span appTooltip [disabled]="!canCompactSelection()" [hasSelection]="selectionCount() >= 2" message="Select at least 2 messages to compact" position="top" align="center" size="sm">
+                <button
+                  type="button"
+                  appButton
+                  variant="ghost"
+                  size="sm"
+                  (click)="handleCompactSelection()"
+                  [disabled]="!canCompactSelection()"
+                >
+                  Compact
+                </button>
+              </span>
               <button
                 type="button"
                 appButton

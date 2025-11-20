@@ -43,14 +43,23 @@
   </div>
 
   <div class="composer__actions">
-    <button
-      type="button"
-      appButton
-      variant="primary"
-      [disabled]="disabled() || !selectedModelId()"
-      (click)="onSubmit()"
+    <span
+      appTooltip
+      [disabled]="disabled() || !selectedModelId() || !isUnlocked()"
+      [hasKeys]="storedProviders().length > 0"
+      position="top"
+      align="end"
+      size="md"
     >
-      Send
-    </button>
+      <button
+        type="button"
+        appButton
+        variant="primary"
+        [disabled]="disabled() || !selectedModelId() || !isUnlocked()"
+        (click)="onSubmit()"
+      >
+        Send
+      </button>
+    </span>
   </div>
 </section>

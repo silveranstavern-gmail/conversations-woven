@@ -1,11 +1,14 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 
 @Component({
   selector: 'app-dialog-shell',
   standalone: true,
   templateUrl: './dialog-shell.component.html',
   styleUrl: './dialog-shell.component.css',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '(document:keydown.escape)': 'handleEscape($event)'
+  }
 })
 export class DialogShellComponent {
   @Input() title = '';
@@ -14,7 +17,6 @@ export class DialogShellComponent {
 
   @Output() cancel = new EventEmitter<void>();
 
-  @HostListener('document:keydown.escape', ['$event'])
   handleEscape(event: Event): void {
     (event as KeyboardEvent).preventDefault();
     this.handleCancel();

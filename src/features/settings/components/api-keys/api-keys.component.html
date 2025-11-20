@@ -65,36 +65,42 @@
           <a appButton variant="ghost" size="sm" [href]="provider.docUrl" target="_blank" rel="noopener noreferrer">
             Docs
           </a>
-          <button
-            type="button"
-            appButton
-            variant="ghost"
-            size="sm"
-            [disabled]="statusFor(provider.id) === 'locked'"
-            (click)="handleValidate(provider.id)"
-          >
-            Validate
-          </button>
-          <button
-            type="button"
-            appButton
-            variant="ghost"
-            size="sm"
-            [disabled]="statusFor(provider.id) === 'locked'"
-            (click)="handleSave(provider.id)"
-          >
-            Save
-          </button>
-          <button
-            type="button"
-            appButton
-            variant="danger"
-            size="sm"
-            [disabled]="!isUnlocked() || statusFor(provider.id) === 'locked'"
-            (click)="handleRemove(provider.id)"
-          >
-            Remove
-          </button>
+          <span appTooltip [disabled]="statusFor(provider.id) === 'locked'" [hasKeys]="storedProviders().length > 0" position="top" align="center" size="md">
+            <button
+              type="button"
+              appButton
+              variant="ghost"
+              size="sm"
+              [disabled]="statusFor(provider.id) === 'locked'"
+              (click)="handleValidate(provider.id)"
+            >
+              Validate
+            </button>
+          </span>
+          <span appTooltip [disabled]="statusFor(provider.id) === 'locked'" [hasKeys]="storedProviders().length > 0" position="top" align="center" size="md">
+            <button
+              type="button"
+              appButton
+              variant="ghost"
+              size="sm"
+              [disabled]="statusFor(provider.id) === 'locked'"
+              (click)="handleSave(provider.id)"
+            >
+              Save
+            </button>
+          </span>
+          <span appTooltip [disabled]="!isUnlocked() || statusFor(provider.id) === 'locked'" [hasKeys]="storedProviders().length > 0" position="top" align="center" size="md">
+            <button
+              type="button"
+              appButton
+              variant="danger"
+              size="sm"
+              [disabled]="!isUnlocked() || statusFor(provider.id) === 'locked'"
+              (click)="handleRemove(provider.id)"
+            >
+              Remove
+            </button>
+          </span>
         </div>
 
         @if (messageFor(provider.id); as message) {

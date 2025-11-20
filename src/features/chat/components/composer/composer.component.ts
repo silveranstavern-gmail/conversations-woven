@@ -2,8 +2,10 @@ import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { ChatModelOption } from '../../data/chat-adapters.service';
 import { UserPreferencesService } from '@core/services/preference/user-preferences.service';
+import { KeychainService } from '@core/services/keychain.service';
 import { ModelSelectorComponent } from '@shared/ui/model-selector/model-selector.component';
 import { ButtonDirective } from '@shared/ui/button/button.directive';
+import { TooltipDirective } from '@shared/ui/tooltip/tooltip.directive';
 
 export interface ComposerSubmitPayload {
   content: string;
@@ -13,13 +15,14 @@ export interface ComposerSubmitPayload {
 @Component({
   selector: 'app-composer',
   standalone: true,
-  imports: [DecimalPipe, ModelSelectorComponent, ButtonDirective],
+  imports: [DecimalPipe, ModelSelectorComponent, ButtonDirective, TooltipDirective],
   templateUrl: './composer.component.html',
   styleUrl: './composer.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ComposerComponent {
   private readonly preferences = inject(UserPreferencesService);
+  private readonly keychain = inject(KeychainService);
 
   public readonly disabled = input(false);
   public readonly models = input<ChatModelOption[]>([]);
@@ -35,6 +38,8 @@ export class ComposerComponent {
     return this.models().find((option) => option.id === currentId) ?? null;
   });
   protected readonly sendHotkey = this.preferences.sendHotkey;
+  protected readonly isUnlocked = this.keychain.isUnlocked;
+  protected readonly storedProviders = this.keychain.storedProviders;
   protected readonly placeholderText = computed(() => {
     const mode = this.sendHotkey();
     return mode === 'enter' ? 'Enter to send, Shift+Enter for new line' : 'Ctrl/⌘ + Enter to send';

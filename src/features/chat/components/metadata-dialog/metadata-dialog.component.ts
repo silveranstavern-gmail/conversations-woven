@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Subject } from 'rxjs';
 import { MetadataGeneratorService, GeneratedMetadata } from '@core/services/metadata-generator.service';
+import { KeychainService } from '@core/services/keychain.service';
 import { ChatMessage } from '@models/chat';
 import { DialogShellComponent } from '@shared/ui/dialog-shell/dialog-shell.component';
 import { ButtonDirective } from '@shared/ui/button/button.directive';
+import { TooltipDirective } from '@shared/ui/tooltip/tooltip.directive';
 
 export interface MetadataDialogResult {
   title: string;
@@ -14,13 +16,14 @@ export interface MetadataDialogResult {
 @Component({
   selector: 'app-metadata-dialog',
   standalone: true,
-  imports: [DialogShellComponent, ButtonDirective],
+  imports: [DialogShellComponent, ButtonDirective, TooltipDirective],
   templateUrl: './metadata-dialog.component.html',
   styleUrls: ['./metadata-dialog.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MetadataDialogComponent {
   private readonly metadataGenerator = inject(MetadataGeneratorService);
+  private readonly keychain = inject(KeychainService);
 
   title = 'Edit Metadata';
   initialTitle = '';
@@ -34,6 +37,8 @@ export class MetadataDialogComponent {
   readonly summaryValue = signal('');
   readonly tagInput = signal('');
   readonly isGenerating = signal(false);
+  readonly isUnlocked = this.keychain.isUnlocked;
+  readonly storedProviders = this.keychain.storedProviders;
 
   readonly result$ = new Subject<MetadataDialogResult | null>();
 

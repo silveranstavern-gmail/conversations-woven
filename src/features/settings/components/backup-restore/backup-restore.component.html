@@ -11,18 +11,22 @@
       accept="application/json"
       (change)="handleImportSelected($event)"
     />
-    <button type="button" appButton variant="ghost" (click)="handleExport()" [disabled]="isProcessing()">
-      Export bundle
-    </button>
-    <button
-      type="button"
-      appButton
-      variant="ghost"
-      (click)="triggerImport(fileInput)"
-      [disabled]="isProcessing()"
-    >
-      Import bundle
-    </button>
+    <span appTooltip [disabled]="isProcessing()" [isProcessing]="isProcessing()" position="top" align="center" size="md">
+      <button type="button" appButton variant="ghost" (click)="handleExport()" [disabled]="isProcessing()">
+        Export bundle
+      </button>
+    </span>
+    <span appTooltip [disabled]="isProcessing()" [isProcessing]="isProcessing()" position="top" align="center" size="md">
+      <button
+        type="button"
+        appButton
+        variant="ghost"
+        (click)="triggerImport(fileInput)"
+        [disabled]="isProcessing()"
+      >
+        Import bundle
+      </button>
+    </span>
   </div>
   <div class="settings-section__body-content">
     @if (statusMessage()) {

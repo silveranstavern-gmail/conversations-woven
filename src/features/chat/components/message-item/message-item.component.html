@@ -80,16 +80,18 @@
         <button type="button" appButton variant="ghost" size="sm" (click)="handleCancelEdit()">
           Cancel
         </button>
-        <button
-          type="button"
-          appButton
-          variant="ghost"
-          size="sm"
-          [disabled]="!canCommitEdit()"
-          (click)="handleSaveEdit()"
-        >
-          Save changes
-        </button>
+        <span appTooltip [disabled]="!canCommitEdit()" message="Enter message content to save" position="top" align="center" size="sm">
+          <button
+            type="button"
+            appButton
+            variant="ghost"
+            size="sm"
+            [disabled]="!canCommitEdit()"
+            (click)="handleSaveEdit()"
+          >
+            Save changes
+          </button>
+        </span>
       </div>
     </section>
   } @else {

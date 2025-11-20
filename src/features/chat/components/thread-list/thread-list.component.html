@@ -39,16 +39,18 @@
       <span class="thread-list__selection-count" [class.thread-list__selection-count--active]="hasSelection()">
         {{ selectedCount() }} selected
       </span>
-      <button
-        type="button"
-        appButton
-        variant="ghost"
-        size="sm"
-        (click)="onClearSelection()"
-        [disabled]="!hasSelection()"
-      >
-        Clear selection
-      </button>
+      <span appTooltip [disabled]="!hasSelection()" [hasSelection]="hasSelection()" message="No selection to clear" position="top" align="center" size="sm">
+        <button
+          type="button"
+          appButton
+          variant="ghost"
+          size="sm"
+          (click)="onClearSelection()"
+          [disabled]="!hasSelection()"
+        >
+          Clear selection
+        </button>
+      </span>
     </div>
   </div>
 
@@ -148,9 +150,11 @@
                 <button type="button" appButton variant="ghost" size="sm" (click)="onRenameThread($event, thread.id)">
                   Rename
                 </button>
-                <button type="button" appButton variant="ghost" size="sm" (click)="onGenerateMetadata($event, thread.id)">
-                  Generate Metadata
-                </button>
+                <span appTooltip [disabled]="!isUnlocked()" [hasKeys]="storedProviders().length > 0" position="right" align="end" size="md">
+                  <button type="button" appButton variant="ghost" size="sm" (click)="onGenerateMetadata($event, thread.id)" [disabled]="!isUnlocked()">
+                    Generate Metadata
+                  </button>
+                </span>
                 <button type="button" appButton variant="ghost" size="sm" (click)="onTogglePin($event, thread.id, !(thread.pinned ?? false))">
                   {{ thread.pinned ? 'Unpin' : 'Pin' }}
                 </button>

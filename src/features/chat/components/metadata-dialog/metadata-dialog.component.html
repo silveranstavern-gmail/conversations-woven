@@ -59,19 +59,30 @@
       </div>
   </div>
   <div class="dialog-footer-content">
-    <button
-      type="button"
-      appButton
-      variant="secondary"
-      (click)="handleGenerate()"
-      [disabled]="isGenerating() || !threadId || messages.length === 0"
+    <span
+      appTooltip
+      [disabled]="isGenerating() || !threadId || messages.length === 0 || !isUnlocked()"
+      [hasKeys]="storedProviders().length > 0"
+      [isProcessing]="isGenerating()"
+      [isEmpty]="!threadId || messages.length === 0"
+      position="top"
+      align="center"
+      size="md"
     >
-      @if (isGenerating()) {
-        Generating...
-      } @else {
-        Generate
-      }
-    </button>
+      <button
+        type="button"
+        appButton
+        variant="secondary"
+        (click)="handleGenerate()"
+        [disabled]="isGenerating() || !threadId || messages.length === 0 || !isUnlocked()"
+      >
+        @if (isGenerating()) {
+          Generating...
+        } @else {
+          Generate
+        }
+      </button>
+    </span>
     <button type="button" appButton variant="secondary" (click)="handleCancel()">
       Cancel
     </button>

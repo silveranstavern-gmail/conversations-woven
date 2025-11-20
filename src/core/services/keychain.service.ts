@@ -75,6 +75,10 @@ export class KeychainService {
   async deleteKey(providerId: string): Promise<void> {
     await this.idb.deleteKv(this.buildKey(providerId));
     await this.refresh();
+    // Auto-lock if no keys remain
+    if (this.storedProviders().length === 0) {
+      this.lock();
+    }
   }
 
   async readKey(providerId: string): Promise<string | null> {

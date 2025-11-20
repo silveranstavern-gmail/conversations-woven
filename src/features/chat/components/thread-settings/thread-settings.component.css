@@ -63,7 +63,7 @@
   flex: 1;
   height: 6px;
   border-radius: 3px;
-  background: var(--surface-secondary, #f5f5f5);
+  background: var(--color-surface-hover);
   outline: none;
   -webkit-appearance: none;
   appearance: none;
@@ -75,27 +75,27 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: var(--primary-color, #0066cc);
+  background: var(--color-brand);
   cursor: pointer;
-  transition: background 0.2s;
+  transition: filter 0.2s;
 }
 
 .dialog-slider::-webkit-slider-thumb:hover {
-  background: var(--primary-hover, #0052a3);
+  filter: brightness(1.15);
 }
 
 .dialog-slider::-moz-range-thumb {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: var(--primary-color, #0066cc);
+  background: var(--color-brand);
   cursor: pointer;
   border: none;
-  transition: background 0.2s;
+  transition: filter 0.2s;
 }
 
 .dialog-slider::-moz-range-thumb:hover {
-  background: var(--primary-hover, #0052a3);
+  filter: brightness(1.15);
 }
 
 .dialog-slider-value {
@@ -103,5 +103,5 @@
   text-align: right;
   font-size: 14px;
   font-weight: 500;
-  color: var(--text-primary, #1a1a1a);
+  color: var(--color-text);
 }

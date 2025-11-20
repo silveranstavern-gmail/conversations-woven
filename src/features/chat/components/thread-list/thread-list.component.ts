@@ -4,7 +4,6 @@ import {
   Component,
   computed,
   effect,
-  HostListener,
   inject,
   input,
   output,
@@ -14,18 +13,24 @@ import { RouterLink } from '@angular/router';
 import { ChatThread, Id } from '@models/chat';
 import { ChatThreadsService } from '../../data/chat-threads.service';
 import { DialogService } from '@core/services/dialog.service';
+import { KeychainService } from '@core/services/keychain.service';
 import { ButtonDirective } from '@shared/ui/button/button.directive';
+import { TooltipDirective } from '@shared/ui/tooltip/tooltip.directive';
 
 @Component({
   selector: 'app-thread-list',
-  imports: [DatePipe, RouterLink, ButtonDirective],
+  imports: [DatePipe, RouterLink, ButtonDirective, TooltipDirective],
   templateUrl: './thread-list.component.html',
   styleUrl: './thread-list.component.css',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '(document:click)': 'onDocumentClick($event)'
+  }
 })
 export class ThreadListComponent {
   private readonly threadsService = inject(ChatThreadsService);
   private readonly dialogService = inject(DialogService);
+  private readonly keychain = inject(KeychainService);
 
   public readonly threads = input<ChatThread[]>([]);
   public readonly activeThreadId = input<Id | null>(null);
@@ -78,6 +83,8 @@ export class ThreadListComponent {
     const filtered = this.filteredThreads();
     return filtered.length > 0 && filtered.every((thread) => set.has(thread.id));
   });
+  protected readonly isUnlocked = this.keychain.isUnlocked;
+  protected readonly storedProviders = this.keychain.storedProviders;
 
   constructor() {
     effect(() => {
@@ -90,7 +97,6 @@ export class ThreadListComponent {
     });
   }
 
-  @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
     const isMenuClick = target.closest('.thread-list__item-menu');

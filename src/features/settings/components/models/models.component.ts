@@ -5,10 +5,11 @@ import {
   ChatModelVisibilityOption
 } from '@features/chat/data/chat-adapters.service';
 import { ButtonDirective } from '@shared/ui/button/button.directive';
+import { TooltipDirective } from '@shared/ui/tooltip/tooltip.directive';
 
 @Component({
   selector: 'app-settings-models',
-  imports: [DecimalPipe, SlicePipe, ButtonDirective],
+  imports: [DecimalPipe, SlicePipe, ButtonDirective, TooltipDirective],
   templateUrl: './models.component.html',
   styleUrl: './models.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
