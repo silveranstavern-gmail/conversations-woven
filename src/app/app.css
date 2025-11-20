@@ -78,7 +78,7 @@
   border-radius: var(--radius-pill);
   font-weight: 500;
   color: var(--color-muted);
-  transition: color var(--transition-base), background var(--transition-base);
+  /* Removed transition to prevent fade-in on load */
 }
 
 .primary-nav a.active {

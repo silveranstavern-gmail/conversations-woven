@@ -35,7 +35,7 @@
   padding: var(--space-3);
   display: block;
   color: inherit;
-  transition: border-color var(--transition-base), background var(--transition-base);
+  /* Removed transition to prevent fade-in on navigation */
 }
 
 .settings-layout__links a.active {

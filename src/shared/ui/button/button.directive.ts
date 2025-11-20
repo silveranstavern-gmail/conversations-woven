@@ -7,19 +7,18 @@ export type ButtonSize = 'sm' | 'md' | 'icon';
   selector: 'button[appButton], a[appButton]',
   standalone: true,
   host: {
-    '[class]': 'computedClass()',
+    'class': 'ui-btn',
+    '[class.ui-btn--primary]': 'variant() === "primary"',
+    '[class.ui-btn--secondary]': 'variant() === "secondary"',
+    '[class.ui-btn--ghost]': 'variant() === "ghost"',
+    '[class.ui-btn--danger]': 'variant() === "danger"',
+    '[class.ui-btn--sm]': 'size() === "sm"',
+    '[class.ui-btn--md]': 'size() === "md"',
+    '[class.ui-btn--icon]': 'size() === "icon"',
   }
 })
 export class ButtonDirective {
   public readonly variant = input<ButtonVariant>('primary');
   public readonly size = input<ButtonSize>('md');
-
-  protected readonly computedClass = computed(() => {
-    const base = 'ui-btn';
-    const variantClass = `${base}--${this.variant()}`;
-    const sizeClass = `${base}--${this.size()}`;
-    
-    return `${base} ${variantClass} ${sizeClass}`;
-  });
 }
 

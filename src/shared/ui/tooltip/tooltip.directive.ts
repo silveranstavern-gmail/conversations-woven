@@ -53,6 +53,7 @@ export class TooltipDirective {
 
   private readonly isDisabledSignal = signal<boolean>(false);
   protected readonly isVisible = signal<boolean>(false);
+  private clearPositionTimeout: number | null = null;
 
   constructor() {
     // Detect disabled state from the element
@@ -74,13 +75,13 @@ export class TooltipDirective {
   });
 
   protected readonly tooltipText = computed(() => {
-    // If custom message provided, use it
+    // If custom message provided, always use it (show tooltip regardless of disabled state)
     const customMessage = this.message();
     if (customMessage) {
       return customMessage;
     }
 
-    // Only show tooltip if disabled
+    // Only show tooltip if disabled (when no custom message)
     if (!this.isDisabled()) {
       return null;
     }
@@ -130,13 +131,28 @@ export class TooltipDirective {
     if (typeof window === 'undefined') return;
     if (!this.tooltipText()) return;
     
-    this.isVisible.set(true);
+    // Cancel any pending position clear timeout if user re-enters quickly
+    if (this.clearPositionTimeout !== null) {
+      clearTimeout(this.clearPositionTimeout);
+      this.clearPositionTimeout = null;
+    }
+    
+    // Calculate and set position first, then show tooltip to prevent flash
     this.updatePosition();
+    // Use requestAnimationFrame to ensure CSS variables are applied before showing
+    requestAnimationFrame(() => {
+      this.isVisible.set(true);
+    });
   }
 
   onLeave(): void {
     this.isVisible.set(false);
-    this.clearPosition();
+    // Delay clearing position until after fade-out transition completes (200ms)
+    // This prevents the tooltip from flashing at (0,0) during the fade-out
+    this.clearPositionTimeout = window.setTimeout(() => {
+      this.clearPosition();
+      this.clearPositionTimeout = null;
+    }, 200); // Match the CSS transition duration
   }
 
   onScroll(): void {
@@ -222,6 +238,11 @@ export class TooltipDirective {
   }
 
   private clearPosition(): void {
+    // Cancel any pending timeout if clearing position manually
+    if (this.clearPositionTimeout !== null) {
+      clearTimeout(this.clearPositionTimeout);
+      this.clearPositionTimeout = null;
+    }
     this.elementRef.nativeElement.style.removeProperty('--tooltip-x');
     this.elementRef.nativeElement.style.removeProperty('--tooltip-y');
   }

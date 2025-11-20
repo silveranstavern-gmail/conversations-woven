@@ -190,7 +190,7 @@ button {
   text-decoration: none;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: all 0.2s ease-in-out;
+  /* Removed transition entirely to prevent flash on mount/navigation */
   user-select: none;
   white-space: nowrap;
 }

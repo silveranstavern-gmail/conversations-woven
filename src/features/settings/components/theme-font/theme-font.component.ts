@@ -1,5 +1,5 @@
 import { DecimalPipe, DOCUMENT, TitleCasePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { UserPreferencesService, SendHotkeyMode } from '@core/services/preference/user-preferences.service';
 import { ButtonDirective } from '@shared/ui/button/button.directive';
 
@@ -21,8 +21,12 @@ export class ThemeFontComponent {
   protected readonly themePreference = this.preferences.theme;
   protected readonly fontScale = this.preferences.fontScale;
   protected readonly sendHotkey = this.preferences.sendHotkey;
+  
+  // Local signal for slider visual value (updates immediately without committing)
+  protected readonly sliderValue = signal<number>(this.fontScale());
+  
   protected readonly previewLabel = computed(
-    () => `Preview text · ${(this.fontScale() * 100).toFixed(0)}%`
+    () => `Preview text · ${(this.sliderValue() * 100).toFixed(0)}%`
   );
 
   constructor() {
@@ -32,13 +36,26 @@ export class ThemeFontComponent {
     effect(() => {
       this.applyFontScale(this.fontScale());
     });
+    // Sync slider value when preference changes externally
+    effect(() => {
+      this.sliderValue.set(this.fontScale());
+    });
   }
 
   protected onThemeChange(preference: ThemePreference): void {
     this.preferences.setTheme(preference);
   }
 
-  protected onScaleChange(event: Event): void {
+  protected onScaleInput(event: Event): void {
+    // Update visual value immediately without committing
+    const nextValue = Number((event.target as HTMLInputElement).value);
+    this.sliderValue.set(nextValue);
+    // Apply visual change immediately
+    this.applyFontScale(nextValue);
+  }
+
+  protected onScaleCommit(event: Event): void {
+    // Commit the value to preferences on mouseup/touchend
     const nextValue = Number((event.target as HTMLInputElement).value);
     this.preferences.setFontScale(nextValue);
   }

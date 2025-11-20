@@ -16,6 +16,14 @@
   gap: var(--space-2);
 }
 
+.models__controls {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  border: 1px solid var(--color-border);
+}
+
 .models__search {
   width: 100%;
 }
@@ -28,6 +36,79 @@
   background-color: var(--color-surface-0);
   color: var(--color-text);
   font-size: 0.9rem;
+}
+
+.models__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: center;
+}
+
+.models__select {
+  max-width: 200px;
+  padding: 0.4rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface-0);
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+.models__chips {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.filter-chip {
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border);
+  background: transparent;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--color-text);
+}
+
+.filter-chip:hover {
+  background: var(--color-surface-hover);
+}
+
+.filter-chip.active {
+  background: var(--color-brand);
+  color: var(--color-brand-contrast);
+  border-color: var(--color-brand);
+}
+
+.models__providers {
+  font-size: 0.9rem;
+}
+
+.models__providers summary {
+  cursor: pointer;
+  user-select: none;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.models__providers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-base);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+}
+
+.models__providers-grid label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  cursor: pointer;
 }
 
 .models__header h1 {
@@ -120,10 +201,18 @@
   flex-wrap: wrap;
 }
 
-.models__badge--off {
+.models__badge--off,
+.badge--off {
   background: transparent;
   color: var(--color-muted);
   border: 1px dashed var(--color-border);
+  opacity: 0.3;
+  text-decoration: line-through;
+}
+
+.badge--new {
+  background: var(--color-brand);
+  color: white;
 }
 
 .models__pricing {

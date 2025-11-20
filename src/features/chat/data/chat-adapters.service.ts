@@ -10,6 +10,20 @@ export interface ChatModelOption {
   adapterModelId: string;
   capabilities: LlmCapabilities;
   details?: ModelCardData;
+  // Derived fields for easier filtering and sorting
+  providerId: string;
+  contextLength: number;
+  pricing: {
+    prompt: number;
+    completion: number;
+  };
+  filterCapabilities: {
+    image: boolean;
+    video: boolean;
+    tools: boolean;
+    json: boolean;
+  };
+  created: number; // Timestamp for "Newest" sort
 }
 
 export interface ChatModelVisibilityOption extends ChatModelOption {
@@ -34,7 +48,7 @@ export class ChatAdaptersService {
 
   private readonly disabledModelIds = signal<string[]>(this.hydrateDisabledModelIds());
   private readonly defaultModelId = signal<string | null>(this.hydrateDefaultModelId());
-  private readonly pinnedModelIds = signal<string[]>(this.hydratePinnedModelIds());
+  public readonly pinnedModelIds = signal<string[]>(this.hydratePinnedModelIds());
 
   public readonly catalog = computed(() => {
     const disabled = new Set(this.disabledModelIds());
@@ -84,34 +98,60 @@ export class ChatAdaptersService {
 
       const { data } = (await response.json()) as { data: any[] };
 
-      const models: ChatModelOption[] = data.map((model: any) => ({
-        id: model.id,
-        label: model.name,
-        adapterId: 'openrouter',
-        adapterLabel: 'OpenRouter',
-        adapterModelId: model.id,
-        capabilities: {
-          streaming: true, // Assume all OpenRouter models support streaming
-          tools: model.supported_parameters?.includes('tools') ?? model.supported_features?.includes('tools') ?? false,
-          jsonMode: model.supported_parameters?.includes('response_format') ?? model.supported_features?.includes('json_mode') ?? false,
-          maxTokens: model.top_provider?.max_completion_tokens ?? model.context_length ?? 8000
-        },
-        details: {
-          description: model.description ?? '',
+      const models: ChatModelOption[] = data.map((model: any) => {
+        // 1. Parse Provider (e.g., "anthropic" from "anthropic/claude...")
+        const providerId = model.id.split('/')[0] || 'unknown';
+        
+        // 2. Parse Capabilities based on JSON structure
+        const inputModalities = model.architecture?.input_modalities || [];
+        const supportedParams = model.supported_parameters || [];
+        
+        // 3. Parse Pricing (Strings to Floats)
+        const promptPrice = parseFloat(model.pricing?.prompt || '0');
+        const completionPrice = parseFloat(model.pricing?.completion || '0');
+
+        return {
+          id: model.id,
+          label: model.name,
+          adapterId: 'openrouter',
+          adapterLabel: 'OpenRouter',
+          adapterModelId: model.id,
+          providerId,
+          created: model.created || 0,
+          contextLength: model.context_length || 0,
           pricing: {
-            prompt: model.pricing?.prompt ?? 0,
-            completion: model.pricing?.completion ?? 0,
-            request: model.pricing?.request ?? 0,
-            image: model.pricing?.image ?? 0,
+            prompt: promptPrice,
+            completion: completionPrice
           },
-          contextLength: model.context_length ?? 0,
-          architecture: {
-            modality: model.architecture?.modality ?? '',
-            input_modalities: model.architecture?.input_modalities ?? [],
-            output_modalities: model.architecture?.output_modalities ?? [],
+          filterCapabilities: {
+            image: inputModalities.includes('image'),
+            video: inputModalities.includes('video'),
+            tools: supportedParams.includes('tools') || model.supported_features?.includes('tools') || false,
+            json: supportedParams.includes('response_format') || model.supported_features?.includes('json_mode') || supportedParams.includes('structured_outputs') || false
           },
-        },
-      }));
+          capabilities: {
+            streaming: true, // Assume all OpenRouter models support streaming
+            tools: supportedParams.includes('tools') || model.supported_features?.includes('tools') || false,
+            jsonMode: supportedParams.includes('response_format') || model.supported_features?.includes('json_mode') || false,
+            maxTokens: model.top_provider?.max_completion_tokens ?? model.context_length ?? 8000
+          },
+          details: {
+            description: model.description ?? '',
+            pricing: {
+              prompt: promptPrice,
+              completion: completionPrice,
+              request: parseFloat(model.pricing?.request || '0'),
+              image: parseFloat(model.pricing?.image || '0'),
+            },
+            contextLength: model.context_length ?? 0,
+            architecture: {
+              modality: model.architecture?.modality ?? '',
+              input_modalities: inputModalities,
+              output_modalities: model.architecture?.output_modalities ?? [],
+            },
+          },
+        };
+      });
 
       this.allModelsSignal.set(models);
     } catch (error) {
@@ -134,6 +174,26 @@ export class ChatAdaptersService {
       return;
     }
 
+    // If disabling, remove from pinned and default
+    if (!enabled) {
+      // Remove from pinned
+      if (this.isPinned(id)) {
+        this.pinnedModelIds.update((current) => {
+          const next = new Set(current);
+          next.delete(id);
+          const snapshot = Array.from(next);
+          this.persistPinnedModelIds(snapshot);
+          return snapshot;
+        });
+      }
+      
+      // Remove from default
+      if (this.isDefault(id)) {
+        this.defaultModelId.set(null);
+        this.persistPreferences();
+      }
+    }
+
     this.disabledModelIds.update((current) => {
       const next = new Set(current);
       enabled ? next.delete(id) : next.add(id);
@@ -152,6 +212,11 @@ export class ChatAdaptersService {
     const allModelIds = this.allModelsSignal().map((model) => model.id);
     this.disabledModelIds.set(allModelIds);
     this.persistDisabledModelIds(allModelIds);
+    
+    // Clear all pinned and default models when disabling all
+    this.pinnedModelIds.set([]);
+    this.defaultModelId.set(null);
+    this.persistPreferences();
   }
 
   enableFreeModels(): void {

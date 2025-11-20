@@ -10,32 +10,90 @@
         {{ enabledCount() }} of {{ totalCount() }} visible · {{ disabledCount() }} hidden
       </p>
     </div>
-    <div class="models__search">
-      <label>
-        <span class="visually-hidden">Search models</span>
-        <input
-          type="search"
-          placeholder="Search models..."
-          [value]="searchTerm()"
-          (input)="handleSearchChange($event)"
-          autocomplete="off"
-        />
-      </label>
+
+    <div class="models__controls surface-card">
+      <!-- 1. Search (Existing, slightly moved) -->
+      <div class="models__search">
+        <label>
+          <span class="visually-hidden">Search models</span>
+          <input
+            type="search"
+            placeholder="Search models..."
+            [value]="searchTerm()"
+            (input)="handleSearchChange($event)"
+            autocomplete="off"
+          />
+        </label>
+      </div>
+
+      <!-- 2. Filters Row -->
+      <div class="models__filters">
+        <!-- Sort Dropdown -->
+        <select [value]="sortOption()" (change)="onSortChange($event)" class="models__select">
+          <option value="default">Default Sort</option>
+          <option value="newest">Newest</option>
+          <option value="price-asc">Price: Low to High</option>
+          <option value="price-desc">Price: High to Low</option>
+          <option value="context-desc">Context: Largest First</option>
+        </select>
+
+        <!-- Toggle Chips -->
+        <div class="models__chips">
+          <button
+            type="button"
+            class="filter-chip"
+            [class.active]="showFreeOnly()"
+            (click)="toggleFreeOnly()">
+            Free
+          </button>
+          <button
+            type="button"
+            class="filter-chip"
+            [class.active]="showVisionOnly()"
+            (click)="toggleVisionOnly()">
+            Vision
+          </button>
+          <button
+            type="button"
+            class="filter-chip"
+            [class.active]="showToolsOnly()"
+            (click)="toggleToolsOnly()">
+            Tools
+          </button>
+        </div>
+      </div>
+
+      <!-- 3. Providers Expansion -->
+      <details class="models__providers">
+        <summary>Filter by Provider ({{ selectedProviders().size || 'All' }})</summary>
+        <div class="models__providers-grid">
+          @for (p of availableProviders(); track p) {
+            <label>
+              <input
+                type="checkbox"
+                [checked]="selectedProviders().has(p)"
+                (change)="toggleProvider(p, $event)"
+              >
+              {{ p | titlecase }}
+            </label>
+          }
+        </div>
+      </details>
     </div>
 
     <div class="models__header-actions">
-      <span appTooltip [disabled]="enabledCount() === 0" [isEmpty]="enabledCount() === 0" message="No enabled models to disable" position="bottom" align="center" size="sm">
+      <span appTooltip [disabled]="false" message="No enabled models to disable" position="bottom" align="center" size="sm">
         <button
           type="button"
           appButton
           variant="ghost"
           (click)="handleDisableAll()"
-          [disabled]="enabledCount() === 0"
+          [disabled]="hasActiveFilters() ? filteredEnabledCount() === 0 : enabledCount() === 0"
         >
-          Disable all
+          {{ disableAllLabel() }}
         </button>
       </span>
-      <span appTooltip [disabled]="freeModelsCount() === 0 || enabledFreeCount() === freeModelsCount()" [isEmpty]="freeModelsCount() === 0" message="No free models available or all free models are already enabled" position="bottom" align="center" size="md">
+      <span appTooltip [disabled]="false" message="No free models available or all free models are already enabled" position="bottom" align="center" size="md">
         <button
           type="button"
           appButton
@@ -46,15 +104,15 @@
           Enable free
         </button>
       </span>
-      <span appTooltip [disabled]="disabledCount() === 0" [isEmpty]="disabledCount() === 0" message="No disabled models to enable" position="bottom" align="center" size="sm">
+      <span appTooltip [disabled]="false" message="No disabled models to enable" position="bottom" align="center" size="sm">
         <button
           type="button"
           appButton
           variant="ghost"
           (click)="handleEnableAll()"
-          [disabled]="disabledCount() === 0"
+          [disabled]="hasActiveFilters() ? filteredDisabledCount() === 0 : disabledCount() === 0"
         >
-          Enable all
+          {{ enableAllLabel() }}
         </button>
       </span>
     </div>
@@ -117,42 +175,28 @@
 
         <div class="models__meta">
           <div class="models__badges" aria-label="Capabilities">
-            <span class="badge" [class.models__badge--off]="!model.capabilities.streaming">
-              Streaming
-            </span>
-            <span class="badge" [class.models__badge--off]="!model.capabilities.tools">
-              Tools
-            </span>
-            <span class="badge" [class.models__badge--off]="!model.capabilities.jsonMode">
-              JSON
-            </span>
-            @if (model.details?.architecture?.input_modalities?.includes('image')) {
-              <span class="badge">Vision</span>
-            }
-            @if (model.details?.architecture?.input_modalities?.includes('video')) {
+            <!-- Use the boolean flags we calculated in service -->
+            <span class="badge" [class.badge--off]="!model.filterCapabilities.image">Vision</span>
+            <span class="badge" [class.badge--off]="!model.filterCapabilities.tools">Tools</span>
+            <span class="badge" [class.badge--off]="!model.filterCapabilities.json">JSON</span>
+            @if (model.filterCapabilities.video) {
               <span class="badge">Video</span>
             }
-            @if (model.details?.architecture?.input_modalities?.includes('audio')) {
-              <span class="badge">Audio</span>
+            <!-- Show date badge if New -->
+            @if (isNew(model.created)) {
+              <span class="badge badge--new">New</span>
             }
           </div>
           <p class="text-muted small">
-            Max {{ model.details?.contextLength | number: '1.0-0' }} tokens
+            Context: {{ model.contextLength | number }} tokens
           </p>
         </div>
 
-        @if(model.details) {
-          <div class="models__pricing">
-            <p class="models__pricing-title">Pricing (per million tokens)</p>
-            <div class="models__pricing-details">
-              <span>Prompt: <strong>${{ model.details.pricing.prompt * 1000000 | number:'1.2-2' }}</strong></span>
-              <span>Completion: <strong>${{ model.details.pricing.completion * 1000000 | number:'1.2-2' }}</strong></span>
-              @if (model.details.pricing.request !== 0) {
-                <span>Request: <strong>${{ model.details.pricing.request * 1000 | number:'1.2-2' }}/1k</strong></span>
-              }
-            </div>
-          </div>
-        }
+        <!-- Pricing display using number pipe -->
+        <div class="models__pricing text-muted small">
+          <span>In: ${{ model.pricing.prompt * 1000000 | number:'1.2-4' }}/M</span>
+          <span>Out: ${{ model.pricing.completion * 1000000 | number:'1.2-4' }}/M</span>
+        </div>
 
         @if(model.details && model.details.description) {
           <p class="models__description text-muted small" [title]="model.details.description">
