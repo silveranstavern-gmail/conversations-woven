@@ -29,7 +29,11 @@ export class ModelsComponent {
   protected readonly showVisionOnly = signal(false);
   protected readonly showToolsOnly = signal(false);
   protected readonly showNewOnly = signal(false);
+  protected readonly showVisibleOnly = signal(false);
+  protected readonly showHiddenOnly = signal(false);
   protected readonly selectedProviders = signal<Set<string>>(new Set());
+  protected readonly isProviderDropdownOpen = signal(false);
+  protected readonly providerSearchTerm = signal('');
   protected readonly dateFilterType = signal<'none' | 'after' | 'before' | 'range'>('none');
   protected readonly dateStart = signal('');
   protected readonly dateEnd = signal('');
@@ -41,41 +45,6 @@ export class ModelsComponent {
     () => this.catalog().filter((model) => !model.enabled).length
   );
   protected readonly enabledCount = computed(() => this.totalCount() - this.disabledCount());
-  protected readonly freeModels = computed(() =>
-    this.catalog().filter((model) => model.label.toLowerCase().includes('(free)'))
-  );
-  protected readonly freeModelsCount = computed(() => this.freeModels().length);
-  protected readonly enabledFreeCount = computed(
-    () => this.freeModels().filter((model) => model.enabled).length
-  );
-  protected readonly filteredFreeCount = computed(() =>
-    this.filteredCatalog().filter((model) => model.label.toLowerCase().includes('(free)')).length
-  );
-  protected readonly enabledFilteredFreeCount = computed(() =>
-    this.filteredCatalog().filter((model) => model.enabled && model.label.toLowerCase().includes('(free)')).length
-  );
-  protected readonly enableFreeLabel = computed(() =>
-    this.hasActiveFilters() ? 'Enable free (filtered)' : 'Enable free'
-  );
-  protected readonly enableFreeDisabled = computed(() => {
-    if (this.hasActiveFilters()) {
-      return this.filteredFreeCount() === 0 || this.enabledFilteredFreeCount() === this.filteredFreeCount();
-    }
-    return this.freeModelsCount() === 0 || this.enabledFreeCount() === this.freeModelsCount();
-  });
-  protected readonly enableFreeTooltip = computed(() => {
-    if (!this.enableFreeDisabled()) {
-      return '';
-    }
-    if (this.hasActiveFilters()) {
-      return this.filteredFreeCount() === 0
-        ? 'No free models match current filters'
-        : 'All filtered free models are already enabled';
-    }
-    return this.freeModelsCount() === 0
-      ? 'No free models available'
-      : 'All free models are already enabled';
-  });
   protected readonly clearFiltersDisabled = computed(() => !this.hasActiveFilters());
   protected readonly clearFiltersTooltip = computed(() =>
     this.clearFiltersDisabled() ? 'No filters to clear' : ''
@@ -88,6 +57,12 @@ export class ModelsComponent {
   protected readonly filteredDisabledCount = computed(() => 
     this.filteredCatalog().filter((model) => !model.enabled).length
   );
+  protected readonly bulkDisableLabel = computed(
+    () => `Disable ${this.filteredEnabledCount()} models`
+  );
+  protected readonly bulkEnableLabel = computed(
+    () => `Enable ${this.filteredDisabledCount()} models`
+  );
   
   // Check if any filters are active
   protected readonly hasActiveFilters = computed(() => 
@@ -96,25 +71,28 @@ export class ModelsComponent {
     this.showVisionOnly() ||
     this.showToolsOnly() ||
     this.showNewOnly() ||
+    this.showVisibleOnly() ||
+    this.showHiddenOnly() ||
     this.selectedProviders().size > 0 ||
     this.dateFilterType() !== 'none' ||
     !!this.dateStart().trim() ||
     !!this.dateEnd().trim()
   );
-  
-  // Dynamic button labels based on active filters
-  protected readonly enableAllLabel = computed(() => 
-    this.hasActiveFilters() ? 'Enable Filtered' : 'Enable All'
-  );
-  protected readonly disableAllLabel = computed(() => 
-    this.hasActiveFilters() ? 'Disable Filtered' : 'Disable All'
-  );
+
   // --- Computed Options for UI ---
   // Extract unique providers for the filter dropdown
   protected readonly availableProviders = computed(() => {
     const models = this.catalog();
     const providers = new Set(models.map(m => m.providerId));
     return Array.from(providers).sort();
+  });
+  protected readonly filteredProviders = computed(() => {
+    const term = this.providerSearchTerm().toLowerCase().trim();
+    const providers = this.availableProviders();
+    if (!term) {
+      return providers;
+    }
+    return providers.filter(provider => provider.toLowerCase().includes(term));
   });
 
   // --- The Master Filter Pipeline ---
@@ -127,6 +105,8 @@ export class ModelsComponent {
     const visionOnly = this.showVisionOnly();
     const toolsOnly = this.showToolsOnly();
     const newOnly = this.showNewOnly();
+    const visibleOnly = this.showVisibleOnly();
+    const hiddenOnly = this.showHiddenOnly();
     const activeProviders = this.selectedProviders();
     const sort = this.sortOption();
     const dateFilter = this.dateFilterType();
@@ -164,6 +144,17 @@ export class ModelsComponent {
     // Provider Filter
     if (activeProviders.size > 0) {
       models = models.filter(m => activeProviders.has(m.providerId));
+    }
+
+    // Visibility Filters (mutually exclusive; both true yields empty)
+    if (visibleOnly && hiddenOnly) {
+      return [];
+    }
+    if (visibleOnly) {
+      models = models.filter(m => m.enabled);
+    }
+    if (hiddenOnly) {
+      models = models.filter(m => !m.enabled);
     }
 
     // Date Filters
@@ -254,25 +245,6 @@ export class ModelsComponent {
     }
   }
 
-  protected handleEnableFree(): void {
-    if (this.hasActiveFilters()) {
-      const modelsToEnable = this.filteredCatalog().filter(
-        (model) => !model.enabled && model.label.toLowerCase().includes('(free)')
-      );
-      if (modelsToEnable.length === 0) {
-        return;
-      }
-      modelsToEnable.forEach((model) => {
-        this.adapters.setModelEnabled(model.id, true);
-      });
-    } else {
-      if (this.enabledFreeCount() === this.freeModelsCount()) {
-        return;
-      }
-      this.adapters.enableFreeModels();
-    }
-  }
-
   protected trackByModelId(_: number, model: ChatModelVisibilityOption): string {
     return model.id;
   }
@@ -285,11 +257,7 @@ export class ModelsComponent {
   // --- Filter Actions ---
   protected toggleProvider(provider: string, event: Event): void {
     const checked = (event.target as HTMLInputElement).checked;
-    this.selectedProviders.update(set => {
-      const next = new Set(set);
-      checked ? next.add(provider) : next.delete(provider);
-      return next;
-    });
+    this.setProviderSelection(provider, checked);
   }
   
   protected toggleFreeOnly(): void {
@@ -306,6 +274,33 @@ export class ModelsComponent {
 
   protected toggleNewOnly(): void {
     this.showNewOnly.update(v => !v);
+  }
+
+  protected toggleVisibleOnly(): void {
+    this.showVisibleOnly.update((value) => !value);
+    if (this.showVisibleOnly() && this.showHiddenOnly()) {
+      this.showHiddenOnly.set(false);
+    }
+  }
+
+  protected toggleHiddenOnly(): void {
+    this.showHiddenOnly.update((value) => !value);
+    if (this.showVisibleOnly() && this.showHiddenOnly()) {
+      this.showVisibleOnly.set(false);
+    }
+  }
+
+  protected toggleProviderDropdown(): void {
+    this.isProviderDropdownOpen.update((open) => !open);
+  }
+
+  protected onProviderSearchChange(event: Event): void {
+    this.providerSearchTerm.set((event.target as HTMLInputElement).value);
+  }
+
+  protected toggleProviderQuick(provider: string): void {
+    const isSelected = this.selectedProviders().has(provider);
+    this.setProviderSelection(provider, !isSelected);
   }
 
   protected onSortChange(event: Event): void {
@@ -358,7 +353,11 @@ export class ModelsComponent {
     this.showVisionOnly.set(false);
     this.showToolsOnly.set(false);
     this.showNewOnly.set(false);
+    this.showVisibleOnly.set(false);
+    this.showHiddenOnly.set(false);
     this.selectedProviders.set(new Set());
+    this.providerSearchTerm.set('');
+    this.isProviderDropdownOpen.set(false);
     this.dateFilterType.set('none');
     this.dateStart.set('');
     this.dateEnd.set('');
@@ -432,5 +431,13 @@ export class ModelsComponent {
     if (!value.trim()) return null;
     const time = Date.parse(value);
     return Number.isNaN(time) ? null : time;
+  }
+
+  private setProviderSelection(provider: string, checked: boolean): void {
+    this.selectedProviders.update((set) => {
+      const next = new Set(set);
+      checked ? next.add(provider) : next.delete(provider);
+      return next;
+    });
   }
 }

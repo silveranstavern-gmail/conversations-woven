@@ -41,6 +41,7 @@ export class TooltipDirective {
   public readonly hasSelection = input<boolean | null | undefined>(null);
   public readonly isEmpty = input<boolean | null | undefined>(null);
   public readonly isProcessing = input<boolean | null | undefined>(null);
+  public readonly alwaysShow = input(false);
 
   // If true, the tooltip will consider the element disabled if the app is locked or has no keys
   public readonly requiresUnlock = input(false);
@@ -88,21 +89,25 @@ export class TooltipDirective {
   });
 
   protected readonly tooltipText = computed(() => {
-    if (!this.isDisabled()) {
-      return null;
-    }
-
     const priorityReason = this.getKeychainPriorityReason();
     if (priorityReason) {
       return priorityReason;
     }
-
+    
     const customMessage = this.message();
-    if (customMessage) {
-      return customMessage;
+
+    if (this.isDisabled()) {
+      if (customMessage) {
+        return customMessage;
+      }
+      return this.getDisabledReason();
     }
 
-    return this.getDisabledReason();
+    if (this.alwaysShow()) {
+      return customMessage ?? null;
+    }
+
+    return null;
   });
 
   private getDisabledReason(): string | null {

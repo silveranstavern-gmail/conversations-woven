@@ -45,8 +45,8 @@
       </div>
     </div>
 
-    <div class="models__controls surface-card">
-      <div class="models__search-row">
+    <div class="models__controls-sticky surface-card">
+      <div class="models__controls-top">
         <div class="models__search">
           <label>
             <span class="visually-hidden">Search models</span>
@@ -56,34 +56,10 @@
               [value]="searchTerm()"
               (input)="handleSearchChange($event)"
               autocomplete="off"
-            />
+            >
           </label>
         </div>
-        <span
-          appTooltip
-          [disabled]="clearFiltersDisabled()"
-          [message]="clearFiltersTooltip()"
-          position="bottom"
-          align="center"
-          size="sm"
-        >
-          <button
-            type="button"
-            appButton
-            variant="ghost"
-            class="models__clear"
-            (click)="clearFilters()"
-            [disabled]="clearFiltersDisabled()"
-          >
-            Clear filters
-          </button>
-        </span>
-      </div>
-
-      <!-- 2. Filters Row -->
-      <div class="models__filters-bar">
-        <div class="models__filters">
-          <!-- Sort Dropdown -->
+        <div class="models__controls-top-actions">
           <select [value]="sortOption()" (change)="onSortChange($event)" class="models__select">
             <option value="default">Default Sort</option>
             <option value="newest">Newest</option>
@@ -91,141 +67,234 @@
             <option value="price-desc">Price: High to Low</option>
             <option value="context-desc">Context: Largest First</option>
           </select>
-
-          <!-- Toggle Chips -->
-          <div class="models__chips">
-            <button
-              type="button"
-              class="filter-chip"
-              [class.active]="showFreeOnly()"
-              (click)="toggleFreeOnly()">
-              Free
-            </button>
-            <button
-              type="button"
-              class="filter-chip"
-              [class.active]="showVisionOnly()"
-              (click)="toggleVisionOnly()">
-              Vision
-            </button>
-            <button
-              type="button"
-              class="filter-chip"
-              [class.active]="showToolsOnly()"
-              (click)="toggleToolsOnly()">
-              Tools
-            </button>
-            <button
-              type="button"
-              class="filter-chip"
-              [class.active]="showNewOnly()"
-              (click)="toggleNewOnly()">
-              New
-            </button>
-          </div>
-
           <div class="models__date-filter">
-            <label class="models__date-filter-label">
-              <span>Date filter</span>
-              <select
-                class="models__select"
-                [value]="dateFilterType()"
-                (change)="onDateFilterTypeChange($event)">
-                <option value="none">None</option>
-                <option value="after">Date after</option>
-                <option value="before">Date before</option>
-                <option value="range">Date range</option>
-              </select>
-            </label>
+            <select
+              class="models__select"
+              [value]="dateFilterType()"
+              (change)="onDateFilterTypeChange($event)"
+            >
+              <option value="none">Date filter: None</option>
+              <option value="after">Date after</option>
+              <option value="before">Date before</option>
+              <option value="range">Date range</option>
+            </select>
             <div class="models__date-filter-fields">
               @switch (dateFilterType()) {
                 @case ('after') {
-                  <label>
-                    <span class="visually-hidden">Start date</span>
-                    <input type="date" [value]="dateStart()" (input)="onDateStartChange($event)">
-                  </label>
+                  <label class="visually-hidden" for="models-date-start">Start date</label>
+                  <input
+                    id="models-date-start"
+                    type="date"
+                    [value]="dateStart()"
+                    (input)="onDateStartChange($event)"
+                  >
                 }
                 @case ('before') {
-                  <label>
-                    <span class="visually-hidden">End date</span>
-                    <input type="date" [value]="dateEnd()" (input)="onDateEndChange($event)">
-                  </label>
+                  <label class="visually-hidden" for="models-date-end">End date</label>
+                  <input
+                    id="models-date-end"
+                    type="date"
+                    [value]="dateEnd()"
+                    (input)="onDateEndChange($event)"
+                  >
                 }
                 @case ('range') {
-                  <label>
-                    <span class="visually-hidden">Start date</span>
-                    <input type="date" [value]="dateStart()" (input)="onDateStartChange($event)">
-                  </label>
-                  <label>
-                    <span class="visually-hidden">End date</span>
-                    <input type="date" [value]="dateEnd()" (input)="onDateEndChange($event)">
-                  </label>
+                  <label class="visually-hidden" for="models-date-start">Start date</label>
+                  <input
+                    id="models-date-start"
+                    type="date"
+                    [value]="dateStart()"
+                    (input)="onDateStartChange($event)"
+                  >
+                  <label class="visually-hidden" for="models-date-end">End date</label>
+                  <input
+                    id="models-date-end"
+                    type="date"
+                    [value]="dateEnd()"
+                    (input)="onDateEndChange($event)"
+                  >
                 }
               }
             </div>
           </div>
+          <span
+            appTooltip
+            [disabled]="clearFiltersDisabled()"
+            [message]="clearFiltersTooltip()"
+            position="bottom"
+            align="center"
+            size="sm"
+          >
+            <button
+              type="button"
+              appButton
+              variant="ghost"
+              class="models__clear"
+              (click)="clearFilters()"
+              [disabled]="clearFiltersDisabled()"
+            >
+              Clear filters
+            </button>
+          </span>
         </div>
       </div>
 
-      <!-- 3. Providers Expansion -->
-      <details class="models__providers">
-        <summary>Filter by Provider ({{ selectedProviders().size || 'All' }})</summary>
-        <div class="models__providers-grid">
-          @for (p of availableProviders(); track p) {
-            <label>
-              <input
-                type="checkbox"
-                [checked]="selectedProviders().has(p)"
-                (change)="toggleProvider(p, $event)"
-              >
-              {{ p | titlecase }}
-            </label>
+      <div class="models__controls-filters">
+        <div class="models__provider">
+          <div class="models__provider-trigger">
+            <button
+              type="button"
+              appButton
+              variant="secondary"
+              size="sm"
+              (click)="toggleProviderDropdown()"
+              [class.active]="isProviderDropdownOpen()"
+            >
+              Providers ({{ selectedProviders().size || availableProviders().length }})
+            </button>
+            <div class="models__provider-quick">
+              <span appTooltip message="Toggle OpenAI provider filter" position="bottom" align="center" size="sm" [alwaysShow]="true">
+                <button
+                  type="button"
+                  appButton
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Toggle OpenAI"
+                  [class.active]="selectedProviders().has('openai')"
+                  (click)="toggleProviderQuick('openai')"
+                >
+                  OA
+                </button>
+              </span>
+              <span appTooltip message="Toggle Anthropic provider filter" position="bottom" align="center" size="sm" [alwaysShow]="true">
+                <button
+                  type="button"
+                  appButton
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Toggle Anthropic"
+                  [class.active]="selectedProviders().has('anthropic')"
+                  (click)="toggleProviderQuick('anthropic')"
+                >
+                  A
+                </button>
+              </span>
+              <span appTooltip message="Toggle Google provider filter" position="bottom" align="center" size="sm" [alwaysShow]="true">
+                <button
+                  type="button"
+                  appButton
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Toggle Google"
+                  [class.active]="selectedProviders().has('google')"
+                  (click)="toggleProviderQuick('google')"
+                >
+                  G
+                </button>
+              </span>
+            </div>
+          </div>
+          @if (isProviderDropdownOpen()) {
+            <div class="models__provider-dropdown">
+              <label>
+                <span class="visually-hidden">Search providers</span>
+                <input
+                  type="search"
+                  placeholder="Search providers..."
+                  [value]="providerSearchTerm()"
+                  (input)="onProviderSearchChange($event)"
+                  autocomplete="off"
+                >
+              </label>
+              <div class="models__provider-list">
+                @for (p of filteredProviders(); track p) {
+                  <label>
+                    <input
+                      type="checkbox"
+                      [checked]="selectedProviders().has(p)"
+                      (change)="toggleProvider(p, $event)"
+                    >
+                    {{ p | titlecase }}
+                  </label>
+                }
+              </div>
+            </div>
           }
         </div>
-      </details>
-    </div>
 
-    <div class="models__header-actions">
-      <span appTooltip [disabled]="hasActiveFilters() ? filteredEnabledCount() === 0 : enabledCount() === 0" message="No enabled models to disable" position="bottom" align="center" size="sm">
-        <button
-          type="button"
-          appButton
-          variant="ghost"
-          (click)="handleDisableAll()"
-          [disabled]="hasActiveFilters() ? filteredEnabledCount() === 0 : enabledCount() === 0"
-        >
-          {{ disableAllLabel() }}
-        </button>
-      </span>
-      <span appTooltip [disabled]="hasActiveFilters() ? filteredDisabledCount() === 0 : disabledCount() === 0" message="No disabled models to enable" position="bottom" align="center" size="sm">
-        <button
-          type="button"
-          appButton
-          variant="ghost"
-          (click)="handleEnableAll()"
-          [disabled]="hasActiveFilters() ? filteredDisabledCount() === 0 : disabledCount() === 0"
-        >
-          {{ enableAllLabel() }}
-        </button>
-      </span>
-      <span
-        appTooltip
-        [disabled]="enableFreeDisabled()"
-        [message]="enableFreeTooltip()"
-        position="bottom"
-        align="center"
-        size="md"
-      >
-        <button
-          type="button"
-          appButton
-          variant="ghost"
-          (click)="handleEnableFree()"
-          [disabled]="enableFreeDisabled()"
-        >
-          {{ enableFreeLabel() }}
-        </button>
-      </span>
+        <div class="models__chips">
+          <button
+            type="button"
+            class="filter-chip"
+            [class.active]="showVisibleOnly()"
+            (click)="toggleVisibleOnly()">
+            Visible
+          </button>
+          <button
+            type="button"
+            class="filter-chip"
+            [class.active]="showHiddenOnly()"
+            (click)="toggleHiddenOnly()">
+            Hidden
+          </button>
+          <button
+            type="button"
+            class="filter-chip"
+            [class.active]="showFreeOnly()"
+            (click)="toggleFreeOnly()">
+            Free
+          </button>
+          <button
+            type="button"
+            class="filter-chip"
+            [class.active]="showVisionOnly()"
+            (click)="toggleVisionOnly()">
+            Vision
+          </button>
+          <button
+            type="button"
+            class="filter-chip"
+            [class.active]="showToolsOnly()"
+            (click)="toggleToolsOnly()">
+            Tools
+          </button>
+          <button
+            type="button"
+            class="filter-chip"
+            [class.active]="showNewOnly()"
+            (click)="toggleNewOnly()">
+            New
+          </button>
+        </div>
+      </div>
+
+      <div class="models__controls-footer">
+        <p class="text-muted small">Actions apply to {{ filteredCatalog().length }} filtered models</p>
+        <div class="models__header-actions">
+          <span appTooltip [disabled]="filteredEnabledCount() === 0" message="No enabled models to disable" position="bottom" align="center" size="sm">
+            <button
+              type="button"
+              appButton
+              variant="ghost"
+              (click)="handleDisableAll()"
+              [disabled]="filteredEnabledCount() === 0"
+            >
+              {{ bulkDisableLabel() }}
+            </button>
+          </span>
+          <span appTooltip [disabled]="filteredDisabledCount() === 0" message="No disabled models to enable" position="bottom" align="center" size="sm">
+            <button
+              type="button"
+              appButton
+              variant="ghost"
+              (click)="handleEnableAll()"
+              [disabled]="filteredDisabledCount() === 0"
+            >
+              {{ bulkEnableLabel() }}
+            </button>
+          </span>
+        </div>
+      </div>
     </div>
   </header>
 
