@@ -30,6 +30,14 @@ export interface ChatModelVisibilityOption extends ChatModelOption {
   enabled: boolean;
 }
 
+export interface ModelPreset {
+  version: 1;
+  exportedAt: string;
+  disabledModelIds: string[];
+  defaultModelId: string | null;
+  pinnedModelIds: string[];
+}
+
 interface ModelPreferencesSnapshot {
   disabledModelIds: string[];
   defaultModelId?: string;
@@ -314,6 +322,51 @@ export class ChatAdaptersService {
       temperature: opts.temperature,
       system: opts.system
     });
+  }
+
+  createModelPreset(): ModelPreset {
+    const disabledModelIds = this.catalog()
+      .filter((model) => !model.enabled)
+      .map((model) => model.id);
+
+    return {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      disabledModelIds,
+      defaultModelId: this.defaultModelId(),
+      pinnedModelIds: [...this.pinnedModelIds()]
+    };
+  }
+
+  applyModelPreset(preset: Partial<ModelPreset> | null | undefined): void {
+    if (!preset || typeof preset !== 'object') {
+      return;
+    }
+
+    const availableIds = new Set(this.allModelsSignal().map((model) => model.id));
+    if (availableIds.size === 0) {
+      return;
+    }
+
+    const nextDisabledIds = Array.isArray(preset.disabledModelIds)
+      ? preset.disabledModelIds.filter((id) => availableIds.has(id))
+      : [];
+    const disabledSet = new Set(nextDisabledIds);
+
+    const nextPinnedIds = Array.isArray(preset.pinnedModelIds)
+      ? preset.pinnedModelIds.filter((id) => availableIds.has(id) && !disabledSet.has(id))
+      : [];
+
+    const defaultCandidate = preset.defaultModelId ?? null;
+    const nextDefaultId =
+      defaultCandidate && availableIds.has(defaultCandidate) && !disabledSet.has(defaultCandidate)
+        ? defaultCandidate
+        : null;
+
+    this.disabledModelIds.set(nextDisabledIds);
+    this.pinnedModelIds.set(nextPinnedIds);
+    this.defaultModelId.set(nextDefaultId);
+    this.persistPreferences();
   }
 
   private hydrateDisabledModelIds(): string[] {

@@ -1,65 +1,169 @@
 <section class="models">
   <header class="models__header">
-    <div>
-      <h1>Models visibility</h1>
-      <p class="text-muted">
-        Choose which provider models appear in the composer dropdown. Disabled models stay available
-        for existing threads but cannot be selected for new prompts.
-      </p>
-      <p class="text-muted small">
-        {{ enabledCount() }} of {{ totalCount() }} visible · {{ disabledCount() }} hidden
-      </p>
+    <div class="models__header-row">
+      <div class="models__intro">
+        <h1>Models visibility</h1>
+        <p class="text-muted">
+          Choose which provider models appear in the composer dropdown. Disabled models stay available
+          for existing threads but cannot be selected for new prompts.
+        </p>
+        <p class="text-muted small">
+          {{ enabledCount() }} of {{ totalCount() }} visible · {{ disabledCount() }} hidden
+        </p>
+      </div>
+
+      <div class="models__preset-actions">
+        <input
+          #presetInput
+          type="file"
+          accept="application/json"
+          class="visually-hidden"
+          (change)="handleImportPreset($event)"
+        >
+        <span
+          appTooltip
+          message="Download current visibility as JSON"
+          position="bottom"
+          align="center"
+          size="md"
+        >
+          <button type="button" appButton variant="ghost" size="sm" (click)="handleSavePreset()">
+            Save Model Preset
+          </button>
+        </span>
+        <span
+          appTooltip
+          message="Load a preset and reapply available matches"
+          position="bottom"
+          align="center"
+          size="md"
+        >
+          <button type="button" appButton variant="ghost" size="sm" (click)="handleImportClick(presetInput)">
+            Import Model Preset
+          </button>
+        </span>
+      </div>
     </div>
 
     <div class="models__controls surface-card">
-      <!-- 1. Search (Existing, slightly moved) -->
-      <div class="models__search">
-        <label>
-          <span class="visually-hidden">Search models</span>
-          <input
-            type="search"
-            placeholder="Search models..."
-            [value]="searchTerm()"
-            (input)="handleSearchChange($event)"
-            autocomplete="off"
-          />
-        </label>
+      <div class="models__search-row">
+        <div class="models__search">
+          <label>
+            <span class="visually-hidden">Search models</span>
+            <input
+              type="search"
+              placeholder="Search models..."
+              [value]="searchTerm()"
+              (input)="handleSearchChange($event)"
+              autocomplete="off"
+            />
+          </label>
+        </div>
+        <span
+          appTooltip
+          [disabled]="clearFiltersDisabled()"
+          [message]="clearFiltersTooltip()"
+          position="bottom"
+          align="center"
+          size="sm"
+        >
+          <button
+            type="button"
+            appButton
+            variant="ghost"
+            class="models__clear"
+            (click)="clearFilters()"
+            [disabled]="clearFiltersDisabled()"
+          >
+            Clear filters
+          </button>
+        </span>
       </div>
 
       <!-- 2. Filters Row -->
-      <div class="models__filters">
-        <!-- Sort Dropdown -->
-        <select [value]="sortOption()" (change)="onSortChange($event)" class="models__select">
-          <option value="default">Default Sort</option>
-          <option value="newest">Newest</option>
-          <option value="price-asc">Price: Low to High</option>
-          <option value="price-desc">Price: High to Low</option>
-          <option value="context-desc">Context: Largest First</option>
-        </select>
+      <div class="models__filters-bar">
+        <div class="models__filters">
+          <!-- Sort Dropdown -->
+          <select [value]="sortOption()" (change)="onSortChange($event)" class="models__select">
+            <option value="default">Default Sort</option>
+            <option value="newest">Newest</option>
+            <option value="price-asc">Price: Low to High</option>
+            <option value="price-desc">Price: High to Low</option>
+            <option value="context-desc">Context: Largest First</option>
+          </select>
 
-        <!-- Toggle Chips -->
-        <div class="models__chips">
-          <button
-            type="button"
-            class="filter-chip"
-            [class.active]="showFreeOnly()"
-            (click)="toggleFreeOnly()">
-            Free
-          </button>
-          <button
-            type="button"
-            class="filter-chip"
-            [class.active]="showVisionOnly()"
-            (click)="toggleVisionOnly()">
-            Vision
-          </button>
-          <button
-            type="button"
-            class="filter-chip"
-            [class.active]="showToolsOnly()"
-            (click)="toggleToolsOnly()">
-            Tools
-          </button>
+          <!-- Toggle Chips -->
+          <div class="models__chips">
+            <button
+              type="button"
+              class="filter-chip"
+              [class.active]="showFreeOnly()"
+              (click)="toggleFreeOnly()">
+              Free
+            </button>
+            <button
+              type="button"
+              class="filter-chip"
+              [class.active]="showVisionOnly()"
+              (click)="toggleVisionOnly()">
+              Vision
+            </button>
+            <button
+              type="button"
+              class="filter-chip"
+              [class.active]="showToolsOnly()"
+              (click)="toggleToolsOnly()">
+              Tools
+            </button>
+            <button
+              type="button"
+              class="filter-chip"
+              [class.active]="showNewOnly()"
+              (click)="toggleNewOnly()">
+              New
+            </button>
+          </div>
+
+          <div class="models__date-filter">
+            <label class="models__date-filter-label">
+              <span>Date filter</span>
+              <select
+                class="models__select"
+                [value]="dateFilterType()"
+                (change)="onDateFilterTypeChange($event)">
+                <option value="none">None</option>
+                <option value="after">Date after</option>
+                <option value="before">Date before</option>
+                <option value="range">Date range</option>
+              </select>
+            </label>
+            <div class="models__date-filter-fields">
+              @switch (dateFilterType()) {
+                @case ('after') {
+                  <label>
+                    <span class="visually-hidden">Start date</span>
+                    <input type="date" [value]="dateStart()" (input)="onDateStartChange($event)">
+                  </label>
+                }
+                @case ('before') {
+                  <label>
+                    <span class="visually-hidden">End date</span>
+                    <input type="date" [value]="dateEnd()" (input)="onDateEndChange($event)">
+                  </label>
+                }
+                @case ('range') {
+                  <label>
+                    <span class="visually-hidden">Start date</span>
+                    <input type="date" [value]="dateStart()" (input)="onDateStartChange($event)">
+                  </label>
+                  <label>
+                    <span class="visually-hidden">End date</span>
+                    <input type="date" [value]="dateEnd()" (input)="onDateEndChange($event)">
+                  </label>
+                }
+              }
+            </div>
+          </div>
         </div>
       </div>
 
@@ -93,17 +197,6 @@
           {{ disableAllLabel() }}
         </button>
       </span>
-      <span appTooltip [disabled]="freeModelsCount() === 0 || enabledFreeCount() === freeModelsCount()" message="No free models available or all free models are already enabled" position="bottom" align="center" size="md">
-        <button
-          type="button"
-          appButton
-          variant="ghost"
-          (click)="handleEnableFree()"
-          [disabled]="freeModelsCount() === 0 || enabledFreeCount() === freeModelsCount()"
-        >
-          Enable free
-        </button>
-      </span>
       <span appTooltip [disabled]="hasActiveFilters() ? filteredDisabledCount() === 0 : disabledCount() === 0" message="No disabled models to enable" position="bottom" align="center" size="sm">
         <button
           type="button"
@@ -113,6 +206,24 @@
           [disabled]="hasActiveFilters() ? filteredDisabledCount() === 0 : disabledCount() === 0"
         >
           {{ enableAllLabel() }}
+        </button>
+      </span>
+      <span
+        appTooltip
+        [disabled]="enableFreeDisabled()"
+        [message]="enableFreeTooltip()"
+        position="bottom"
+        align="center"
+        size="md"
+      >
+        <button
+          type="button"
+          appButton
+          variant="ghost"
+          (click)="handleEnableFree()"
+          [disabled]="enableFreeDisabled()"
+        >
+          {{ enableFreeLabel() }}
         </button>
       </span>
     </div>

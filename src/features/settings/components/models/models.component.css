@@ -10,10 +10,31 @@
   gap: var(--space-4);
 }
 
-.models__header > div:first-child {
+.models__header-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.models__intro {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  flex: 1;
+  min-width: 0;
+}
+
+.models__preset-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.models__preset-actions button {
+  white-space: nowrap;
 }
 
 .models__controls {
@@ -22,6 +43,16 @@
   flex-direction: column;
   gap: var(--space-4);
   border: 1px solid var(--color-border);
+}
+
+.models__search-row {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.models__clear {
+  margin-left: auto;
 }
 
 .models__search {
@@ -38,11 +69,17 @@
   font-size: 0.9rem;
 }
 
+.models__filters-bar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
 .models__filters {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-4);
-  align-items: center;
+  align-items: flex-start;
 }
 
 .models__select {
@@ -58,6 +95,7 @@
 .models__chips {
   display: flex;
   gap: var(--space-2);
+  flex-wrap: wrap;
 }
 
 .filter-chip {
@@ -79,6 +117,34 @@
   background: var(--color-brand);
   color: var(--color-brand-contrast);
   border-color: var(--color-brand);
+}
+
+.models__date-filter {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+  margin-left: auto;
+}
+
+.models__date-filter-label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.models__date-filter-fields {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.models__date-filter input[type="date"] {
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-0);
+  color: var(--color-text);
 }
 
 .models__providers {

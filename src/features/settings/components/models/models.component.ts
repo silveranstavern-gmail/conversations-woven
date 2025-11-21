@@ -2,7 +2,8 @@ import { DecimalPipe, SlicePipe, TitleCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import {
   ChatAdaptersService,
-  ChatModelVisibilityOption
+  ChatModelVisibilityOption,
+  ModelPreset
 } from '@features/chat/data/chat-adapters.service';
 import { ButtonDirective } from '@shared/ui/button/button.directive';
 import { TooltipDirective } from '@shared/ui/tooltip/tooltip.directive';
@@ -27,7 +28,11 @@ export class ModelsComponent {
   protected readonly showFreeOnly = signal(false);
   protected readonly showVisionOnly = signal(false);
   protected readonly showToolsOnly = signal(false);
+  protected readonly showNewOnly = signal(false);
   protected readonly selectedProviders = signal<Set<string>>(new Set());
+  protected readonly dateFilterType = signal<'none' | 'after' | 'before' | 'range'>('none');
+  protected readonly dateStart = signal('');
+  protected readonly dateEnd = signal('');
 
   // --- Base Data ---
   protected readonly catalog = this.adapters.catalog;
@@ -42,6 +47,38 @@ export class ModelsComponent {
   protected readonly freeModelsCount = computed(() => this.freeModels().length);
   protected readonly enabledFreeCount = computed(
     () => this.freeModels().filter((model) => model.enabled).length
+  );
+  protected readonly filteredFreeCount = computed(() =>
+    this.filteredCatalog().filter((model) => model.label.toLowerCase().includes('(free)')).length
+  );
+  protected readonly enabledFilteredFreeCount = computed(() =>
+    this.filteredCatalog().filter((model) => model.enabled && model.label.toLowerCase().includes('(free)')).length
+  );
+  protected readonly enableFreeLabel = computed(() =>
+    this.hasActiveFilters() ? 'Enable free (filtered)' : 'Enable free'
+  );
+  protected readonly enableFreeDisabled = computed(() => {
+    if (this.hasActiveFilters()) {
+      return this.filteredFreeCount() === 0 || this.enabledFilteredFreeCount() === this.filteredFreeCount();
+    }
+    return this.freeModelsCount() === 0 || this.enabledFreeCount() === this.freeModelsCount();
+  });
+  protected readonly enableFreeTooltip = computed(() => {
+    if (!this.enableFreeDisabled()) {
+      return '';
+    }
+    if (this.hasActiveFilters()) {
+      return this.filteredFreeCount() === 0
+        ? 'No free models match current filters'
+        : 'All filtered free models are already enabled';
+    }
+    return this.freeModelsCount() === 0
+      ? 'No free models available'
+      : 'All free models are already enabled';
+  });
+  protected readonly clearFiltersDisabled = computed(() => !this.hasActiveFilters());
+  protected readonly clearFiltersTooltip = computed(() =>
+    this.clearFiltersDisabled() ? 'No filters to clear' : ''
   );
   
   // Computed counts for filtered catalog (when filters are active)
@@ -58,7 +95,11 @@ export class ModelsComponent {
     this.showFreeOnly() ||
     this.showVisionOnly() ||
     this.showToolsOnly() ||
-    this.selectedProviders().size > 0
+    this.showNewOnly() ||
+    this.selectedProviders().size > 0 ||
+    this.dateFilterType() !== 'none' ||
+    !!this.dateStart().trim() ||
+    !!this.dateEnd().trim()
   );
   
   // Dynamic button labels based on active filters
@@ -85,8 +126,12 @@ export class ModelsComponent {
     const freeOnly = this.showFreeOnly();
     const visionOnly = this.showVisionOnly();
     const toolsOnly = this.showToolsOnly();
+    const newOnly = this.showNewOnly();
     const activeProviders = this.selectedProviders();
     const sort = this.sortOption();
+    const dateFilter = this.dateFilterType();
+    const startDate = this.parseDate(this.dateStart());
+    const endDate = this.parseDate(this.dateEnd());
 
     // Status Lookups (Computed once for O(1) access inside the sort loop)
     const defaultId = this.adapters.defaultModel()?.id;
@@ -112,10 +157,18 @@ export class ModelsComponent {
     if (toolsOnly) {
       models = models.filter(m => m.filterCapabilities.tools);
     }
+    if (newOnly) {
+      models = models.filter(m => this.isNew(m.created));
+    }
 
     // Provider Filter
     if (activeProviders.size > 0) {
       models = models.filter(m => activeProviders.has(m.providerId));
+    }
+
+    // Date Filters
+    if (dateFilter !== 'none' && (startDate || endDate)) {
+      models = models.filter((model) => this.matchesDateFilter(model.created, dateFilter, startDate, endDate));
     }
 
     // --- 2. Tiered Sorting ---
@@ -202,10 +255,22 @@ export class ModelsComponent {
   }
 
   protected handleEnableFree(): void {
-    if (this.enabledFreeCount() === this.freeModelsCount()) {
-      return;
+    if (this.hasActiveFilters()) {
+      const modelsToEnable = this.filteredCatalog().filter(
+        (model) => !model.enabled && model.label.toLowerCase().includes('(free)')
+      );
+      if (modelsToEnable.length === 0) {
+        return;
+      }
+      modelsToEnable.forEach((model) => {
+        this.adapters.setModelEnabled(model.id, true);
+      });
+    } else {
+      if (this.enabledFreeCount() === this.freeModelsCount()) {
+        return;
+      }
+      this.adapters.enableFreeModels();
     }
-    this.adapters.enableFreeModels();
   }
 
   protected trackByModelId(_: number, model: ChatModelVisibilityOption): string {
@@ -239,6 +304,10 @@ export class ModelsComponent {
     this.showToolsOnly.update(v => !v);
   }
 
+  protected toggleNewOnly(): void {
+    this.showNewOnly.update(v => !v);
+  }
+
   protected onSortChange(event: Event): void {
     this.sortOption.set((event.target as HTMLSelectElement).value as SortOption);
   }
@@ -264,5 +333,104 @@ export class ModelsComponent {
     // Check if model was created within the last 30 days
     const thirtyDaysAgo = Date.now() - 2592000000; // 30 days in milliseconds
     return (created * 1000) > thirtyDaysAgo;
+  }
+
+  protected onDateFilterTypeChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value as 'none' | 'after' | 'before' | 'range';
+    this.dateFilterType.set(value);
+    if (value === 'none') {
+      this.dateStart.set('');
+      this.dateEnd.set('');
+    }
+  }
+
+  protected onDateStartChange(event: Event): void {
+    this.dateStart.set((event.target as HTMLInputElement).value);
+  }
+
+  protected onDateEndChange(event: Event): void {
+    this.dateEnd.set((event.target as HTMLInputElement).value);
+  }
+
+  protected clearFilters(): void {
+    this.searchTerm.set('');
+    this.showFreeOnly.set(false);
+    this.showVisionOnly.set(false);
+    this.showToolsOnly.set(false);
+    this.showNewOnly.set(false);
+    this.selectedProviders.set(new Set());
+    this.dateFilterType.set('none');
+    this.dateStart.set('');
+    this.dateEnd.set('');
+  }
+
+  protected handleSavePreset(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const preset = this.adapters.createModelPreset();
+    const blob = new Blob([JSON.stringify(preset, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const filename = `model-preset-${preset.exportedAt.replace(/[:]/g, '-')}.json`;
+
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
+
+    URL.revokeObjectURL(url);
+  }
+
+  protected handleImportClick(input: HTMLInputElement): void {
+    input.value = '';
+    input.click();
+  }
+
+  protected async handleImportPreset(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement | null;
+    const file = input?.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text) as Partial<ModelPreset>;
+      this.adapters.applyModelPreset(parsed);
+    } catch (error) {
+      console.error('Failed to import model preset', error);
+    } finally {
+      input.value = '';
+    }
+  }
+
+  private matchesDateFilter(
+    createdSeconds: number,
+    filterType: 'after' | 'before' | 'range',
+    start: number | null,
+    end: number | null
+  ): boolean {
+    const createdMs = createdSeconds ? createdSeconds * 1000 : 0;
+    if (!createdMs) {
+      return false;
+    }
+
+    switch (filterType) {
+      case 'after':
+        return !!start && createdMs >= start;
+      case 'before':
+        return !!end && createdMs <= end;
+      case 'range':
+        return (!!start ? createdMs >= start : true) && (!!end ? createdMs <= end : true);
+      default:
+        return true;
+    }
+  }
+
+  private parseDate(value: string): number | null {
+    if (!value.trim()) return null;
+    const time = Date.parse(value);
+    return Number.isNaN(time) ? null : time;
   }
 }

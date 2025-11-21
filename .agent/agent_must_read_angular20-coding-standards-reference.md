@@ -1,5 +1,12 @@
 # Angular 20 coding style guide
 
+> TL;DR for this repository
+> - Use signals + `inject()`; keep components/directives lean with `ChangeDetectionStrategy.OnPush`.
+> - Prefer standalone architecture patterns already present in files; follow the file’s existing decorator config (don’t add `standalone: true` unless the file already uses it).
+> - Host bindings/listeners belong in the `host` object, not decorators; avoid `ngClass`/`ngStyle`—use `[class]`/`[style]`.
+> - Keep naming consistent (hyphenated files, matched test names) and group related files together; favor feature folders.
+> - Use native control flow (`@if`, `@for`, `@switch`) and template-friendly method names.
+
 ## Introduction
 
 This guide covers a range of style conventions for Angular application code. These recommendations
