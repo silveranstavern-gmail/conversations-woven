@@ -13,7 +13,6 @@ interface ProviderDefinition {
 
 @Component({
   selector: 'app-api-keys',
-  standalone: true,
   imports: [SettingsSectionComponent, ButtonDirective, TooltipDirective],
   templateUrl: './api-keys.component.html',
   styleUrl: './api-keys.component.css',

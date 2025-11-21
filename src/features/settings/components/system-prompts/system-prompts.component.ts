@@ -8,7 +8,6 @@ import { SettingsSectionComponent } from '../ui/settings-section/settings-sectio
 
 @Component({
   selector: 'app-system-prompts',
-  standalone: true,
   imports: [ModelSelectorComponent, SettingsSectionComponent],
   templateUrl: './system-prompts.component.html',
   styleUrl: './system-prompts.component.css',

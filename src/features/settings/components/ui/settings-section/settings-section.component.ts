@@ -1,14 +1,13 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 @Component({
   selector: 'app-settings-section',
-  standalone: true,
   template: `
     <header class="settings-section__header">
       <div>
-        <p class="settings-section__eyebrow">{{ eyebrow }}</p>
-        <h2>{{ heading }}</h2>
-        <p class="text-muted">{{ description }}</p>
+        <p class="settings-section__eyebrow">{{ eyebrow() }}</p>
+        <h2>{{ heading() }}</h2>
+        <p class="text-muted">{{ description() }}</p>
       </div>
       <div class="settings-section__actions">
         <ng-content select=".settings-section__actions-content"></ng-content>
@@ -57,8 +56,8 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SettingsSectionComponent {
-  @Input() eyebrow = '';
-  @Input() heading = '';
-  @Input() description = '';
+  public readonly eyebrow = input('');
+  public readonly heading = input('');
+  public readonly description = input('');
 }
 

@@ -8,21 +8,23 @@
       </a>
     </div>
 
-    <nav class="primary-nav" aria-label="Primary">
-      <a routerLink="/chat" routerLinkActive="active">Chat</a>
-      <a routerLink="/settings" routerLinkActive="active">Settings</a>
-    </nav>
+    <div class="header-actions">
+      <nav class="primary-nav" aria-label="Primary">
+        <a routerLink="/chat" routerLinkActive="active">Chat</a>
+        <a routerLink="/settings" routerLinkActive="active">Settings</a>
+      </nav>
 
-    <button
-      type="button"
-      class="nav-action"
-      [class.nav-action--locked]="!isUnlocked()"
-      [class.nav-action--unlocked]="isUnlocked()"
-      [title]="isUnlocked() ? 'Keychain unlocked' : 'Keychain locked - Click to unlock'"
-      (click)="handleKeychainAction()"
-    >
-      {{ isUnlocked() ? '🔓' : '🔒' }}
-    </button>
+      <button
+        type="button"
+        class="nav-action"
+        [class.nav-action--locked]="!isUnlocked()"
+        [class.nav-action--unlocked]="isUnlocked()"
+        [title]="isUnlocked() ? 'Keychain unlocked' : 'Keychain locked - Click to unlock'"
+        (click)="handleKeychainAction()"
+      >
+        {{ isUnlocked() ? '🔓' : '🔒' }}
+      </button>
+    </div>
   </header>
 
   <main class="app-shell__content">

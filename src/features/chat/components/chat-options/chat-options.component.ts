@@ -8,7 +8,6 @@ import { ButtonDirective } from '@shared/ui/button/button.directive';
 
 @Component({
   selector: 'app-chat-options',
-  standalone: true,
   imports: [ModelSelectorComponent, ButtonDirective],
   templateUrl: './chat-options.component.html',
   styleUrl: './chat-options.component.css',

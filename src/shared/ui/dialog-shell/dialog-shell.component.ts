@@ -1,8 +1,7 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 
 @Component({
   selector: 'app-dialog-shell',
-  standalone: true,
   templateUrl: './dialog-shell.component.html',
   styleUrl: './dialog-shell.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -11,11 +10,11 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
   }
 })
 export class DialogShellComponent {
-  @Input() title = '';
-  @Input() message?: string;
-  @Input() width = '500px';
+  public readonly title = input('');
+  public readonly message = input<string | undefined>();
+  public readonly width = input('500px');
 
-  @Output() cancel = new EventEmitter<void>();
+  public readonly cancel = output<void>();
 
   handleEscape(event: Event): void {
     (event as KeyboardEvent).preventDefault();

@@ -4,7 +4,6 @@ import { ChatAdaptersService } from '@features/chat/data/chat-adapters.service';
 
 @Component({
   selector: 'app-model-selector',
-  standalone: true,
   templateUrl: './model-selector.component.html',
   styleUrl: './model-selector.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

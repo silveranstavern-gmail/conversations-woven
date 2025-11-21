@@ -1,9 +1,9 @@
 <div class="dialog-overlay" (click)="handleOverlayClick()">
-  <div class="dialog-container" [style.min-width]="width" (click)="handleContainerClick($event)">
+  <div class="dialog-container" [style.min-width]="width()" (click)="handleContainerClick($event)">
     <div class="dialog-header">
-      <h2 class="dialog-title">{{ title }}</h2>
-      @if (message) {
-        <p class="dialog-message">{{ message }}</p>
+      <h2 class="dialog-title">{{ title() }}</h2>
+      @if (message()) {
+        <p class="dialog-message">{{ message() }}</p>
       }
       <ng-content select=".dialog-header-content"></ng-content>
     </div>

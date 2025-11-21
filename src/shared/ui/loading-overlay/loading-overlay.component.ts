@@ -3,7 +3,6 @@ import { LoadingOverlayService } from '@core/services/loading-overlay.service';
 
 @Component({
   selector: 'app-loading-overlay',
-  standalone: true,
   templateUrl: './loading-overlay.component.html',
   styleUrl: './loading-overlay.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush

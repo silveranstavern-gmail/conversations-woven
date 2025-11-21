@@ -5,7 +5,6 @@ export type ButtonSize = 'sm' | 'md' | 'icon';
 
 @Directive({
   selector: 'button[appButton], a[appButton]',
-  standalone: true,
   host: {
     'class': 'ui-btn',
     '[class.ui-btn--primary]': 'variant() === "primary"',

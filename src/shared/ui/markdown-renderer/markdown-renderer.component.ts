@@ -11,7 +11,6 @@ const marked = new Marked({
 
 @Component({
   selector: 'app-markdown-renderer',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<div class="markdown" [innerHTML]="sanitized()"></div>`,
   styleUrls: ['./markdown-renderer.component.css']

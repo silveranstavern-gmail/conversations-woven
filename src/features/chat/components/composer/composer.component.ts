@@ -1,4 +1,4 @@
-import { AfterViewInit, ChangeDetectionStrategy, Component, computed, ElementRef, inject, input, output, signal, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, Component, computed, ElementRef, inject, input, output, signal, viewChild } from '@angular/core';
 import { UserPreferencesService } from '@core/services/preference/user-preferences.service';
 import { KeychainService } from '@core/services/keychain.service';
 import { TooltipDirective } from '@shared/ui/tooltip/tooltip.directive';
@@ -10,14 +10,13 @@ export interface ComposerSubmitPayload {
 
 @Component({
   selector: 'app-composer',
-  standalone: true,
   imports: [TooltipDirective],
   templateUrl: './composer.component.html',
   styleUrl: './composer.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ComposerComponent implements AfterViewInit {
-  @ViewChild('textarea', { static: false }) private textareaRef?: ElementRef<HTMLTextAreaElement>;
+  private readonly textareaRef = viewChild<ElementRef<HTMLTextAreaElement>>('textarea');
 
   private readonly preferences = inject(UserPreferencesService);
   private readonly keychain = inject(KeychainService);
@@ -122,10 +121,11 @@ export class ComposerComponent implements AfterViewInit {
   }
 
   private autoResize(): void {
-    if (!this.textareaRef) {
+    const ref = this.textareaRef();
+    if (!ref) {
       return;
     }
-    const el = this.textareaRef.nativeElement;
+    const el = ref.nativeElement;
     el.style.height = 'auto';
     el.style.height = el.scrollHeight + 'px';
   }

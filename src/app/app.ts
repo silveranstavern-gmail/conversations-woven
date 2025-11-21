@@ -1,16 +1,18 @@
-import { Component, effect, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { KeychainService } from '@core/services/keychain.service';
 import { DialogService } from '@core/services/dialog.service';
 import { UserPreferencesService } from '@core/services/preference/user-preferences.service';
 import { LoadingOverlayComponent } from '@shared/ui/loading-overlay/loading-overlay.component';
+import { ButtonDirective } from '@shared/ui/button/button.directive';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, LoadingOverlayComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, LoadingOverlayComponent, ButtonDirective],
   templateUrl: './app.html',
-  styleUrl: './app.css'
+  styleUrl: './app.css',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class App {
   private readonly keychain = inject(KeychainService);

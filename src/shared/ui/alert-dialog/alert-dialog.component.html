@@ -1,7 +1,7 @@
-<app-dialog-shell [title]="title" [message]="message" (cancel)="handleCancel()">
+<app-dialog-shell [title]="title()" [message]="message()" (cancel)="handleCancel()">
   <div class="dialog-footer-content">
     <button type="button" appButton variant="primary" (click)="handleConfirm()">
-      {{ confirmLabel }}
+      {{ confirmLabel() }}
     </button>
   </div>
 </app-dialog-shell>

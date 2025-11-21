@@ -9,7 +9,6 @@ export type TooltipSize = 'sm' | 'md' | 'lg' | 'auto';
 
 @Directive({
   selector: '[appTooltip]',
-  standalone: true,
   host: {
     '[class.tooltip-wrapper]': 'true',
     '[attr.data-tooltip]': 'tooltipText()',

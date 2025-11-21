@@ -5,7 +5,6 @@ import { TooltipDirective } from '@shared/ui/tooltip/tooltip.directive';
 
 @Component({
   selector: 'app-chat-header',
-  standalone: true,
   imports: [ButtonDirective, TooltipDirective],
   template: `
     <header class="header">

@@ -10,7 +10,6 @@ export interface ThreadSettings {
 
 @Component({
   selector: 'app-thread-settings',
-  standalone: true,
   imports: [DialogShellComponent, ButtonDirective],
   templateUrl: './thread-settings.component.html',
   styleUrl: './thread-settings.component.css',

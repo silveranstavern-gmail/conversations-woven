@@ -1,21 +1,21 @@
-<app-dialog-shell [title]="title" [message]="message" (cancel)="handleCancel()">
+<app-dialog-shell [title]="title()" [message]="message()" (cancel)="handleCancel()">
   <div class="dialog-body-content">
     <input
       #inputRef
-      [type]="inputType"
+      [type]="inputType()"
       class="dialog-input"
       [value]="inputValue()"
-      [placeholder]="placeholder"
+      [placeholder]="placeholder()"
       (input)="inputValue.set($any($event.target).value)"
       (keydown)="handleKeydown($event)"
     />
   </div>
   <div class="dialog-footer-content">
     <button type="button" appButton variant="secondary" (click)="handleCancel()">
-      {{ cancelLabel }}
+      {{ cancelLabel() }}
     </button>
     <button type="button" appButton variant="primary" (click)="handleConfirm()">
-      {{ confirmLabel }}
+      {{ confirmLabel() }}
     </button>
   </div>
 </app-dialog-shell>

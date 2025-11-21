@@ -1,19 +1,18 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { Subject } from 'rxjs';
 import { DialogShellComponent } from '../dialog-shell/dialog-shell.component';
 import { ButtonDirective } from '../button/button.directive';
 
 @Component({
   selector: 'app-alert-dialog',
-  standalone: true,
   imports: [DialogShellComponent, ButtonDirective],
   templateUrl: './alert-dialog.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AlertDialogComponent {
-  title = '';
-  message = '';
-  confirmLabel = 'OK';
+  public readonly title = input('');
+  public readonly message = input('');
+  public readonly confirmLabel = input('OK');
 
   readonly result$ = new Subject<void>();
 

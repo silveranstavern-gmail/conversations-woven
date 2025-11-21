@@ -4,8 +4,11 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  effect,
+  inject,
+  input,
   signal,
-  ViewChild
+  viewChild
 } from '@angular/core';
 import { Subject } from 'rxjs';
 import { DialogShellComponent } from '../dialog-shell/dialog-shell.component';
@@ -13,33 +16,42 @@ import { ButtonDirective } from '../button/button.directive';
 
 @Component({
   selector: 'app-prompt-dialog',
-  standalone: true,
   imports: [DialogShellComponent, ButtonDirective],
   templateUrl: './prompt-dialog.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PromptDialogComponent implements AfterViewInit {
-  title = '';
-  message = '';
-  initialValue = '';
-  placeholder = '';
-  inputType: 'text' | 'password' = 'text';
-  confirmLabel = 'OK';
-  cancelLabel = 'Cancel';
+  private readonly cdr = inject(ChangeDetectorRef);
 
-  readonly inputValue = signal('');
+  public readonly title = input('');
+  public readonly message = input('');
+  public readonly initialValue = input('');
+  public readonly placeholder = input('');
+  public readonly inputType = input<'text' | 'password'>('text');
+  public readonly confirmLabel = input('OK');
+  public readonly cancelLabel = input('Cancel');
+
+  public readonly inputValue = signal('');
 
   readonly result$ = new Subject<string | null>();
 
-  @ViewChild('inputRef', { static: false }) inputRef?: ElementRef<HTMLInputElement>;
+  private readonly inputRef = viewChild<ElementRef<HTMLInputElement>>('inputRef');
 
-  constructor(private readonly cdr: ChangeDetectorRef) {}
+  constructor() {
+    // Sync initialValue input to inputValue signal
+    effect(() => {
+      const initial = this.initialValue();
+      if (initial) {
+        this.inputValue.set(initial);
+      }
+    });
+  }
 
   ngAfterViewInit(): void {
     // Use requestAnimationFrame to ensure the dialog is fully rendered before focusing
     requestAnimationFrame(() => {
       this.cdr.detectChanges();
-      this.inputRef?.nativeElement?.focus();
+      this.inputRef()?.nativeElement?.focus();
     });
   }
 

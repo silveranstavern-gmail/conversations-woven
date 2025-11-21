@@ -1,21 +1,20 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { Subject } from 'rxjs';
 import { DialogShellComponent } from '../dialog-shell/dialog-shell.component';
 import { ButtonDirective } from '../button/button.directive';
 
 @Component({
   selector: 'app-confirm-dialog',
-  standalone: true,
   imports: [DialogShellComponent, ButtonDirective],
   templateUrl: './confirm-dialog.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ConfirmDialogComponent {
-  title = '';
-  message = '';
-  confirmLabel = 'Confirm';
-  cancelLabel = 'Cancel';
-  danger = false;
+  public readonly title = input('');
+  public readonly message = input('');
+  public readonly confirmLabel = input('Confirm');
+  public readonly cancelLabel = input('Cancel');
+  public readonly danger = input(false);
 
   readonly result$ = new Subject<boolean>();
 

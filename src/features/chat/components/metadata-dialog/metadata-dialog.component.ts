@@ -15,7 +15,6 @@ export interface MetadataDialogResult {
 
 @Component({
   selector: 'app-metadata-dialog',
-  standalone: true,
   imports: [DialogShellComponent, ButtonDirective, TooltipDirective],
   templateUrl: './metadata-dialog.component.html',
   styleUrls: ['./metadata-dialog.component.css'],

@@ -42,14 +42,14 @@ export class DialogService {
     const componentRef = this.createDialogComponent(PromptDialogComponent);
     const dialog = componentRef.instance;
     
-    dialog.title = config.title;
-    dialog.message = config.message ?? '';
-    dialog.initialValue = config.initialValue ?? '';
-    dialog.placeholder = config.placeholder ?? '';
-    dialog.inputType = config.inputType ?? 'text';
-    dialog.confirmLabel = config.confirmLabel ?? 'OK';
-    dialog.cancelLabel = config.cancelLabel ?? 'Cancel';
-    dialog.inputValue.set(config.initialValue ?? '');
+    componentRef.setInput('title', config.title);
+    componentRef.setInput('message', config.message ?? '');
+    componentRef.setInput('initialValue', config.initialValue ?? '');
+    componentRef.setInput('placeholder', config.placeholder ?? '');
+    componentRef.setInput('inputType', config.inputType ?? 'text');
+    componentRef.setInput('confirmLabel', config.confirmLabel ?? 'OK');
+    componentRef.setInput('cancelLabel', config.cancelLabel ?? 'Cancel');
+    // inputValue will be synced via effect from initialValue input
 
     const result = await firstValueFrom(dialog.result$);
     this.destroyDialog(componentRef);
@@ -60,11 +60,11 @@ export class DialogService {
     const componentRef = this.createDialogComponent(ConfirmDialogComponent);
     const dialog = componentRef.instance;
     
-    dialog.title = config.title;
-    dialog.message = config.message;
-    dialog.confirmLabel = config.confirmLabel ?? 'Confirm';
-    dialog.cancelLabel = config.cancelLabel ?? 'Cancel';
-    dialog.danger = config.danger ?? false;
+    componentRef.setInput('title', config.title);
+    componentRef.setInput('message', config.message);
+    componentRef.setInput('confirmLabel', config.confirmLabel ?? 'Confirm');
+    componentRef.setInput('cancelLabel', config.cancelLabel ?? 'Cancel');
+    componentRef.setInput('danger', config.danger ?? false);
 
     const result = await firstValueFrom(dialog.result$);
     this.destroyDialog(componentRef);
@@ -75,9 +75,9 @@ export class DialogService {
     const componentRef = this.createDialogComponent(AlertDialogComponent);
     const dialog = componentRef.instance;
     
-    dialog.title = config.title;
-    dialog.message = config.message;
-    dialog.confirmLabel = config.confirmLabel ?? 'OK';
+    componentRef.setInput('title', config.title);
+    componentRef.setInput('message', config.message);
+    componentRef.setInput('confirmLabel', config.confirmLabel ?? 'OK');
 
     await firstValueFrom(dialog.result$);
     this.destroyDialog(componentRef);

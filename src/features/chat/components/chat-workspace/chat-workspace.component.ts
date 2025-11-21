@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, input, OnDestroy, ViewChild, AfterViewInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, input, OnDestroy, viewChild, AfterViewInit } from '@angular/core';
 import { ChatMessage, ChatThread, Id } from '@models/chat';
 import { MessageListComponent } from '../message-list/message-list.component';
 import { ComposerComponent, ComposerSubmitPayload } from '../composer/composer.component';
@@ -22,7 +22,7 @@ import { ChatHeaderComponent } from '../chat-header/chat-header.component';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
-  @ViewChild('scrollContainer') private scrollContainer?: ElementRef<HTMLDivElement>;
+  private readonly scrollContainer = viewChild<ElementRef<HTMLDivElement>>('scrollContainer');
 
   public readonly thread = input<ChatThread | undefined>();
   public readonly hasThreads = input<boolean>(false);
@@ -96,9 +96,9 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
       if (msgs.length > 0 && msgs[msgs.length - 1].role === 'user') {
         this.userHasScrolledUp = false;
         setTimeout(() => {
-          const el = this.scrollContainer?.nativeElement;
-          if (el) {
-            el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+          const ref = this.scrollContainer();
+          if (ref) {
+            ref.nativeElement.scrollTo({ top: ref.nativeElement.scrollHeight, behavior: 'smooth' });
           }
         }, 50);
       }
@@ -107,8 +107,9 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
 
   ngAfterViewInit(): void {
     // Hook up the observer and scroll listener when the view renders
-    const el = this.scrollContainer?.nativeElement;
-    if (el) {
+    const ref = this.scrollContainer();
+    if (ref) {
+      const el = ref.nativeElement;
       // Add scroll listener to detect user scroll
       el.addEventListener('scroll', this.onScroll);
 
@@ -125,8 +126,9 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
   }
 
   private onScroll = () => {
-    const el = this.scrollContainer?.nativeElement;
-    if (!el) return;
+    const ref = this.scrollContainer();
+    if (!ref) return;
+    const el = ref.nativeElement;
     
     // Tolerance of 20px
     const isAtBottom = Math.abs(el.scrollHeight - el.scrollTop - el.clientHeight) < 20;
@@ -139,8 +141,9 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
   private scrollToBottomIfPinned(): void {
     if (this.userHasScrolledUp) return;
 
-    const el = this.scrollContainer?.nativeElement;
-    if (!el) return;
+    const ref = this.scrollContainer();
+    if (!ref) return;
+    const el = ref.nativeElement;
 
     el.scrollTo({ top: el.scrollHeight, behavior: 'instant' }); 
     // Use 'instant' during streaming for performance, 'smooth' only for new user messages
@@ -148,9 +151,9 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
 
   ngOnDestroy(): void {
     this.resizeObserver?.disconnect();
-    const el = this.scrollContainer?.nativeElement;
-    if (el) {
-      el.removeEventListener('scroll', this.onScroll);
+    const ref = this.scrollContainer();
+    if (ref) {
+      ref.nativeElement.removeEventListener('scroll', this.onScroll);
     }
   }
   protected readonly currentThreadContextSet = computed(() => {

@@ -8,7 +8,6 @@ import { TooltipDirective } from '@shared/ui/tooltip/tooltip.directive';
 
 @Component({
   selector: 'app-backup-restore',
-  standalone: true,
   imports: [SettingsSectionComponent, ButtonDirective, TooltipDirective],
   templateUrl: './backup-restore.component.html',
   styleUrl: './backup-restore.component.css',

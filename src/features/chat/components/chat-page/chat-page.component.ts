@@ -22,7 +22,7 @@ export class ChatPageComponent {
   private readonly dialogService = inject(DialogService);
   private readonly router = inject(Router);
   private readonly messageState = inject(MessageStateService);
-  public readonly layoutService = inject(LayoutService);
+  protected readonly layoutService = inject(LayoutService);
 
   public readonly threadId = input<string | undefined>();
 
