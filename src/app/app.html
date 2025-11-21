@@ -1,12 +1,12 @@
 <div class="app-shell" data-testid="app-shell">
   <header class="app-shell__header">
-    <a routerLink="/chat" class="brand">
-      <span class="brand__mark">PS</span>
-      <span class="brand__copy">
+    <div class="brand">
+      <a href="https://ponderingsilver.com/resume/" target="_blank" rel="noopener noreferrer" class="brand__mark">PS</a>
+      <a routerLink="/chat" class="brand__copy">
         <strong>Conversations Woven</strong>
         <small>Context-first workspace</small>
-      </span>
-    </a>
+      </a>
+    </div>
 
     <nav class="primary-nav" aria-label="Primary">
       <a routerLink="/chat" routerLinkActive="active">Chat</a>
@@ -28,4 +28,6 @@
   <main class="app-shell__content">
     <router-outlet />
   </main>
+  
+  <app-loading-overlay />
 </div>

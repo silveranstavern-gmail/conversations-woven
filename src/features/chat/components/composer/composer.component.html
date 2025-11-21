@@ -1,65 +1,37 @@
-<section class="composer surface-card">
-  <div class="composer__model">
-    <label>
-      <span>Model</span>
-      <app-model-selector
-        [disabled]="disabled() || models().length === 0"
-        [selectedModelId]="selectedModelId()"
-        (modelSelected)="onModelChange($event)"
-      />
-    </label>
+<div class="composer-shell" [class.disabled]="disabled()">
+  
+  <textarea
+    #textarea
+    class="composer-input"
+    [placeholder]="placeholderText()"
+    [value]="draft()"
+    [disabled]="disabled()"
+    (input)="onDraftInput($event)"
+    (keydown)="onKeydown($event)"
+    rows="1"
+  ></textarea>
 
-    @if (activeModel(); as model) {
-      <div class="composer__model-meta">
-        <p class="composer__model-provider text-muted">
-          {{ model.adapterLabel }}
-        </p>
-
-        <div class="composer__model-capabilities" aria-label="Model capabilities">
-          <span
-            class="badge composer__capability"
-            [class.composer__capability--off]="!model.capabilities.streaming"
-          >
-            Streaming
-          </span>
-        </div>
-
-        <p class="composer__model-tokens text-muted">
-          Max {{ model.capabilities.maxTokens | number: '1.0-0' }} tokens
-        </p>
-      </div>
-    }
-  </div>
-
-  <div class="composer__input">
-    <textarea
-      [placeholder]="placeholderText()"
-      [value]="draft()"
-      [disabled]="disabled()"
-      (input)="onDraftInput($event)"
-      (keydown)="onKeydown($event)"
-      rows="3"
-    ></textarea>
-  </div>
-
-  <div class="composer__actions">
-    <span
-      appTooltip
-      [disabled]="disabled() || !selectedModelId() || !isUnlocked()"
-      [hasKeys]="storedProviders().length > 0"
-      position="top"
-      align="end"
-      size="md"
-    >
-      <button
-        type="button"
-        appButton
-        variant="primary"
-        [disabled]="disabled() || !selectedModelId() || !isUnlocked()"
-        (click)="onSubmit()"
+  <div class="composer-footer">
+    <div class="composer-actions">
+      <span 
+        appTooltip 
+        [requiresUnlock]="true"
+        [disabled]="isSendDisabled()" 
+        [message]="sendTooltipMessage()"
+        position="top" 
+        align="center" 
+        size="sm"
       >
-        Send
-      </button>
-    </span>
+        <button 
+          class="send-btn"
+          type="button"
+          [disabled]="isSendDisabled()"
+          (click)="onSubmit()"
+          aria-label="Send Message"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+        </button>
+      </span>
+    </div>
   </div>
-</section>
+</div>

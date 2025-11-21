@@ -3,18 +3,72 @@
   line-height: 1.6;
   color: var(--color-text);
   word-break: break-word;
+  overflow-wrap: break-word;
+  /* Ensure container doesn't overflow horizontally */
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-y: visible;
 }
 
+/* Code blocks - wrap instead of scroll (Typora-style) */
 .markdown pre {
   background: color-mix(in oklch, var(--color-surface-2) 80%, transparent);
   padding: 0.85rem;
   border-radius: var(--radius-sm);
-  overflow-x: auto;
+  /* Wrap long lines instead of scrolling */
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  /* Prevent horizontal overflow */
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-y: visible;
 }
 
+/* Inline code - wrap if needed, preserve spacing */
 .markdown code {
   font-family: var(--font-family-mono);
   font-size: 0.85rem;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Code inside pre blocks - ensure wrapping while preserving code structure */
+.markdown pre code {
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  display: block;
+  max-width: 100%;
+}
+
+/* Tables - wrap content but allow horizontal scroll for very wide tables */
+.markdown table {
+  width: 100%;
+  max-width: 100%;
+  border-collapse: collapse;
+  overflow-x: auto;
+  display: block;
+}
+
+.markdown table thead,
+.markdown table tbody {
+  display: table;
+  width: 100%;
+  table-layout: auto;
+}
+
+.markdown table tr {
+  display: table-row;
+}
+
+.markdown table th,
+.markdown table td {
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 0; /* Force table to respect width constraints */
 }
 
 .markdown h1,
@@ -23,8 +77,23 @@
 .markdown h4 {
   margin-top: 1.2em;
   margin-bottom: 0.6em;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .markdown ul {
   padding-left: 1.3rem;
+}
+
+/* Ensure images don't overflow */
+.markdown img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Ensure blockquotes wrap */
+.markdown blockquote {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
 }

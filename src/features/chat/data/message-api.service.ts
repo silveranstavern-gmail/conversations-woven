@@ -79,17 +79,19 @@ export class MessageApiService {
         turns = this.messageState.buildChatTurns(threadId);
       }
 
-      // Prepend system prompt if it exists (only if not already in turns)
+      // Sandwich system prompt: add at start and end (only if not already in turns)
       const thread = this.threads.getThreadSnapshot(threadId);
       if (thread?.systemPrompt && !turns.some((t) => t.role === 'system')) {
         turns = [
           { role: 'system', content: thread.systemPrompt },
-          ...turns
+          ...turns,
+          { role: 'system', content: thread.systemPrompt }
         ];
       }
 
+      // Don't pass system via opts since we're managing it in the turns array
+      // This prevents duplicate system messages at the start
       const stream = await this.adapters.streamModel(model.id, turns, {
-        system: thread?.systemPrompt,
         temperature: thread?.temperature
       });
       let workingAssistant = assistantMessage;

@@ -82,7 +82,7 @@
     </div>
 
     <div class="models__header-actions">
-      <span appTooltip [disabled]="false" message="No enabled models to disable" position="bottom" align="center" size="sm">
+      <span appTooltip [disabled]="hasActiveFilters() ? filteredEnabledCount() === 0 : enabledCount() === 0" message="No enabled models to disable" position="bottom" align="center" size="sm">
         <button
           type="button"
           appButton
@@ -93,7 +93,7 @@
           {{ disableAllLabel() }}
         </button>
       </span>
-      <span appTooltip [disabled]="false" message="No free models available or all free models are already enabled" position="bottom" align="center" size="md">
+      <span appTooltip [disabled]="freeModelsCount() === 0 || enabledFreeCount() === freeModelsCount()" message="No free models available or all free models are already enabled" position="bottom" align="center" size="md">
         <button
           type="button"
           appButton
@@ -104,7 +104,7 @@
           Enable free
         </button>
       </span>
-      <span appTooltip [disabled]="false" message="No disabled models to enable" position="bottom" align="center" size="sm">
+      <span appTooltip [disabled]="hasActiveFilters() ? filteredDisabledCount() === 0 : disabledCount() === 0" message="No disabled models to enable" position="bottom" align="center" size="sm">
         <button
           type="button"
           appButton

@@ -13,6 +13,14 @@
   gap: var(--space-4);
 }
 
+.thread-list__header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+}
+
 .thread-list__title {
   margin: 0;
   font-weight: 600;
@@ -53,15 +61,6 @@
   gap: var(--space-3);
 }
 
-.thread-list__selection-count {
-  color: var(--color-muted);
-}
-
-.thread-list__selection-count--active {
-  color: var(--color-text);
-  font-weight: 600;
-}
-
 .thread-list__bulk {
   display: flex;
   align-items: center;
@@ -71,11 +70,6 @@
   border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
   background: color-mix(in oklch, var(--color-border) 10%, transparent);
-}
-
-.thread-list__bulk p {
-  margin: 0;
-  font-weight: 600;
 }
 
 .thread-list__bulk-actions {
@@ -164,6 +158,12 @@
   gap: 0.1rem;
 }
 
+.thread-list__item-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .thread-list__item-title {
   margin: 0;
   font-weight: 600;
@@ -194,6 +194,15 @@
   padding: 0.15rem 0.4rem;
   min-width: auto;
   font-size: 0.75rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text);
+  border-radius: var(--radius-sm);
+}
+
+.thread-list__item-menu-trigger:hover {
+  background-color: var(--color-surface-hover);
 }
 
 .thread-list__item-menu {
@@ -228,4 +237,22 @@
   border-radius: var(--radius-sm);
   border: none;
   color: var(--color-muted);
+}
+
+/* Collapsed state adjustments when parent sidebar is closed */
+:host-context(.chat-layout__sidebar-wrapper--left.chat-layout__sidebar-wrapper--collapsed) .thread-list {
+  padding: var(--space-4) 0;
+}
+
+:host-context(.chat-layout__sidebar-wrapper--left.chat-layout__sidebar-wrapper--collapsed) .thread-list__header {
+  justify-content: center;
+  border-bottom: none;
+}
+
+:host-context(.chat-layout__sidebar-wrapper--left.chat-layout__sidebar-wrapper--collapsed) .thread-list__header-top button:first-child,
+:host-context(.chat-layout__sidebar-wrapper--left.chat-layout__sidebar-wrapper--collapsed) .thread-list__search,
+:host-context(.chat-layout__sidebar-wrapper--left.chat-layout__sidebar-wrapper--collapsed) .thread-list__selection-toolbar,
+:host-context(.chat-layout__sidebar-wrapper--left.chat-layout__sidebar-wrapper--collapsed) .thread-list__bulk,
+:host-context(.chat-layout__sidebar-wrapper--left.chat-layout__sidebar-wrapper--collapsed) .thread-list__items {
+  display: none;
 }

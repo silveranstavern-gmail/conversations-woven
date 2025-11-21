@@ -1,0 +1,173 @@
+.chat-options {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--color-surface);
+  border-left: 1px solid var(--color-border);
+  white-space: normal;
+}
+
+.chat-options__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  justify-content: flex-start;
+  padding: var(--space-4) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  transition: padding 0.3s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.chat-options__title {
+  margin: 0;
+  margin-left: auto;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text);
+  transition: opacity 0.2s ease-in-out, width 0.3s cubic-bezier(0.2, 0, 0, 1);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.chat-options__content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-4);
+  transition: opacity 0.2s ease-in-out;
+}
+
+.chat-options__field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.chat-options__label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.chat-options__hint {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--color-muted);
+}
+
+.chat-options__textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-base);
+  color: var(--color-text);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  resize: vertical;
+  min-height: 100px;
+  line-height: 1.5;
+}
+
+.chat-options__textarea:focus {
+  outline: none;
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px var(--color-brand-subtle);
+}
+
+.chat-options__slider-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chat-options__slider {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-surface-hover);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.chat-options__slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-brand);
+  cursor: pointer;
+  transition: filter 0.2s;
+}
+
+.chat-options__slider::-webkit-slider-thumb:hover {
+  filter: brightness(1.15);
+}
+
+.chat-options__slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-brand);
+  cursor: pointer;
+  border: none;
+  transition: filter 0.2s;
+}
+
+.chat-options__slider::-moz-range-thumb:hover {
+  filter: brightness(1.15);
+}
+
+.chat-options__slider-value {
+  min-width: 40px;
+  text-align: right;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.chat-options__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: var(--space-4);
+  text-align: center;
+}
+
+/* When parent sidebar is collapsed, hide content and adjust header */
+:host-context(.chat-layout__sidebar-wrapper--right.chat-layout__sidebar-wrapper--collapsed) .chat-options {
+  background-color: var(--color-surface-hover);
+}
+
+:host-context(.chat-layout__sidebar-wrapper--right.chat-layout__sidebar-wrapper--collapsed) .chat-options__title {
+  display: none;
+}
+
+:host-context(.chat-layout__sidebar-wrapper--right.chat-layout__sidebar-wrapper--collapsed) .chat-options__content {
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+  height: 0;
+}
+
+:host-context(.chat-layout__sidebar-wrapper--right.chat-layout__sidebar-wrapper--collapsed) .chat-options__header {
+  padding: var(--space-4) 0;
+  justify-content: center;
+  border-bottom: none;
+}
+
+:host-context(.chat-layout__sidebar-wrapper--right.chat-layout__sidebar-wrapper--collapsed) .chat-options__header button {
+  transition: background-color 0.2s ease-in-out;
+}
+
+:host-context(.chat-layout__sidebar-wrapper--right.chat-layout__sidebar-wrapper--collapsed) .chat-options__header button:hover {
+  background-color: var(--color-surface);
+}
+

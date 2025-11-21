@@ -122,6 +122,10 @@
   box-sizing: border-box;
 }
 
+html {
+  height: 100%;
+}
+
 /* Global Reset Improvements */
 body {
   background-color: var(--color-base);
@@ -130,10 +134,12 @@ body {
   font-size: calc(14px * var(--font-scale)); /* Slightly smaller base font for density */
   -webkit-font-smoothing: antialiased;
   margin: 0;
+  height: 100%;
 }
 
 app-root {
-  min-height: 100vh;
+  height: 100%;
+  display: block;
   background: radial-gradient(circle at top right, color-mix(in oklch, var(--color-brand) 30%, transparent), transparent 55%),
     var(--color-base);
 }

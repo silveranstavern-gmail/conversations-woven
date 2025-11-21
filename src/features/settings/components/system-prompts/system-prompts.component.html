@@ -53,7 +53,7 @@
               (modelSelected)="onModelChange($event)"
             />
           </label>
-          @if (compactor().modelId === 'default' && effectiveModelLabel()) {
+          @if (effectiveModelLabel()) {
             <p class="text-muted small">
               Currently using: {{ effectiveModelLabel() }}
             </p>
@@ -130,7 +130,7 @@
               (modelSelected)="onMetadataModelChange($event)"
             />
           </label>
-          @if (metadata().modelId === 'default' && effectiveModelLabel()) {
+          @if (effectiveModelLabel()) {
             <p class="text-muted small">
               Currently using: {{ effectiveModelLabel() }}
             </p>

@@ -1,64 +1,65 @@
-.composer {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  border-radius: var(--radius-md);
-}
-
-.composer__model {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.composer__model select {
-  margin-top: 0.25rem;
-  padding: 0.4rem;
-  border-radius: var(--radius-sm);
+.composer-shell {
+  background-color: var(--color-surface);
   border: 1px solid var(--color-border);
-}
-
-.composer__model-meta {
+  border-radius: var(--radius-lg);
+  padding: 0.75rem;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.5rem;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.composer__model-provider {
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+.composer-shell:focus-within {
+  border-color: var(--color-brand);
+  box-shadow: var(--shadow-md);
 }
 
-.composer__model-capabilities {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-}
-
-.composer__capability {
-  font-size: 0.75rem;
-}
-
-.composer__capability--off {
-  opacity: 0.55;
-}
-
-.composer__model-tokens {
-  font-size: 0.9rem;
-}
-
-.composer__input textarea {
+.composer-input {
   width: 100%;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-  padding: var(--space-3);
-  resize: vertical;
-  font-family: var(--font-family-mono);
+  background: transparent;
+  border: none;
+  resize: none; /* Handled by autosize logic */
+  padding: 0.5rem;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  max-height: 200px;
+  overflow-y: hidden;
+  outline: none;
+  min-height: 1.5rem;
+  line-height: 1.5;
 }
 
-.composer__actions {
+.composer-footer {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  padding: 0 0.25rem;
+}
+
+.composer-actions {
+  display: flex;
+  align-items: center;
+}
+
+/* Send Button */
+.send-btn {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-brand);
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.send-btn:disabled {
+  background-color: var(--color-border);
+  cursor: not-allowed;
+}
+.send-btn:active {
+  transform: scale(0.95);
 }

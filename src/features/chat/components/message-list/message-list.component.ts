@@ -1,4 +1,3 @@
-import { ScrollingModule } from '@angular/cdk/scrolling';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { ChatMessage, Id } from '@models/chat';
 import { MessageItemComponent } from '../message-item/message-item.component';
@@ -6,14 +5,12 @@ import { MessageItemComponent } from '../message-item/message-item.component';
 @Component({
   selector: 'app-message-list',
   standalone: true,
-  imports: [ScrollingModule, MessageItemComponent],
+  imports: [MessageItemComponent],
   templateUrl: './message-list.component.html',
   styleUrl: './message-list.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MessageListComponent {
-  private static readonly ITEM_SIZE = 160;
-
   public readonly messages = input<ChatMessage[]>([]);
   public readonly activeMessageId = input<Id | null>(null);
   public readonly selectedIds = input<Id[]>([]);
@@ -28,7 +25,6 @@ export class MessageListComponent {
   public readonly updateMessage = output<{ id: Id; content: string }>();
   public readonly contextSelectionChange = output<{ messageId: Id; included: boolean }>();
 
-  protected readonly itemSize = MessageListComponent.ITEM_SIZE;
   protected readonly selectedSet = computed(() => new Set(this.selectedIds()));
 
   protected readonly trackById = (_: number, item: ChatMessage): Id => item.id;

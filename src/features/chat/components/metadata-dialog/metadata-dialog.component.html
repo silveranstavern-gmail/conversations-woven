@@ -61,8 +61,8 @@
   <div class="dialog-footer-content">
     <span
       appTooltip
-      [disabled]="isGenerating() || !threadId || messages.length === 0 || !isUnlocked()"
-      [hasKeys]="storedProviders().length > 0"
+      [requiresUnlock]="true"
+      [disabled]="isGenerating() || !threadId || messages.length === 0"
       [isProcessing]="isGenerating()"
       [isEmpty]="!threadId || messages.length === 0"
       position="top"

@@ -34,6 +34,7 @@ export class ThreadListComponent {
 
   public readonly threads = input<ChatThread[]>([]);
   public readonly activeThreadId = input<Id | null>(null);
+  public readonly isSidebarOpen = input<boolean>(true);
   public readonly threadSelected = output<Id>();
   public readonly createThread = output<void>();
   public readonly renameThread = output<Id>();
@@ -44,6 +45,7 @@ export class ThreadListComponent {
   public readonly bulkDelete = output<Id[]>();
   public readonly bulkPin = output<{ ids: Id[]; pinned: boolean }>();
   public readonly bulkProtect = output<{ ids: Id[]; protected: boolean }>();
+  public readonly closeSidebar = output<void>();
 
   protected readonly term = signal('');
   protected readonly selectedIds = signal<Id[]>([]);
@@ -138,6 +140,10 @@ export class ThreadListComponent {
 
   protected onCreateThread(): void {
     this.createThread.emit();
+  }
+
+  protected onCloseSidebar(): void {
+    this.closeSidebar.emit();
   }
 
   protected onRenameThread(event: Event, threadId: Id): void {

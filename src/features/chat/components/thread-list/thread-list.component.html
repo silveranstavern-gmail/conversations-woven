@@ -1,24 +1,29 @@
 <section class="thread-list" aria-label="Conversation threads">
   <header class="thread-list__header">
-    <div>
-      <p class="thread-list__title">Conversations</p>
-      <p class="thread-list__meta text-muted">
-        {{ threads().length }} total · {{ pinnedCount() }} pinned
-      </p>
-    </div>
-
-    <div class="thread-list__header-actions">
-      <button type="button" appButton variant="primary" (click)="onCreateThread()">
-        + New Chat
+    <div class="thread-list__header-top">
+      <button type="button" appButton variant="ghost" size="icon" (click)="onCreateThread()" title="New Chat">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
       </button>
+      <span appTooltip [disabled]="!isSidebarOpen()" message="Sidebar is already closed" position="bottom" align="center" size="sm">
+        <button
+          type="button"
+          appButton
+          variant="ghost"
+          size="icon"
+          (click)="onCloseSidebar()"
+          title="Close Sidebar"
+          [disabled]="!isSidebarOpen()"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>
+        </button>
+      </span>
     </div>
   </header>
 
   <label class="thread-list__search">
-    <span class="visually-hidden">Search threads</span>
     <input
       type="search"
-      placeholder="Search or filter..."
+      placeholder="Search threads..."
       (input)="onFilterChange($event)"
       autocomplete="off"
     />
@@ -36,9 +41,6 @@
     </label>
 
     <div class="thread-list__selection-actions">
-      <span class="thread-list__selection-count" [class.thread-list__selection-count--active]="hasSelection()">
-        {{ selectedCount() }} selected
-      </span>
       <span appTooltip [disabled]="!hasSelection()" [hasSelection]="hasSelection()" message="No selection to clear" position="top" align="center" size="sm">
         <button
           type="button"
@@ -56,7 +58,6 @@
 
   @if (hasSelection()) {
     <div class="thread-list__bulk">
-      <p>{{ selectedCount() }} selected</p>
       <div class="thread-list__bulk-actions">
         <button type="button" appButton variant="ghost" size="sm" (click)="onBulkPin(true)">
           Pin
@@ -134,39 +135,39 @@
 
           <!-- Content -->
           <div class="thread-list__item-content">
-            <p class="thread-list__item-title">{{ thread.title }}</p>
-            <p class="thread-list__item-meta">
-              {{ thread.messageCount }} messages · Updated {{ thread.updatedAt | date: 'short' }}
-            </p>
+            <div class="thread-list__item-row">
+              <span class="thread-list__item-title">{{ thread.title }}</span>
+            </div>
+            <div class="thread-list__item-meta">
+              {{ thread.updatedAt | date: 'shortDate' }}
+            </div>
           </div>
 
-          <!-- Actions Menu -->
-          <div class="thread-list__item-actions">
-            <button type="button" appButton variant="ghost" size="sm" class="thread-list__item-menu-trigger" (click)="onToggleMenu($event, thread.id)">
-              ...
-            </button>
-            @if (openMenuThreadId() === thread.id) {
-              <div class="thread-list__item-menu" (click)="$event.stopPropagation()">
-                <button type="button" appButton variant="ghost" size="sm" (click)="onRenameThread($event, thread.id)">
-                  Rename
+          <!-- Actions Menu Trigger -->
+          <button type="button" class="thread-list__item-menu-trigger" (click)="onToggleMenu($event, thread.id)">...</button>
+          @if (openMenuThreadId() === thread.id) {
+            <div class="thread-list__item-menu" (click)="$event.stopPropagation()">
+              <button type="button" appButton variant="ghost" size="sm" (click)="onRenameThread($event, thread.id)">
+                Rename
+              </button>
+              <span appTooltip [disabled]="!isUnlocked()" [hasKeys]="storedProviders().length > 0" position="right" align="end" size="md">
+                <button type="button" appButton variant="ghost" size="sm" (click)="onGenerateMetadata($event, thread.id)" [disabled]="!isUnlocked()">
+                  Generate Metadata
                 </button>
-                <span appTooltip [disabled]="!isUnlocked()" [hasKeys]="storedProviders().length > 0" position="right" align="end" size="md">
-                  <button type="button" appButton variant="ghost" size="sm" (click)="onGenerateMetadata($event, thread.id)" [disabled]="!isUnlocked()">
-                    Generate Metadata
-                  </button>
-                </span>
-                <button type="button" appButton variant="ghost" size="sm" (click)="onTogglePin($event, thread.id, !(thread.pinned ?? false))">
-                  {{ thread.pinned ? 'Unpin' : 'Pin' }}
-                </button>
-                <button type="button" appButton variant="ghost" size="sm" (click)="onToggleProtection($event, thread.id, !(thread.protected ?? false))">
-                  {{ thread.protected ? 'Unprotect' : 'Protect' }}
-                </button>
-                <button type="button" appButton variant="danger" size="sm" (click)="onDeleteThread($event, thread.id)" [disabled]="thread.protected" [attr.title]="thread.protected ? 'Unprotect before deleting' : null">
+              </span>
+              <button type="button" appButton variant="ghost" size="sm" (click)="onTogglePin($event, thread.id, !(thread.pinned ?? false))">
+                {{ thread.pinned ? 'Unpin' : 'Pin' }}
+              </button>
+              <button type="button" appButton variant="ghost" size="sm" (click)="onToggleProtection($event, thread.id, !(thread.protected ?? false))">
+                {{ thread.protected ? 'Unprotect' : 'Protect' }}
+              </button>
+              <span appTooltip [disabled]="thread.protected" message="Unprotect before deleting" position="right" align="end" size="sm">
+                <button type="button" appButton variant="danger" size="sm" (click)="onDeleteThread($event, thread.id)" [disabled]="thread.protected">
                   Delete
                 </button>
-              </div>
-            }
-          </div>
+              </span>
+            </div>
+          }
         </article>
       }
     }

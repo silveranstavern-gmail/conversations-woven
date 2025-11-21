@@ -1,0 +1,83 @@
+<aside class="chat-options">
+  <header class="chat-options__header">
+    <button 
+      type="button" 
+      appButton 
+      variant="ghost" 
+      size="icon" 
+      (click)="handleToggleRightSidebar()"
+      [title]="isRightSidebarOpen() ? 'Close Sidebar' : 'Open Sidebar'"
+    >
+      @if (isRightSidebarOpen()) {
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>
+      } @else {
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 17-5-5 5-5"/><path d="m11 17-5-5 5-5"/></svg>
+      }
+    </button>
+    @if (isRightSidebarOpen()) {
+      <h2 class="chat-options__title">Run Settings</h2>
+    }
+  </header>
+
+  <div class="chat-options__content">
+    @if (thread(); as current) {
+      <!-- Model Selector -->
+      <div class="chat-options__field">
+        <label class="chat-options__label" for="model-selector">
+          Model
+          <span class="chat-options__hint">Choose the AI model for this conversation</span>
+        </label>
+        <app-model-selector
+          id="model-selector"
+          [selectedModelId]="preferredModelId()"
+          [disabled]="false"
+          (modelSelected)="handleModelSelected($event)"
+        />
+      </div>
+
+      <!-- System Instructions -->
+      <div class="chat-options__field">
+        <label class="chat-options__label" for="system-prompt">
+          System Instructions
+          <span class="chat-options__hint">Optional instructions that guide the AI's behavior</span>
+        </label>
+        <textarea
+          id="system-prompt"
+          class="chat-options__textarea"
+          [value]="systemPromptDraftValue()"
+          (input)="handleSystemPromptChange($event)"
+          (blur)="handleSaveSettings()"
+          placeholder="You are a helpful assistant..."
+          rows="4"
+        ></textarea>
+      </div>
+
+      <!-- Temperature -->
+      <div class="chat-options__field">
+        <label class="chat-options__label" for="temperature">
+          Temperature
+          <span class="chat-options__hint">Controls randomness (0.0 = deterministic, 2.0 = creative)</span>
+        </label>
+        <div class="chat-options__slider-container">
+          <input
+            id="temperature"
+            type="range"
+            class="chat-options__slider"
+            min="0"
+            max="2"
+            step="0.1"
+            [value]="temperatureDraftValue() ?? temperature()"
+            (input)="handleTemperatureChange($event)"
+            (change)="handleSaveSettings()"
+          />
+          <span class="chat-options__slider-value">{{ (temperatureDraftValue() ?? temperature()).toFixed(1) }}</span>
+        </div>
+      </div>
+    } @else {
+      <div class="chat-options__empty">
+        <p class="text-muted">Select a conversation to configure settings</p>
+      </div>
+    }
+  </div>
+</aside>
+

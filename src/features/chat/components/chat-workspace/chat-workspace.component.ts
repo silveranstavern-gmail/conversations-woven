@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, input, OnDestroy, ViewChild, AfterViewInit } from '@angular/core';
 import { ChatMessage, ChatThread, Id } from '@models/chat';
 import { MessageListComponent } from '../message-list/message-list.component';
 import { ComposerComponent, ComposerSubmitPayload } from '../composer/composer.component';
@@ -8,18 +8,22 @@ import { MessageApiService } from '../../data/message-api.service';
 import { ChatActionsService } from '../../data/chat-actions.service';
 import { ChatAdaptersService } from '../../data/chat-adapters.service';
 import { ChatThreadsService } from '../../data/chat-threads.service';
+import { KeychainService } from '@core/services/keychain.service';
 import { DialogService } from '@core/services/dialog.service';
 import { ButtonDirective } from '@shared/ui/button/button.directive';
 import { TooltipDirective } from '@shared/ui/tooltip/tooltip.directive';
+import { ChatHeaderComponent } from '../chat-header/chat-header.component';
 
 @Component({
   selector: 'app-chat-workspace',
-  imports: [MessageListComponent, ComposerComponent, ButtonDirective, TooltipDirective],
+  imports: [MessageListComponent, ComposerComponent, ButtonDirective, TooltipDirective, ChatHeaderComponent],
   templateUrl: './chat-workspace.component.html',
   styleUrl: './chat-workspace.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ChatWorkspaceComponent {
+export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
+  @ViewChild('scrollContainer') private scrollContainer?: ElementRef<HTMLDivElement>;
+
   public readonly thread = input<ChatThread | undefined>();
   public readonly hasThreads = input<boolean>(false);
 
@@ -29,13 +33,16 @@ export class ChatWorkspaceComponent {
   private readonly chatActions = inject(ChatActionsService);
   private readonly adapters = inject(ChatAdaptersService);
   private readonly threads = inject(ChatThreadsService);
+  private readonly keychain = inject(KeychainService);
   private readonly dialogService = inject(DialogService);
+
+  protected readonly isUnlocked = this.keychain.isUnlocked;
+  protected readonly storedProviders = this.keychain.storedProviders;
 
   protected readonly messages = this.messageState.messages;
   protected readonly activeMessageId = this.messageState.activeMessageId;
   protected readonly isLoading = this.messageState.isLoading;
   protected readonly isStreaming = this.messageState.isStreaming;
-  protected readonly models = this.adapters.models;
   protected readonly selectedMessageIds = this.selectionState.selectedMessageIds;
   protected readonly selectionCount = this.selectionState.selectionCount;
   protected readonly hasSelection = this.selectionState.hasSelection;
@@ -47,7 +54,7 @@ export class ChatWorkspaceComponent {
     if (!currentThread) {
       return null;
     }
-    const available = this.models();
+    const available = this.adapters.models();
     // First check thread's preferred model
     const threadPreferred = currentThread.preferredModelId;
     if (threadPreferred && available.some((model) => model.id === threadPreferred)) {
@@ -77,6 +84,75 @@ export class ChatWorkspaceComponent {
   );
 
   protected readonly isContextSelectionActive = this.selectionState.isContextSelectionActive.asReadonly();
+
+  // ResizeObserver for auto-scroll optimization
+  private resizeObserver?: ResizeObserver;
+  private userHasScrolledUp = false;
+
+  constructor() {
+    // Handle new user messages - always scroll to bottom and reset scroll flag
+    effect(() => {
+      const msgs = this.messages();
+      if (msgs.length > 0 && msgs[msgs.length - 1].role === 'user') {
+        this.userHasScrolledUp = false;
+        setTimeout(() => {
+          const el = this.scrollContainer?.nativeElement;
+          if (el) {
+            el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+          }
+        }, 50);
+      }
+    });
+  }
+
+  ngAfterViewInit(): void {
+    // Hook up the observer and scroll listener when the view renders
+    const el = this.scrollContainer?.nativeElement;
+    if (el) {
+      // Add scroll listener to detect user scroll
+      el.addEventListener('scroll', this.onScroll);
+
+      // Create observer to watch the *inner* container or the last element
+      this.resizeObserver = new ResizeObserver(() => {
+        this.scrollToBottomIfPinned();
+      });
+      
+      // Observe the container's first child (the stream container)
+      if (el.firstElementChild) {
+        this.resizeObserver.observe(el.firstElementChild);
+      }
+    }
+  }
+
+  private onScroll = () => {
+    const el = this.scrollContainer?.nativeElement;
+    if (!el) return;
+    
+    // Tolerance of 20px
+    const isAtBottom = Math.abs(el.scrollHeight - el.scrollTop - el.clientHeight) < 20;
+    
+    // If user is NOT at bottom, we mark them as having scrolled up
+    // If they ARE at bottom, we reset it (they are pinned again)
+    this.userHasScrolledUp = !isAtBottom;
+  }
+
+  private scrollToBottomIfPinned(): void {
+    if (this.userHasScrolledUp) return;
+
+    const el = this.scrollContainer?.nativeElement;
+    if (!el) return;
+
+    el.scrollTo({ top: el.scrollHeight, behavior: 'instant' }); 
+    // Use 'instant' during streaming for performance, 'smooth' only for new user messages
+  }
+
+  ngOnDestroy(): void {
+    this.resizeObserver?.disconnect();
+    const el = this.scrollContainer?.nativeElement;
+    if (el) {
+      el.removeEventListener('scroll', this.onScroll);
+    }
+  }
   protected readonly currentThreadContextSet = computed(() => {
     const threadId = this.thread()?.id;
     if (!threadId) {
@@ -101,14 +177,6 @@ export class ChatWorkspaceComponent {
       return;
     }
     void this.messageApi.sendUserMessage(payload.content, payload.modelId, threadId);
-  }
-
-  protected handleModelSelected(modelId: string): void {
-    const current = this.thread();
-    if (!current) {
-      return;
-    }
-    void this.threads.setPreferredModel(current.id, modelId);
   }
 
   protected handleCopyMessage(messageId: Id): void {
@@ -194,19 +262,6 @@ export class ChatWorkspaceComponent {
     this.downloadTextFile(markdown, `${this.buildFilename(thread.title)}.md`);
   }
 
-  protected async handleOpenSettings(): Promise<void> {
-    const thread = this.thread();
-    if (!thread) {
-      return;
-    }
-    const settings = await this.dialogService.threadSettings({
-      systemPrompt: thread.systemPrompt,
-      temperature: thread.temperature
-    });
-    if (settings !== null) {
-      void this.threads.updateThreadSettings(thread.id, settings);
-    }
-  }
 
   protected async handleTitleClick(): Promise<void> {
     const thread = this.thread();

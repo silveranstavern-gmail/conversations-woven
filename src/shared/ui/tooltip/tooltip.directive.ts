@@ -35,13 +35,16 @@ export class TooltipDirective {
   public readonly message = input<string | null>(null);
   
   // Disabled state (can be passed in or auto-detected)
-  public readonly disabled = input<boolean | null>(null);
+  public readonly disabled = input<boolean | null | undefined>(null);
   
   // Additional context for determining disabled reason
-  public readonly hasKeys = input<boolean | null>(null);
-  public readonly hasSelection = input<boolean | null>(null);
-  public readonly isEmpty = input<boolean | null>(null);
-  public readonly isProcessing = input<boolean | null>(null);
+  public readonly hasKeys = input<boolean | null | undefined>(null);
+  public readonly hasSelection = input<boolean | null | undefined>(null);
+  public readonly isEmpty = input<boolean | null | undefined>(null);
+  public readonly isProcessing = input<boolean | null | undefined>(null);
+
+  // If true, the tooltip will consider the element disabled if the app is locked or has no keys
+  public readonly requiresUnlock = input(false);
 
   // Tooltip positioning and sizing configuration
   public readonly position = input<TooltipPosition>('top');
@@ -67,6 +70,17 @@ export class TooltipDirective {
   }
 
   protected readonly isDisabled = computed(() => {
+    // Check if disabled due to missing keys/lock when requiresUnlock is true
+    if (this.requiresUnlock()) {
+      const hasStoredKeys = this.storedProviders().length > 0;
+      const explicitHasKeys = this.hasKeys();
+      const hasKeysValue = explicitHasKeys !== null ? explicitHasKeys : hasStoredKeys;
+      
+      if (!this.isUnlocked() || !hasKeysValue) {
+        return true;
+      }
+    }
+
     const explicitDisabled = this.disabled();
     if (explicitDisabled !== null) {
       return explicitDisabled;
@@ -75,18 +89,20 @@ export class TooltipDirective {
   });
 
   protected readonly tooltipText = computed(() => {
-    // If custom message provided, always use it (show tooltip regardless of disabled state)
+    if (!this.isDisabled()) {
+      return null;
+    }
+
+    const priorityReason = this.getKeychainPriorityReason();
+    if (priorityReason) {
+      return priorityReason;
+    }
+
     const customMessage = this.message();
     if (customMessage) {
       return customMessage;
     }
 
-    // Only show tooltip if disabled (when no custom message)
-    if (!this.isDisabled()) {
-      return null;
-    }
-
-    // Determine disabled reason
     return this.getDisabledReason();
   });
 
@@ -100,10 +116,11 @@ export class TooltipDirective {
     const explicitHasKeys = this.hasKeys();
     const hasKeysValue = explicitHasKeys !== null ? explicitHasKeys : hasStoredKeys;
 
+    if (!hasKeysValue && (this.requiresUnlock() || !this.isUnlocked())) {
+      return 'An API key needs to be configured first to perform this action';
+    }
+
     if (!this.isUnlocked()) {
-      if (!hasKeysValue) {
-        return 'An API key needs to be configured first to perform this action';
-      }
       return 'Unlock the application to perform this action';
     }
 
@@ -125,6 +142,26 @@ export class TooltipDirective {
 
     // Default message
     return 'This action is currently unavailable';
+  }
+
+  private getKeychainPriorityReason(): string | null {
+    if (!this.requiresUnlock()) {
+      return null;
+    }
+
+    const hasStoredKeys = this.storedProviders().length > 0;
+    const explicitHasKeys = this.hasKeys();
+    const hasKeysValue = explicitHasKeys !== null ? explicitHasKeys : hasStoredKeys;
+
+    if (!hasKeysValue) {
+      return 'An API key needs to be configured first to perform this action';
+    }
+
+    if (!this.isUnlocked()) {
+      return 'Unlock the application to perform this action';
+    }
+
+    return null;
   }
 
   onEnter(): void {

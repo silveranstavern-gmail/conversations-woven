@@ -3,13 +3,16 @@ import { Router } from '@angular/router';
 import { Id } from '@models/chat';
 import { ChatWorkspaceComponent } from '../chat-workspace/chat-workspace.component';
 import { ThreadListComponent } from '../thread-list/thread-list.component';
+import { ChatOptionsComponent } from '../chat-options/chat-options.component';
 import { ChatThreadsService } from '../../data/chat-threads.service';
 import { DialogService } from '@core/services/dialog.service';
 import { MessageStateService } from '../../data/message-state.service';
+import { LayoutService } from '@core/services/layout.service';
+import { ButtonDirective } from '@shared/ui/button/button.directive';
 
 @Component({
   selector: 'app-chat-page',
-  imports: [ThreadListComponent, ChatWorkspaceComponent],
+  imports: [ThreadListComponent, ChatWorkspaceComponent, ChatOptionsComponent, ButtonDirective],
   templateUrl: './chat-page.component.html',
   styleUrl: './chat-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -19,6 +22,7 @@ export class ChatPageComponent {
   private readonly dialogService = inject(DialogService);
   private readonly router = inject(Router);
   private readonly messageState = inject(MessageStateService);
+  public readonly layoutService = inject(LayoutService);
 
   public readonly threadId = input<string | undefined>();
 
@@ -26,7 +30,8 @@ export class ChatPageComponent {
   protected readonly activeThreadId = this.threadsService.selectedThreadId;
   protected readonly activeThread = this.threadsService.activeThread;
   protected readonly hasThreads = this.threadsService.hasThreads;
-  protected readonly isReady = this.threadsService.isReady;
+  protected readonly isSidebarOpen = this.layoutService.isSidebarOpen;
+  protected readonly isRightSidebarOpen = this.layoutService.isRightSidebarOpen;
 
   constructor() {
     // Sync route param to service for UI highlighting only

@@ -8,6 +8,8 @@ import { SummarizerService } from '@core/services/summarizer.service';
 
 import { DialogService } from '@core/services/dialog.service';
 
+import { LoadingOverlayService } from '@core/services/loading-overlay.service';
+
 import { ChatThreadsService } from './chat-threads.service';
 
 import { MessageStateService } from './message-state.service';
@@ -24,6 +26,7 @@ export class ChatActionsService {
   private readonly messageState = inject(MessageStateService);
   private readonly selectionState = inject(SelectionStateService);
   private readonly dialog = inject(DialogService);
+  private readonly loadingOverlay = inject(LoadingOverlayService);
 
   async branchFromMessage(messageId: Id): Promise<void> {
     const thread = this.threads.activeThread();
@@ -121,6 +124,9 @@ export class ChatActionsService {
 
     console.log(`[ChatActions] Starting compaction for ${ordered.length} messages...`);
     
+    // Show loading overlay
+    this.loadingOverlay.show('Compacting');
+    
     try {
       const summary = await this.summarizer.summarize(ordered);
       console.log('[ChatActions] Summary generated, applying changes...');
@@ -146,6 +152,9 @@ export class ChatActionsService {
         title: 'Compaction Error',
         message: 'An unexpected error occurred while compacting messages.'
       });
+    } finally {
+      // Hide loading overlay on both success and failure
+      this.loadingOverlay.hide();
     }
   }
 

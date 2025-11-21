@@ -1,24 +1,86 @@
 <section class="chat-layout">
-  <app-thread-list
-    class="chat-layout__sidebar"
-    [attr.aria-busy]="!isReady()"
-    [threads]="threads()"
-    [activeThreadId]="activeThreadId()"
-    (threadSelected)="handleThreadSelected($event)"
-    (createThread)="handleCreateThread()"
-    (renameThread)="handleRenameThread($event)"
-    (deleteThread)="handleDeleteThread($event)"
-    (togglePin)="handleTogglePin($event)"
-    (toggleProtection)="handleToggleProtection($event)"
-    (generateMetadata)="handleGenerateMetadata($event)"
-    (bulkDelete)="handleBulkDelete($event)"
-    (bulkPin)="handleBulkPin($event)"
-    (bulkProtect)="handleBulkProtect($event)"
-  />
+  <!-- Left Sidebar: Thread List -->
+  <aside 
+    class="chat-layout__sidebar-wrapper chat-layout__sidebar-wrapper--left"
+    [class.chat-layout__sidebar-wrapper--collapsed]="!isSidebarOpen()"
+    [attr.aria-expanded]="isSidebarOpen()"
+  >
+    <div class="chat-layout__sidebar-content">
+      <app-thread-list
+        [threads]="threads()"
+        [activeThreadId]="activeThreadId()"
+        [isSidebarOpen]="isSidebarOpen()"
+        (threadSelected)="handleThreadSelected($event)"
+        (createThread)="handleCreateThread()"
+        (renameThread)="handleRenameThread($event)"
+        (deleteThread)="handleDeleteThread($event)"
+        (togglePin)="handleTogglePin($event)"
+        (toggleProtection)="handleToggleProtection($event)"
+        (generateMetadata)="handleGenerateMetadata($event)"
+        (bulkDelete)="handleBulkDelete($event)"
+        (bulkPin)="handleBulkPin($event)"
+        (bulkProtect)="handleBulkProtect($event)"
+        (closeSidebar)="layoutService.toggleSidebar()"
+      />
+    </div>
 
-  <app-chat-workspace
-    class="chat-layout__workspace"
-    [thread]="activeThread() ?? undefined"
-    [hasThreads]="hasThreads()"
-  />
+    <button
+      type="button"
+      class="chat-layout__sidebar-toggle chat-layout__sidebar-toggle--left"
+      appButton
+      variant="ghost"
+      size="icon"
+      (click)="layoutService.toggleSidebar()"
+      [attr.aria-expanded]="isSidebarOpen()"
+      [attr.aria-label]="isSidebarOpen() ? 'Close threads panel' : 'Open threads panel'"
+    >
+      @if (isSidebarOpen()) {
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>
+      } @else {
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 17 5-5-5-5"/><path d="m13 17 5-5-5-5"/></svg>
+      }
+      <span class="visually-hidden">
+        @if (isSidebarOpen()) { Close threads panel } @else { Open threads panel }
+      </span>
+    </button>
+  </aside>
+
+  <!-- Center: Main Workspace -->
+  <main class="chat-layout__workspace-wrapper">
+    <app-chat-workspace
+      [thread]="activeThread() ?? undefined"
+      [hasThreads]="hasThreads()"
+    />
+  </main>
+
+  <!-- Right Sidebar: Run Settings -->
+  <aside 
+    class="chat-layout__sidebar-wrapper chat-layout__sidebar-wrapper--right"
+    [class.chat-layout__sidebar-wrapper--collapsed]="!isRightSidebarOpen()"
+    [attr.aria-expanded]="isRightSidebarOpen()"
+  >
+    <div class="chat-layout__sidebar-content">
+      <app-chat-options [thread]="activeThread() ?? undefined" />
+    </div>
+
+    <button
+      type="button"
+      class="chat-layout__sidebar-toggle chat-layout__sidebar-toggle--right"
+      appButton
+      variant="ghost"
+      size="icon"
+      (click)="layoutService.toggleRightSidebar()"
+      [attr.aria-expanded]="isRightSidebarOpen()"
+      [attr.aria-label]="isRightSidebarOpen() ? 'Close settings panel' : 'Open settings panel'"
+    >
+      @if (isRightSidebarOpen()) {
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>
+      } @else {
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 17-5-5 5-5"/><path d="m11 17-5-5 5-5"/></svg>
+      }
+      <span class="visually-hidden">
+        @if (isRightSidebarOpen()) { Close settings panel } @else { Open settings panel }
+      </span>
+    </button>
+  </aside>
 </section>

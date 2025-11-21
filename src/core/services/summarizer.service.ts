@@ -83,23 +83,12 @@ export class SummarizerService {
         content: `IMPORTANT REMINDER: ${compactorSettings.prompt}`
       });
 
-      // Stream the summarization request using settings from SystemPromptsService
-      const stream = await this.adapters.streamModel(modelId, turns, {
+      // Call the non-streaming method to get complete response
+      const summary = await this.adapters.generateText(modelId, turns, {
         system: compactorSettings.prompt,
         temperature: compactorSettings.temperature,
         maxTokens: compactorSettings.maxTokens
       });
-
-      // Collect the streamed response
-      let summary = '';
-      for await (const chunk of stream) {
-        if (chunk.deltaText) {
-          summary += chunk.deltaText;
-        }
-        if (chunk.done) {
-          break;
-        }
-      }
 
       return summary.trim() || this.fallbackSummarize(messages);
     } catch (error) {

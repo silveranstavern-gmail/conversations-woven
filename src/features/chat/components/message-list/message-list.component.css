@@ -6,15 +6,15 @@
 }
 
 .message-list__viewport {
-  height: 520px;
-  border: 1px solid color-mix(in oklch, var(--color-border) 60%, transparent);
-  border-radius: var(--radius-md);
-  padding: var(--space-3);
-  background: var(--color-surface-0);
+  width: 100%;
+  background: transparent;
+  border: none;
+  overflow: visible;
 }
 
 .message-list__item {
-  padding-bottom: var(--space-3);
+  /* Make messages flow closer together */
+  padding-bottom: var(--space-2);
 }
 
 .message-list__empty {

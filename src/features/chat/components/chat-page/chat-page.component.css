@@ -1,45 +1,164 @@
 :host {
   display: block;
-  width: 100%;
+  height: 100%; /* Use 100% to fill parent container instead of viewport height */
+  overflow: hidden;
 }
 
 .chat-layout {
-  /* Remove borders, rely on background separation */
-  display: grid;
-  grid-template-columns: minmax(260px, 320px) 1fr;
-  gap: var(--space-4);
-  min-height: calc(100vh - 220px);
+  display: flex;
+  flex-direction: row; /* Align items horizontally */
+  height: 100%;
+  width: 100%;
+  overflow: hidden; /* Prevent scrollbars on the container itself */
+  background-color: var(--color-base);
 }
 
-.chat-layout__sidebar {
+/* SIDEBARS */
+.chat-layout__sidebar-wrapper {
+  --sidebar-width: 300px;
+  --sidebar-collapsed-width: 48px;
+  
+  /* Flexbox Properties */
+  width: var(--sidebar-width);
+  flex-shrink: 0; /* Critical: Prevents sidebar from getting squished */
+  
+  height: 100%;
   background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  /* No shadow, make it flat */
-  box-shadow: none;
-}
-
-.chat-layout__workspace {
-  background-color: var(--color-base); /* Main area is white/base */
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  padding: var(--space-4);
+  border-right: 1px solid var(--color-border);
+  
+  /* Overflow Handling: Ensures content is clipped during collapse animation */
+  overflow: hidden;
+  position: relative;
   display: flex;
   flex-direction: column;
+  
+  /* Transitions */
+  transition:
+    width 0.3s cubic-bezier(0.2, 0, 0, 1),
+    background-color 0.2s ease-in-out;
+    
+  /* Prevent internal text wrapping during shrink */
+  white-space: nowrap;
 }
 
-@media (max-width: 960px) {
+.chat-layout__sidebar-wrapper--right {
+  border-right: none;
+  border-left: 1px solid var(--color-border);
+}
+
+.chat-layout__sidebar-content {
+  flex: 1;
+  height: 100%;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.chat-layout__sidebar-wrapper--collapsed {
+  width: var(--sidebar-collapsed-width);
+  background-color: var(--color-surface-hover);
+}
+
+.chat-layout__sidebar-wrapper--collapsed .chat-layout__sidebar-content {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.chat-layout__sidebar-wrapper--left.chat-layout__sidebar-wrapper--collapsed {
+  border-right: 1px solid var(--color-border);
+}
+
+.chat-layout__sidebar-wrapper--right.chat-layout__sidebar-wrapper--collapsed {
+  border-left: 1px solid var(--color-border);
+}
+
+.chat-layout__sidebar-toggle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--sidebar-collapsed-width);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+  border-radius: 0;
+}
+
+.chat-layout__sidebar-wrapper--collapsed .chat-layout__sidebar-toggle {
+  pointer-events: auto;
+  opacity: 1;
+}
+
+.chat-layout__sidebar-toggle--left {
+  right: 0;
+  border-left: 1px solid var(--color-border);
+}
+
+.chat-layout__sidebar-toggle--right {
+  left: 0;
+  border-right: 1px solid var(--color-border);
+}
+
+/* MAIN WORKSPACE */
+.chat-layout__workspace-wrapper {
+  /* Flexbox Properties */
+  flex: 1; /* Grow to fill all available space */
+  min-width: 0; /* Critical: Allows flex child to shrink below content width (prevents overflow issues) */
+  
+  height: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; 
+}
+
+/* MOBILE OVERRIDES */
+@media (max-width: 768px) {
   .chat-layout {
-    grid-template-columns: 1fr;
+    /* On mobile, just one column. Sidebars become absolute overlays via TS logic or CSS */
+    display: block; 
+    position: relative;
   }
 
-  .chat-layout__sidebar {
-    order: 2;
+  .chat-layout__sidebar-wrapper {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 100;
+    box-shadow: var(--shadow-md);
   }
 
-  .chat-layout__workspace {
-    order: 1;
-    min-height: 40vh;
+  .chat-layout__sidebar-wrapper--left {
+    left: 0;
+    transform: translateX(0);
+    width: var(--sidebar-width);
+  }
+
+  .chat-layout__sidebar-wrapper--left.chat-layout__sidebar-wrapper--collapsed {
+    width: var(--sidebar-width); /* Keep width, translate off-screen instead */
+    transform: translateX(-100%);
+    opacity: 1; /* Opacity isn't needed for slide-out */
+    visibility: visible;
+    background-color: var(--color-surface);
+    border-right: none;
+  }
+  
+  .chat-layout__sidebar-wrapper--right {
+    right: 0;
+    transform: translateX(0);
+    width: var(--sidebar-width);
+  }
+  
+  .chat-layout__sidebar-wrapper--right.chat-layout__sidebar-wrapper--collapsed {
+     width: var(--sidebar-width);
+     transform: translateX(100%);
+     background-color: var(--color-surface);
+  }
+
+  .chat-layout__sidebar-wrapper--collapsed .chat-layout__sidebar-toggle {
+    opacity: 0;
+    pointer-events: none;
   }
 }

@@ -1,0 +1,16 @@
+@if (isVisible()) {
+  <div class="loading-overlay">
+    <div class="loading-overlay__content">
+      <div class="loading-overlay__spinner"></div>
+      <p class="loading-overlay__message">
+        {{ message() }}
+        <span class="loading-overlay__dots">
+          <span class="dot">.</span>
+          <span class="dot">.</span>
+          <span class="dot">.</span>
+        </span>
+      </p>
+    </div>
+  </div>
+}
+
