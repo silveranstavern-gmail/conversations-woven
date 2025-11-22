@@ -5,11 +5,10 @@ import { KeychainService } from '@core/services/keychain.service';
 import { DialogService } from '@core/services/dialog.service';
 import { UserPreferencesService } from '@core/services/preference/user-preferences.service';
 import { LoadingOverlayComponent } from '@shared/ui/loading-overlay/loading-overlay.component';
-import { ButtonDirective } from '@shared/ui/button/button.directive';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, LoadingOverlayComponent, ButtonDirective],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, LoadingOverlayComponent],
   templateUrl: './app.html',
   styleUrl: './app.css',
   changeDetection: ChangeDetectionStrategy.OnPush

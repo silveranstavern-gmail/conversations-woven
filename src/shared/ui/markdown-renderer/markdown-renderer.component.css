@@ -21,8 +21,8 @@
   overflow-wrap: anywhere;
   /* Prevent horizontal overflow */
   max-width: 100%;
-  overflow-x: hidden;
-  overflow-y: visible;
+  overflow-x: auto;
+  overflow-y: auto;
 }
 
 /* Inline code - wrap if needed, preserve spacing */

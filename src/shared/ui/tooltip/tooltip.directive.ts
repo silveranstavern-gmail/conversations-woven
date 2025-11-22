@@ -1,4 +1,14 @@
-import { Directive, computed, effect, ElementRef, inject, input, signal } from '@angular/core';
+import {
+  DestroyRef,
+  Directive,
+  NgZone,
+  computed,
+  effect,
+  ElementRef,
+  inject,
+  input,
+  signal
+} from '@angular/core';
 import { KeychainService } from '@core/services/keychain.service';
 
 export type TooltipPosition = 'top' | 'bottom' | 'left' | 'right';
@@ -21,14 +31,14 @@ export type TooltipSize = 'sm' | 'md' | 'lg' | 'auto';
     '(mouseenter)': 'onEnter()',
     '(mouseleave)': 'onLeave()',
     '(focusin)': 'onEnter()',
-    '(focusout)': 'onLeave()',
-    '(window:scroll)': 'onScroll()',
-    '(window:resize)': 'onScroll()'
+    '(focusout)': 'onLeave()'
   }
 })
 export class TooltipDirective {
   private readonly elementRef = inject(ElementRef<HTMLElement>);
   private readonly keychain = inject(KeychainService);
+  private readonly zone = inject(NgZone);
+  private readonly destroyRef = inject(DestroyRef);
 
   // Custom tooltip message (overrides auto-detection)
   public readonly message = input<string | null>(null);
@@ -57,6 +67,7 @@ export class TooltipDirective {
   private readonly isDisabledSignal = signal<boolean>(false);
   protected readonly isVisible = signal<boolean>(false);
   private clearPositionTimeout: number | null = null;
+  private rafId: number | null = null;
 
   constructor() {
     // Detect disabled state from the element
@@ -67,6 +78,7 @@ export class TooltipDirective {
         this.isDisabledSignal.set(button.disabled);
       }
     });
+    this.registerViewportListeners();
   }
 
   protected readonly isDisabled = computed(() => {
@@ -179,11 +191,13 @@ export class TooltipDirective {
     }
     
     // Calculate and set position first, then show tooltip to prevent flash
-    this.updatePosition();
+    this.schedulePositionUpdate(true);
     // Use requestAnimationFrame to ensure CSS variables are applied before showing
-    requestAnimationFrame(() => {
-      this.isVisible.set(true);
-    });
+    this.zone.runOutsideAngular(() =>
+      requestAnimationFrame(() => {
+        this.zone.run(() => this.isVisible.set(true));
+      })
+    );
   }
 
   onLeave(): void {
@@ -197,8 +211,7 @@ export class TooltipDirective {
   }
 
   onScroll(): void {
-    if (!this.isVisible()) return;
-    this.updatePosition();
+    this.schedulePositionUpdate();
   }
 
   private updatePosition(): void {
@@ -286,6 +299,40 @@ export class TooltipDirective {
     }
     this.elementRef.nativeElement.style.removeProperty('--tooltip-x');
     this.elementRef.nativeElement.style.removeProperty('--tooltip-y');
+  }
+
+  private schedulePositionUpdate(force = false): void {
+    if (!force && !this.isVisible()) {
+      return;
+    }
+    if (this.rafId !== null) {
+      return;
+    }
+    this.zone.runOutsideAngular(() => {
+      this.rafId = requestAnimationFrame(() => {
+        this.rafId = null;
+        this.updatePosition();
+      });
+    });
+  }
+
+  private registerViewportListeners(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    this.zone.runOutsideAngular(() => {
+      const handleViewportChange = () => this.onScroll();
+      window.addEventListener('scroll', handleViewportChange, { passive: true });
+      window.addEventListener('resize', handleViewportChange, { passive: true });
+      this.destroyRef.onDestroy(() => {
+        window.removeEventListener('scroll', handleViewportChange);
+        window.removeEventListener('resize', handleViewportChange);
+        if (this.rafId !== null) {
+          cancelAnimationFrame(this.rafId);
+          this.rafId = null;
+        }
+      });
+    });
   }
 }
 
