@@ -1,40 +1,82 @@
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import type { ChatMessage, Id } from '@models/chat';
-import { IdbService } from '@core/services/persistence/idb.service';
+import { catchError, from, map, of } from 'rxjs';
 import { ChatThreadsService } from './chat-threads.service';
 import type { ChatTurn } from '../adapters/llm-adapter';
+import { MessagePersistenceService } from './message-persistence.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MessageStateService {
-  private readonly idb = inject(IdbService);
+  private readonly persistence = inject(MessagePersistenceService);
   private readonly threads = inject(ChatThreadsService);
 
-  private readonly messagesSignal = signal<ChatMessage[]>([]);
+  private readonly messagesResource = rxResource<ChatMessage[], Id | null>({
+    params: () => this.threads.selectedThreadId(),
+    stream: ({ params }) => {
+      const threadId = params;
+      if (!threadId) {
+        return of([]);
+      }
+      return from(this.persistence.listMessages(threadId)).pipe(
+        map((messages) => {
+          const current = this.messagesResource.value();
+          const merged = this.mergeMessages(current ?? [], messages);
+          return this.sortMessages(merged);
+        }),
+        catchError((error) => {
+          console.error('Failed to load messages', error);
+          return of<ChatMessage[]>([]);
+        })
+      );
+    },
+    defaultValue: []
+  });
   private readonly activeMessageIdSignal = signal<Id | null>(null);
-  private readonly isLoadingSignal = signal(false);
   private readonly streamingMessageIdSignal = signal<Id | null>(null);
 
-  readonly messages = this.messagesSignal.asReadonly();
+  readonly messages = computed(() => this.messagesResource.value());
   readonly activeMessageId = this.activeMessageIdSignal.asReadonly();
-  readonly isLoading = this.isLoadingSignal.asReadonly();
+  readonly isLoading = computed(() => {
+    const status = this.messagesResource.status();
+    return status === 'loading' || status === 'reloading';
+  });
   readonly isStreaming = computed(() => this.streamingMessageIdSignal() !== null);
   readonly hasMessages = computed(() => this.messages().length > 0);
 
   constructor() {
     effect(() => {
       const threadId = this.threads.selectedThreadId();
-      void this.loadMessagesForThread(threadId);
+      const messages = this.messages();
+      const currentActive = this.activeMessageIdSignal();
+
+      if (!threadId) {
+        if (currentActive !== null) {
+          this.activeMessageIdSignal.set(null);
+        }
+        this.streamingMessageIdSignal.set(null);
+        return;
+      }
+
+      if (currentActive && messages.some((message) => message.id === currentActive)) {
+        return;
+      }
+
+      const fallback = messages.length ? messages[messages.length - 1].id : null;
+      if (fallback !== currentActive) {
+        this.activeMessageIdSignal.set(fallback);
+      }
     });
   }
 
   async reloadActiveThread(): Promise<void> {
-    await this.loadMessagesForThread(this.threads.selectedThreadId());
+    await this.messagesResource.reload();
   }
 
   async getMessagesForThread(threadId: Id): Promise<ChatMessage[]> {
-    return await this.idb.listMessages(threadId);
+    return this.persistence.listMessages(threadId);
   }
 
   setActiveMessage(id: Id | null): void {
@@ -49,30 +91,40 @@ export class MessageStateService {
   }
 
   async upsertMessage(message: ChatMessage): Promise<void> {
-    await this.idb.putMessage(message);
+    await this.persistence.saveMessage(message);
+    const status = this.messagesResource.status();
+    if (status === 'loading' || status === 'reloading') {
+      this.messagesResource.reload();
+    }
+    const selectedThreadId = this.threads.selectedThreadId();
     let nextMessages: ChatMessage[] = [];
-    this.messagesSignal.update((current) => {
-      const index = current.findIndex((item) => item.id === message.id);
+    this.messagesResource.value.update((current) => {
+      const safeCurrent = current ?? [];
+      const index = safeCurrent.findIndex((item) => item.id === message.id);
       if (index >= 0) {
-        const clone = [...current];
+        const clone = [...safeCurrent];
         clone[index] = message;
         nextMessages = this.sortMessages(clone);
         return nextMessages;
       }
-      if (message.threadId !== this.threads.selectedThreadId()) {
-        // Message belongs to different thread: don't add
-        nextMessages = current;
-        return nextMessages;
+      if (message.threadId !== selectedThreadId) {
+        nextMessages = safeCurrent;
+        return safeCurrent;
       }
-      nextMessages = this.sortMessages([...current, message]);
+      nextMessages = this.sortMessages([...safeCurrent, message]);
       return nextMessages;
     });
-    await this.syncThreadCount(message.threadId);
-    this.activeMessageIdSignal.set(message.id);
+    await this.syncThreadCount(
+      message.threadId,
+      selectedThreadId === message.threadId ? nextMessages : undefined
+    );
+    if (message.threadId === selectedThreadId) {
+      this.activeMessageIdSignal.set(message.id);
+    }
   }
 
   /**
-   * Updates the message signal immediately without writing to IDB.
+   * Updates the message signal immediately without writing to persistence.
    * Used for streaming updates to keep UI responsive.
    */
   updateMessageSignal(id: Id, patch: Partial<ChatMessage>): ChatMessage | null {
@@ -85,14 +137,15 @@ export class MessageStateService {
       ...patch,
       revision: existing.revision + 1
     };
-    this.messagesSignal.update((current) => {
-      const index = current.findIndex((item) => item.id === id);
+    this.messagesResource.value.update((current) => {
+      const safeCurrent = current ?? [];
+      const index = safeCurrent.findIndex((item) => item.id === id);
       if (index >= 0) {
-        const clone = [...current];
+        const clone = [...safeCurrent];
         clone[index] = next;
         return this.sortMessages(clone);
       }
-      return current;
+      return safeCurrent;
     });
     return next;
   }
@@ -113,19 +166,23 @@ export class MessageStateService {
 
   async deleteMessage(id: Id): Promise<void> {
     const existing = this.messages().find((message) => message.id === id);
-    await this.idb.deleteMessage(id);
+    await this.persistence.deleteMessage(id);
     let nextMessages: ChatMessage[] = [];
-    this.messagesSignal.update((current) => {
-      nextMessages = current.filter((message) => message.id !== id);
+    this.messagesResource.value.update((current) => {
+      const safeCurrent = current ?? [];
+      nextMessages = safeCurrent.filter((message) => message.id !== id);
       return nextMessages;
     });
     if (existing) {
       if (existing.compactedFrom?.length) {
-        await this.idb.deleteCompactionSnapshot(id);
+        await this.persistence.deleteCompactionSnapshot(id);
       }
-      await this.syncThreadCount(existing.threadId);
+      await this.syncThreadCount(
+        existing.threadId,
+        existing.threadId === this.threads.selectedThreadId() ? nextMessages : undefined
+      );
       if (this.activeMessageId() === id) {
-        const fallback = this.messagesSignal();
+        const fallback = nextMessages;
         this.activeMessageIdSignal.set(fallback.length ? fallback[fallback.length - 1].id : null);
       }
     }
@@ -133,15 +190,12 @@ export class MessageStateService {
 
   async bulkReplaceMessages(threadId: Id, messages: ChatMessage[]): Promise<void> {
     const ordered = this.sortMessages(messages);
-    await this.idb.deleteMessagesForThread(threadId);
-    if (ordered.length) {
-      await this.idb.bulkPutMessages(ordered);
-    }
+    await this.persistence.replaceThreadMessages(threadId, ordered);
     if (threadId === this.threads.selectedThreadId()) {
-      this.messagesSignal.set(ordered);
+      this.messagesResource.value.set(ordered);
       this.activeMessageIdSignal.set(ordered.length ? ordered[ordered.length - 1].id : null);
     }
-    await this.syncThreadCount(threadId);
+    await this.syncThreadCount(threadId, threadId === this.threads.selectedThreadId() ? ordered : undefined);
   }
 
   setStreamingMessageId(id: Id | null): void {
@@ -216,41 +270,37 @@ export class MessageStateService {
     return `msg-${Math.random().toString(36).slice(2, 10)}`;
   }
 
-  private async loadMessagesForThread(threadId: Id | null): Promise<void> {
-    if (!threadId) {
-      this.messagesSignal.set([]);
-      this.activeMessageIdSignal.set(null);
+  private async syncThreadCount(threadId: Id, knownMessages?: ChatMessage[]): Promise<void> {
+    if (threadId === this.threads.selectedThreadId() && knownMessages) {
+      await this.threads.setMessageCount(threadId, knownMessages.length);
       return;
     }
-    this.isLoadingSignal.set(true);
-    try {
-      const messages = this.sortMessages(await this.idb.listMessages(threadId));
-      // Ignore stale responses if the user switched threads while we were loading
-      if (this.threads.selectedThreadId() !== threadId) {
-        return;
-      }
-      this.messagesSignal.set(messages);
-      this.activeMessageIdSignal.set(messages.length ? messages[messages.length - 1].id : null);
-    } finally {
-      if (this.threads.selectedThreadId() === threadId) {
-        this.isLoadingSignal.set(false);
-      }
-    }
-  }
-
-  private async syncThreadCount(threadId: Id): Promise<void> {
-    if (threadId === this.threads.selectedThreadId()) {
-      await this.threads.setMessageCount(threadId, this.messagesSignal().length);
-    } else {
-      const messages = await this.idb.listMessages(threadId);
-      await this.threads.setMessageCount(threadId, messages.length);
-    }
+    const messages = await this.persistence.listMessages(threadId);
+    await this.threads.setMessageCount(threadId, messages.length);
   }
 
   private sortMessages(messages: ChatMessage[]): ChatMessage[] {
     return [...messages].sort(
       (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     );
+  }
+
+  private mergeMessages(existing: ChatMessage[], incoming: ChatMessage[]): ChatMessage[] {
+    const merged = new Map<Id, ChatMessage>();
+    for (const message of existing) {
+      merged.set(message.id, message);
+    }
+    for (const message of incoming) {
+      const current = merged.get(message.id);
+      if (!current) {
+        merged.set(message.id, message);
+        continue;
+      }
+      const currentRevision = current.revision ?? 0;
+      const nextRevision = message.revision ?? 0;
+      merged.set(message.id, nextRevision >= currentRevision ? message : current);
+    }
+    return Array.from(merged.values());
   }
 
   // Public helper for token estimation
@@ -266,4 +316,3 @@ export class MessageStateService {
     return messages.reduce((total, msg) => total + this.estimateMessageTokens(msg), 0);
   }
 }
-

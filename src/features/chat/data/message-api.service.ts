@@ -3,9 +3,8 @@ import type { ChatMessage, Id } from '@models/chat';
 import { ChatAdaptersService } from './chat-adapters.service';
 import { MessageStateService } from './message-state.service';
 import { ChatThreadsService } from './chat-threads.service';
-import { SelectionStateService } from './selection-state.service';
-import { ChatTurn } from '../adapters/llm-adapter';
 import { DialogService } from '@core/services/dialog.service';
+import { ContextEngineService } from './context-engine.service';
 
 @Injectable({
   providedIn: 'root'
@@ -14,8 +13,8 @@ export class MessageApiService {
   private readonly adapters = inject(ChatAdaptersService);
   private readonly messageState = inject(MessageStateService);
   private readonly threads = inject(ChatThreadsService);
-  private readonly selectionState = inject(SelectionStateService);
   private readonly dialog = inject(DialogService);
+  private readonly contextEngine = inject(ContextEngineService);
 
   async sendUserMessage(rawMd: string, modelId: string, threadId: Id): Promise<void> {
     if (this.messageState.isStreaming()) {
@@ -30,43 +29,22 @@ export class MessageApiService {
       return;
     }
 
-    // --- VALIDATION START ---
-    // Calculate estimated tokens before modifying state
-    const activeThread = this.threads.activeThread();
-    let effectiveHistory: ChatMessage[] = [];
-
-    if (activeThread && this.selectionState.isContextSelectionActive()) {
-        const contextIds = this.selectionState.getContextForThread(activeThread.id);
-        // Retrieve the actual message objects for these IDs
-        effectiveHistory = this.messageState.getMessagesInOrder(Array.from(contextIds));
-    } else {
-        effectiveHistory = this.messageState.getEffectiveHistory(threadId);
-    }
-
-    // Include System Prompt
     const thread = this.threads.getThreadSnapshot(threadId);
-    let systemTokens = 0;
-    if (thread?.systemPrompt) {
-        systemTokens = this.messageState.estimateTokens(thread.systemPrompt);
-        // Some models might double count if sandwiching, but simple sum is safe enough for validation
-        // If using sandwich strategy (add start and end), double it. 
-        // Current impl sandwiches:
-        systemTokens = systemTokens * 2; 
+    if (!thread) {
+      return;
     }
 
-    const historyTokens = this.messageState.calculateTotalTokens(effectiveHistory);
-    const newMessageTokens = this.messageState.estimateTokens(content);
-    
-    // 200 tokens buffer for protocol/formatting overhead
-    const totalEstimated = historyTokens + newMessageTokens + systemTokens + 200;
+    // --- VALIDATION START ---
+    const requestContext = this.contextEngine.buildRequestContext(thread, content);
+    const totalEstimated = requestContext.estimatedTotalTokens;
     const limit = model.contextLength || 4096;
 
     if (totalEstimated > limit) {
-        await this.dialog.alert({
-            title: 'Context Limit Exceeded',
-            message: `This conversation exceeds the model's context limit (~${totalEstimated} / ${limit} tokens).\n\nPlease compact previous messages, delete irrelevant ones, or select a specific context range to proceed.`
-        });
-        return; 
+      await this.dialog.alert({
+        title: 'Context Limit Exceeded',
+        message: `This conversation exceeds the model's context limit (~${totalEstimated} / ${limit} tokens).\n\nPlease compact previous messages, delete irrelevant ones, or select a specific context range to proceed.`
+      });
+      return;
     }
     // --- VALIDATION END ---
 
@@ -100,40 +78,8 @@ export class MessageApiService {
     this.messageState.setStreamingMessageId(assistantMessage.id);
 
     try {
-      // Determine which messages to send based on context selection mode
-      // Note: We re-derive this to build actual turns, similar to validation logic above but mapping to turns
-      let turns: ChatTurn[];
-
-      if (activeThread && this.selectionState.isContextSelectionActive()) {
-        const contextIds = this.selectionState.getContextForThread(activeThread.id);
-        if (contextIds.size > 0) {
-          // Build turns from selected context IDs
-          turns = this.messageState.buildChatTurnsFromIds(Array.from(contextIds));
-          turns.push({
-            role: 'user',
-            content: userMessage.rawMd ?? ''
-          });
-        } else {
-          turns = this.messageState.buildChatTurns(threadId);
-        }
-      } else {
-        turns = this.messageState.buildChatTurns(threadId);
-      }
-
-      // Sandwich system prompt: add at start and end (only if not already in turns)
-      const thread = this.threads.getThreadSnapshot(threadId);
-      if (thread?.systemPrompt && !turns.some((t) => t.role === 'system')) {
-        turns = [
-          { role: 'system', content: thread.systemPrompt },
-          ...turns,
-          { role: 'system', content: thread.systemPrompt }
-        ];
-      }
-
-      // Don't pass system via opts since we're managing it in the turns array
-      // This prevents duplicate system messages at the start
-      const stream = await this.adapters.streamModel(model.id, turns, {
-        temperature: thread?.temperature
+      const stream = await this.adapters.streamModel(model.id, requestContext.turns, {
+        temperature: thread.temperature
       });
       let workingAssistant = assistantMessage;
       let hasContent = false;
@@ -184,4 +130,3 @@ export class MessageApiService {
     }
   }
 }
-

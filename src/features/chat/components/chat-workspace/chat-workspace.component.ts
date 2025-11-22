@@ -7,6 +7,7 @@ import { SelectionStateService } from '../../data/selection-state.service';
 import { MessageApiService } from '../../data/message-api.service';
 import { ChatActionsService } from '../../data/chat-actions.service';
 import { ChatAdaptersService } from '../../data/chat-adapters.service';
+import { ContextEngineService } from '../../data/context-engine.service';
 import { ChatThreadsService } from '../../data/chat-threads.service';
 import { KeychainService } from '@core/services/keychain.service';
 import { DialogService } from '@core/services/dialog.service';
@@ -33,6 +34,7 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
   private readonly messageApi = inject(MessageApiService);
   private readonly chatActions = inject(ChatActionsService);
   private readonly adapters = inject(ChatAdaptersService);
+  private readonly contextEngine = inject(ContextEngineService);
   private readonly threads = inject(ChatThreadsService);
   private readonly keychain = inject(KeychainService);
   private readonly dialogService = inject(DialogService);
@@ -50,6 +52,7 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
   protected readonly canCompactSelection = computed(
     () => this.selectionCount() >= 2 && !this.isLoading() && !this.isStreaming()
   );
+  protected readonly promptContext = computed(() => this.contextEngine.buildContext(this.thread() ?? null));
   protected readonly preferredModelId = computed(() => {
     const currentThread = this.thread();
     if (!currentThread) {
@@ -79,25 +82,7 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
   });
 
   protected readonly estimatedCurrentTokens = computed(() => {
-    const thread = this.thread();
-    if (!thread) return 0;
-    
-    let msgs: ChatMessage[] = [];
-    // Respect context selection if active
-    if (this.isContextSelectionActive()) {
-        const contextIds = this.selectionState.getContextForThread(thread.id);
-        msgs = this.messageState.getMessagesInOrder(Array.from(contextIds));
-    } else {
-        msgs = this.messageState.getEffectiveHistory(thread.id);
-    }
-
-    const history = this.messageState.calculateTotalTokens(msgs);
-    
-    let system = 0;
-    if (thread.systemPrompt) {
-        system = this.messageState.estimateTokens(thread.systemPrompt) * 2; // Sandwich
-    }
-    return history + system;
+    return this.promptContext().tokens.total;
   });
 
   protected readonly headerSubtitle = computed(() => {
@@ -188,11 +173,7 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
     }
   }
   protected readonly currentThreadContextSet = computed(() => {
-    const threadId = this.thread()?.id;
-    if (!threadId) {
-      return new Set<Id>();
-    }
-    return this.selectionState.getContextForThread(threadId);
+    return this.promptContext().selection.selectedIds;
   });
 
   protected handleDeleteMessage(messageId: Id): void {

@@ -2,7 +2,8 @@ import { inject, Injectable } from '@angular/core';
 
 import type { ChatMessage, Id } from '@models/chat';
 
-import { CompactionSnapshot, IdbService } from '@core/services/persistence/idb.service';
+import { CompactionSnapshot } from '@core/services/persistence/idb.service';
+import { MessagePersistenceService } from './message-persistence.service';
 
 import { SummarizerService } from '@core/services/summarizer.service';
 
@@ -20,7 +21,7 @@ import { SelectionStateService } from './selection-state.service';
   providedIn: 'root'
 })
 export class ChatActionsService {
-  private readonly idb = inject(IdbService);
+  private readonly persistence = inject(MessagePersistenceService);
   private readonly threads = inject(ChatThreadsService);
   private readonly summarizer = inject(SummarizerService);
   private readonly messageState = inject(MessageStateService);
@@ -141,7 +142,7 @@ export class ChatActionsService {
       };
       
       await this.messageState.bulkReplaceMessages(threadId, nextMessages);
-      await this.idb.saveCompactionSnapshot(compacted.id, snapshot);
+      await this.persistence.saveCompactionSnapshot(compacted.id, snapshot);
       await this.threads.touchThread(threadId);
       this.selectionState.setSelectedIds([compacted.id]);
       
@@ -163,7 +164,7 @@ export class ChatActionsService {
     if (!placeholder?.compactedFrom?.length) {
       return;
     }
-    const snapshot = await this.idb.loadCompactionSnapshot(messageId);
+    const snapshot = await this.persistence.loadCompactionSnapshot(messageId);
     if (!snapshot) {
       console.warn(`[ChatActions] Restore failed: No snapshot found for message ${messageId}`);
       return;
@@ -184,7 +185,7 @@ export class ChatActionsService {
       ...messages.slice(index + 1)
     ];
     await this.messageState.bulkReplaceMessages(threadId, nextMessages);
-    await this.idb.deleteCompactionSnapshot(messageId);
+    await this.persistence.deleteCompactionSnapshot(messageId);
     const restoredIds = restored.map((message) => message.id);
     this.selectionState.setSelectedIds(restoredIds);
   }
