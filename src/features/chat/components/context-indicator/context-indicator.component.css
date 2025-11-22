@@ -1,0 +1,47 @@
+.context-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.context-indicator--warning {
+  color: var(--color-warning, #d97706);
+  border-color: var(--color-warning, #d97706);
+  background: color-mix(in oklch, var(--color-warning, #d97706) 10%, transparent);
+}
+
+.context-indicator--error {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+  background: color-mix(in oklch, var(--color-danger) 10%, transparent);
+}
+
+.context-bar {
+  width: 60px;
+  height: 6px;
+  background: var(--color-surface-hover);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.context-bar__fill {
+  height: 100%;
+  background: var(--color-muted);
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.context-indicator--warning .context-bar__fill {
+  background: var(--color-warning, #d97706);
+}
+
+.context-indicator--error .context-bar__fill {
+  background: var(--color-danger);
+}
+

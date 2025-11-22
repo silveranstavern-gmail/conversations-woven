@@ -10,9 +10,6 @@ import type { ChatTurn } from '../adapters/llm-adapter';
 export class MessageStateService {
   private readonly idb = inject(IdbService);
   private readonly threads = inject(ChatThreadsService);
-  // TODO: Make this model-aware using each model's max context window.
-  private readonly safeTokenLimit = 500_000;
-  private readonly contextTailCount = 10;
 
   private readonly messagesSignal = signal<ChatMessage[]>([]);
   private readonly activeMessageIdSignal = signal<Id | null>(null);
@@ -160,15 +157,22 @@ export class MessageStateService {
     return this.messages().filter((message) => lookup.has(message.id));
   }
 
-  buildChatTurns(threadId: Id): ChatTurn[] {
+  // Helper to get messages that would be sent to the LLM (filters out failed/incomplete, but NO pruning)
+  getEffectiveHistory(threadId: Id): ChatMessage[] {
     const sortedMessages = this.sortMessages(
       this.messages().filter((message) => message.threadId === threadId)
     );
-    const chatMessages = sortedMessages
+    return sortedMessages
       .filter((message) => message.state !== 'failed')
       .filter((message) => message.role !== 'assistant' || message.state === 'complete');
-    const pruned = this.pruneMessagesForContext(chatMessages);
-    return pruned
+  }
+
+  buildChatTurns(threadId: Id): ChatTurn[] {
+    const chatMessages = this.getEffectiveHistory(threadId);
+    
+    // Removed: pruneMessagesForContext call
+    
+    return chatMessages
       .map((message) => ({
         role: message.role,
         content: message.rawMd ?? ''
@@ -249,67 +253,17 @@ export class MessageStateService {
     );
   }
 
-  private estimateTokens(content: string): number {
+  // Public helper for token estimation
+  estimateTokens(content: string): number {
     return Math.ceil(content.length / 4);
   }
 
-  private estimateMessageTokens(message: ChatMessage): number {
+  estimateMessageTokens(message: ChatMessage): number {
     return this.estimateTokens(message.rawMd ?? '');
   }
 
-  private pruneMessagesForContext(messages: ChatMessage[]): ChatMessage[] {
-    const totalTokens = messages.reduce(
-      (total, message) => total + this.estimateMessageTokens(message),
-      0
-    );
-    if (totalTokens <= this.safeTokenLimit) {
-      return messages;
-    }
-
-    const systemMessageIds = messages.filter((m) => m.role === 'system').map((m) => m.id);
-    const tailMessageIds = messages.slice(-this.contextTailCount).map((m) => m.id);
-    const preservedIds = new Set([...systemMessageIds, ...tailMessageIds]);
-
-    const tokenMap = new Map(
-      messages.map((message) => [message.id, this.estimateMessageTokens(message)])
-    );
-    let workingTokens = totalTokens;
-    let removedCount = 0;
-
-    const prunableMessages = messages
-      .filter((message) => !preservedIds.has(message.id))
-      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-    const remainingPrunable: ChatMessage[] = [];
-
-    for (const message of prunableMessages) {
-      if (workingTokens <= this.safeTokenLimit) {
-        remainingPrunable.push(message);
-        continue;
-      }
-      workingTokens -= tokenMap.get(message.id) ?? 0;
-      removedCount += 1;
-    }
-
-    const remainingIds = new Set([
-      ...preservedIds,
-      ...remainingPrunable.map((message) => message.id)
-    ]);
-    const prunedMessages = messages.filter((message) => remainingIds.has(message.id));
-
-    if (removedCount > 0 || workingTokens > this.safeTokenLimit) {
-      // eslint-disable-next-line no-console
-      console.warn(
-        'Context pruned to respect token limit. Middle messages were dropped.',
-        {
-          droppedMessages: removedCount,
-          estimatedTokens: totalTokens,
-          safeTokenLimit: this.safeTokenLimit,
-          retainedMessages: prunedMessages.length
-        }
-      );
-    }
-
-    return prunedMessages;
+  calculateTotalTokens(messages: ChatMessage[]): number {
+    return messages.reduce((total, msg) => total + this.estimateMessageTokens(msg), 0);
   }
 }
 

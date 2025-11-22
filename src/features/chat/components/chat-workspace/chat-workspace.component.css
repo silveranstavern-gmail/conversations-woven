@@ -49,6 +49,13 @@
   position: relative;
 }
 
+/* New class for context indicator positioning */
+.workspace__context-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+}
+
 /* Empty State - Center the composer */
 .workspace__empty-state {
   display: flex;

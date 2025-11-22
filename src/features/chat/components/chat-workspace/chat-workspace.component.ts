@@ -13,10 +13,11 @@ import { DialogService } from '@core/services/dialog.service';
 import { ButtonDirective } from '@shared/ui/button/button.directive';
 import { TooltipDirective } from '@shared/ui/tooltip/tooltip.directive';
 import { ChatHeaderComponent } from '../chat-header/chat-header.component';
+import { ContextIndicatorComponent } from '../context-indicator/context-indicator.component';
 
 @Component({
   selector: 'app-chat-workspace',
-  imports: [MessageListComponent, ComposerComponent, ButtonDirective, TooltipDirective, ChatHeaderComponent],
+  imports: [MessageListComponent, ComposerComponent, ButtonDirective, TooltipDirective, ChatHeaderComponent, ContextIndicatorComponent],
   templateUrl: './chat-workspace.component.html',
   styleUrl: './chat-workspace.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -67,6 +68,36 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
     }
     // Fallback to first available
     return available[0]?.id ?? null;
+  });
+
+  // --- NEW COMPUTEDS FOR CONTEXT INDICATOR ---
+  protected readonly currentModelLimit = computed(() => {
+    const id = this.preferredModelId();
+    if (!id) return 0;
+    const model = this.adapters.getModelById(id);
+    return model?.contextLength || 4096;
+  });
+
+  protected readonly estimatedCurrentTokens = computed(() => {
+    const thread = this.thread();
+    if (!thread) return 0;
+    
+    let msgs: ChatMessage[] = [];
+    // Respect context selection if active
+    if (this.isContextSelectionActive()) {
+        const contextIds = this.selectionState.getContextForThread(thread.id);
+        msgs = this.messageState.getMessagesInOrder(Array.from(contextIds));
+    } else {
+        msgs = this.messageState.getEffectiveHistory(thread.id);
+    }
+
+    const history = this.messageState.calculateTotalTokens(msgs);
+    
+    let system = 0;
+    if (thread.systemPrompt) {
+        system = this.messageState.estimateTokens(thread.systemPrompt) * 2; // Sandwich
+    }
+    return history + system;
   });
 
   protected readonly headerSubtitle = computed(() => {

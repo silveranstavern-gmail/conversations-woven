@@ -89,6 +89,15 @@
     <!-- Composer -->
     <div class="workspace__composer-dock">
       <div class="workspace__composer-wrapper">
+        
+        <!-- NEW CONTEXT INDICATOR -->
+        <div class="workspace__context-bar">
+          <app-context-indicator 
+            [usage]="estimatedCurrentTokens()" 
+            [limit]="currentModelLimit()" 
+          />
+        </div>
+
         <app-composer
           [disabled]="composerDisabled()"
           [modelId]="preferredModelId()"
@@ -107,6 +116,15 @@
       
       <!-- Centered Composer -->
       <div class="workspace__composer-wrapper" style="max-width: 650px; width: 90%;">
+        
+         <!-- NEW CONTEXT INDICATOR FOR EMPTY STATE -->
+        <div class="workspace__context-bar">
+          <app-context-indicator 
+             [usage]="estimatedCurrentTokens()" 
+             [limit]="currentModelLimit()" 
+          />
+        </div>
+        
         <app-composer
           [disabled]="false"
           [modelId]="preferredModelId()"

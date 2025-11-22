@@ -5,6 +5,7 @@ import { MessageStateService } from './message-state.service';
 import { ChatThreadsService } from './chat-threads.service';
 import { SelectionStateService } from './selection-state.service';
 import { ChatTurn } from '../adapters/llm-adapter';
+import { DialogService } from '@core/services/dialog.service';
 
 @Injectable({
   providedIn: 'root'
@@ -14,6 +15,7 @@ export class MessageApiService {
   private readonly messageState = inject(MessageStateService);
   private readonly threads = inject(ChatThreadsService);
   private readonly selectionState = inject(SelectionStateService);
+  private readonly dialog = inject(DialogService);
 
   async sendUserMessage(rawMd: string, modelId: string, threadId: Id): Promise<void> {
     if (this.messageState.isStreaming()) {
@@ -27,6 +29,47 @@ export class MessageApiService {
     if (!model) {
       return;
     }
+
+    // --- VALIDATION START ---
+    // Calculate estimated tokens before modifying state
+    const activeThread = this.threads.activeThread();
+    let effectiveHistory: ChatMessage[] = [];
+
+    if (activeThread && this.selectionState.isContextSelectionActive()) {
+        const contextIds = this.selectionState.getContextForThread(activeThread.id);
+        // Retrieve the actual message objects for these IDs
+        effectiveHistory = this.messageState.getMessagesInOrder(Array.from(contextIds));
+    } else {
+        effectiveHistory = this.messageState.getEffectiveHistory(threadId);
+    }
+
+    // Include System Prompt
+    const thread = this.threads.getThreadSnapshot(threadId);
+    let systemTokens = 0;
+    if (thread?.systemPrompt) {
+        systemTokens = this.messageState.estimateTokens(thread.systemPrompt);
+        // Some models might double count if sandwiching, but simple sum is safe enough for validation
+        // If using sandwich strategy (add start and end), double it. 
+        // Current impl sandwiches:
+        systemTokens = systemTokens * 2; 
+    }
+
+    const historyTokens = this.messageState.calculateTotalTokens(effectiveHistory);
+    const newMessageTokens = this.messageState.estimateTokens(content);
+    
+    // 200 tokens buffer for protocol/formatting overhead
+    const totalEstimated = historyTokens + newMessageTokens + systemTokens + 200;
+    const limit = model.contextLength || 4096;
+
+    if (totalEstimated > limit) {
+        await this.dialog.alert({
+            title: 'Context Limit Exceeded',
+            message: `This conversation exceeds the model's context limit (~${totalEstimated} / ${limit} tokens).\n\nPlease compact previous messages, delete irrelevant ones, or select a specific context range to proceed.`
+        });
+        return; 
+    }
+    // --- VALIDATION END ---
+
     const now = new Date();
     const userMessage: ChatMessage = {
       id: this.messageState.generateId(),
@@ -58,7 +101,7 @@ export class MessageApiService {
 
     try {
       // Determine which messages to send based on context selection mode
-      const activeThread = this.threads.activeThread();
+      // Note: We re-derive this to build actual turns, similar to validation logic above but mapping to turns
       let turns: ChatTurn[];
 
       if (activeThread && this.selectionState.isContextSelectionActive()) {
@@ -66,17 +109,14 @@ export class MessageApiService {
         if (contextIds.size > 0) {
           // Build turns from selected context IDs
           turns = this.messageState.buildChatTurnsFromIds(Array.from(contextIds));
-          // IMPORTANT: The new user message must be added to the turns before sending
           turns.push({
             role: 'user',
             content: userMessage.rawMd ?? ''
           });
         } else {
-          // No context selected, fall back to all messages
           turns = this.messageState.buildChatTurns(threadId);
         }
       } else {
-        // Normal mode: use all messages
         turns = this.messageState.buildChatTurns(threadId);
       }
 
