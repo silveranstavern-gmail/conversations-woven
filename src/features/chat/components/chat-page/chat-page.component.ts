@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, input, untracked } from '@angular/core';
 import { Router } from '@angular/router';
 import { Id } from '@models/chat';
 import { ChatWorkspaceComponent } from '../chat-workspace/chat-workspace.component';
@@ -34,15 +34,21 @@ export class ChatPageComponent {
   protected readonly isRightSidebarOpen = this.layoutService.isRightSidebarOpen;
 
   constructor() {
-    // Sync route param to service for UI highlighting only
-    // Navigation should only happen via RouterLink or explicit router.navigate calls
+    // Sync route param to service for UI highlighting
+    // We prioritize the route parameter over any default service selection
     effect(() => {
       const routeThreadId = this.threadId();
-      if (routeThreadId) {
-        // Update service selection for UI highlighting, but don't let service drive navigation
-        const exists = this.threads().some((thread) => thread.id === routeThreadId);
-        if (exists) {
-          this.threadsService.selectThread(routeThreadId);
+      const allThreads = this.threads(); // Dependency: re-run when threads load
+      
+      if (routeThreadId && allThreads.length > 0) {
+        // Check if the service has a different selection or no selection
+        const currentSelection = untracked(() => this.threadsService.selectedThreadId());
+        
+        if (currentSelection !== routeThreadId) {
+          const exists = allThreads.some((thread) => thread.id === routeThreadId);
+          if (exists) {
+            this.threadsService.selectThread(routeThreadId);
+          }
         }
       }
     });

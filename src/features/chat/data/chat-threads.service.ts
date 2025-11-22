@@ -1,4 +1,4 @@
-import { inject, Injectable, computed, signal } from '@angular/core';
+import { computed, effect, inject, Injectable, resource, signal } from '@angular/core';
 import { Id } from '@models/chat';
 import type { ChatThread } from '@models/chat';
 import { IdbService } from '@core/services/persistence/idb.service';
@@ -18,20 +18,43 @@ export class ChatThreadsService {
   private readonly idb = inject(IdbService);
   private readonly adapters = inject(ChatAdaptersService);
 
-  private readonly threadsSignal = signal<ChatThread[]>([]);
+  // FIX: Removed 'params: () => undefined' which was preventing the loader from running.
+  // Without params, the resource loads immediately on creation.
+  private readonly threadsResource = resource<ChatThread[], void>({
+    loader: () => this.idb.listThreads(),
+    defaultValue: []
+  });
   private readonly selectedThreadIdSignal = signal<Id | null>(null);
-  private readonly isInitializingSignal = signal(true);
 
-  readonly threads = this.threadsSignal.asReadonly();
+  readonly threads = computed(() => this.threadsResource.value());
   readonly selectedThreadId = this.selectedThreadIdSignal.asReadonly();
   readonly hasThreads = computed(() => this.threads().length > 0);
   readonly activeThread = computed(
     () => this.threads().find((thread) => thread.id === this.selectedThreadId()) ?? null
   );
-  readonly isReady = computed(() => !this.isInitializingSignal());
+  readonly isReady = computed(() => {
+    const status = this.threadsResource.status();
+    return status === 'resolved' || status === 'reloading' || this.threads().length > 0;
+  });
 
   constructor() {
-    void this.loadInitialThreads();
+    effect(() => {
+      const status = this.threadsResource.status();
+      if (status === 'loading' || status === 'idle') {
+        return;
+      }
+      const records = this.threads();
+      const current = this.selectedThreadIdSignal();
+      if (!records.length) {
+        if (current !== null) {
+          this.selectedThreadIdSignal.set(null);
+        }
+        return;
+      }
+      if (!current || !records.some((thread) => thread.id === current)) {
+        this.selectedThreadIdSignal.set(records[0].id);
+      }
+    });
   }
 
   getThreadSnapshot(id: Id): ChatThread | undefined {
@@ -39,7 +62,7 @@ export class ChatThreadsService {
   }
 
   async refresh(): Promise<void> {
-    await this.loadInitialThreads();
+    this.threadsResource.reload();
   }
 
   async createThread(options: CreateThreadOptions = {}): Promise<ChatThread> {
@@ -58,7 +81,7 @@ export class ChatThreadsService {
     };
 
     await this.idb.putThread(thread);
-    this.threadsSignal.update((current) => [thread, ...current]);
+    this.threadsResource.value.update((current) => [thread, ...current]);
     this.selectedThreadIdSignal.set(thread.id);
     return thread;
   }
@@ -76,7 +99,7 @@ export class ChatThreadsService {
     };
 
     await this.idb.putThread(updated);
-    this.upsertThreadInSignal(updated);
+    this.upsertThreadInState(updated);
   }
 
   selectThread(id: Id | null): void {
@@ -107,7 +130,7 @@ export class ChatThreadsService {
     };
 
     await this.idb.putThread(updated);
-    this.upsertThreadInSignal(updated);
+    this.upsertThreadInState(updated);
   }
 
   async deleteThread(id: Id): Promise<boolean> {
@@ -117,11 +140,9 @@ export class ChatThreadsService {
     }
 
     await this.idb.deleteThread(id);
-    this.threadsSignal.update((current) => current.filter((thread) => thread.id !== id));
-
-    if (this.selectedThreadId() === id) {
-      this.selectedThreadIdSignal.set(this.threadsSignal()[0]?.id ?? null);
-    }
+    this.threadsResource.value.update((current) =>
+      current.filter((thread) => thread.id !== id)
+    );
 
     return true;
   }
@@ -149,11 +170,9 @@ export class ChatThreadsService {
 
     if (deleted.length) {
       const deletedSet = new Set(deleted);
-      this.threadsSignal.update((current) => current.filter((thread) => !deletedSet.has(thread.id)));
-      const currentSelected = this.selectedThreadIdSignal();
-      if (currentSelected && deletedSet.has(currentSelected)) {
-        this.selectedThreadIdSignal.set(this.threadsSignal()[0]?.id ?? null);
-      }
+      this.threadsResource.value.update((current) =>
+        current.filter((thread) => !deletedSet.has(thread.id))
+      );
     }
 
     return { deleted, skipped };
@@ -170,7 +189,7 @@ export class ChatThreadsService {
       updatedAt: new Date().toISOString()
     };
     await this.idb.putThread(updated);
-    this.upsertThreadInSignal(updated);
+    this.upsertThreadInState(updated);
   }
 
   async setProtection(id: Id, isProtected: boolean): Promise<void> {
@@ -184,7 +203,7 @@ export class ChatThreadsService {
       updatedAt: new Date().toISOString()
     };
     await this.idb.putThread(updated);
-    this.upsertThreadInSignal(updated);
+    this.upsertThreadInState(updated);
   }
 
   async bulkUpdatePinned(ids: Id[], pinned: boolean): Promise<void> {
@@ -201,15 +220,7 @@ export class ChatThreadsService {
 
   async reloadFromStore(): Promise<void> {
     const records = await this.idb.listThreads();
-    this.threadsSignal.set(records);
-    if (!records.length) {
-      this.selectedThreadIdSignal.set(null);
-      return;
-    }
-    const current = this.selectedThreadIdSignal();
-    if (!current || !records.some((thread) => thread.id === current)) {
-      this.selectedThreadIdSignal.set(records[0].id);
-    }
+    this.threadsResource.value.set(records);
   }
 
   async setMessageCount(id: Id, count: number): Promise<void> {
@@ -224,7 +235,7 @@ export class ChatThreadsService {
       updatedAt: new Date().toISOString()
     };
     await this.idb.putThread(updated);
-    this.upsertThreadInSignal(updated);
+    this.upsertThreadInState(updated);
   }
 
   async touchThread(id: Id): Promise<void> {
@@ -237,7 +248,7 @@ export class ChatThreadsService {
       updatedAt: new Date().toISOString()
     };
     await this.idb.putThread(updated);
-    this.upsertThreadInSignal(updated);
+    this.upsertThreadInState(updated);
   }
 
   async setPreferredModel(id: Id, modelId: string): Promise<void> {
@@ -254,7 +265,7 @@ export class ChatThreadsService {
       updatedAt: new Date().toISOString()
     };
     await this.idb.putThread(updated);
-    this.upsertThreadInSignal(updated);
+    this.upsertThreadInState(updated);
   }
 
   async updateThreadSettings(
@@ -272,7 +283,7 @@ export class ChatThreadsService {
       updatedAt: new Date().toISOString()
     };
     await this.idb.putThread(updated);
-    this.upsertThreadInSignal(updated);
+    this.upsertThreadInState(updated);
   }
 
   async updateThreadMetadata(
@@ -294,29 +305,7 @@ export class ChatThreadsService {
       updatedAt: new Date().toISOString()
     };
     await this.idb.putThread(updated);
-    this.upsertThreadInSignal(updated);
-  }
-
-  private async loadInitialThreads(): Promise<void> {
-    this.isInitializingSignal.set(true);
-    try {
-      const records = await this.idb.listThreads();
-      this.threadsSignal.set(records);
-      this.selectedThreadIdSignal.set(records[0]?.id ?? null);
-    } finally {
-      this.isInitializingSignal.set(false);
-    }
-  }
-
-  private upsertThreadInSignal(thread: ChatThread): void {
-    const exists = this.threadsSignal().some((item) => item.id === thread.id);
-    if (exists) {
-      this.threadsSignal.update((current) =>
-        current.map((item) => (item.id === thread.id ? thread : item))
-      );
-      return;
-    }
-    this.threadsSignal.update((current) => [thread, ...current]);
+    this.upsertThreadInState(updated);
   }
 
   private async bulkUpdateThreads(
@@ -347,12 +336,22 @@ export class ChatThreadsService {
       return;
     }
     await this.idb.bulkPutThreads(updates);
-    this.replaceThreadsInSignal(updates);
+    this.replaceThreadsInState(updates);
   }
 
-  private replaceThreadsInSignal(updates: ChatThread[]): void {
+  private upsertThreadInState(thread: ChatThread): void {
+    this.threadsResource.value.update((current) => {
+      const exists = current.some((item) => item.id === thread.id);
+      if (exists) {
+        return current.map((item) => (item.id === thread.id ? thread : item));
+      }
+      return [thread, ...current];
+    });
+  }
+
+  private replaceThreadsInState(updates: ChatThread[]): void {
     const map = new Map(updates.map((thread) => [thread.id, thread]));
-    this.threadsSignal.update((current) =>
+    this.threadsResource.value.update((current) =>
       current.map((thread) => map.get(thread.id) ?? thread)
     );
   }

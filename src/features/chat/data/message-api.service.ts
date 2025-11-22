@@ -52,6 +52,7 @@ export class MessageApiService {
       tokensIn: 0,
       tokensOut: 0
     };
+    // Persist immediately so a quick reload doesn't drop the pending assistant response
     await this.messageState.upsertMessage(assistantMessage);
     this.messageState.setStreamingMessageId(assistantMessage.id);
 
@@ -97,6 +98,7 @@ export class MessageApiService {
       let workingAssistant = assistantMessage;
       let hasContent = false;
       let lastSaved = Date.now();
+      let isFirstContent = true;
 
       for await (const chunk of stream) {
         const patch: Partial<ChatMessage> = {
@@ -120,11 +122,14 @@ export class MessageApiService {
           workingAssistant = updated;
         }
 
-        // Only write to IDB if 1 second has passed OR if chunk is done
         const now = Date.now();
-        if (chunk.done || now - lastSaved > 1000) {
+        // Save if: chunk is done, OR 1s passed, OR this is the first content chunk (for safety)
+        if (chunk.done || now - lastSaved > 1000 || (chunk.deltaText && isFirstContent)) {
           await this.messageState.upsertMessage(workingAssistant);
           lastSaved = now;
+          if (chunk.deltaText) {
+            isFirstContent = false;
+          }
         }
       }
 
