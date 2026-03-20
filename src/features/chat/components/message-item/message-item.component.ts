@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { ChatMessage, Id } from '@models/chat';
 import { MarkdownRendererComponent } from '@shared/ui/markdown-renderer/markdown-renderer.component';
@@ -25,6 +25,7 @@ export class MessageItemComponent {
   public readonly isSelected = input(false);
   public readonly isContextSelectionActive = input(false);
   public readonly isContextSelected = input(false);
+  private lastMessageId: Id | null = null;
 
   public readonly deleteMessage = output<ChatMessage['id']>();
   public readonly branchFrom = output<ChatMessage['id']>();
@@ -41,6 +42,7 @@ export class MessageItemComponent {
   protected readonly mode = signal<ViewMode>('rendered');
   protected readonly isEditing = signal(false);
   protected readonly editDraft = signal('');
+  protected readonly reasoningCollapsed = signal(true);
 
   protected readonly authorLabel = computed(() => {
     const value = this.message().role;
@@ -86,6 +88,41 @@ export class MessageItemComponent {
     return message.role === 'user' || message.role === 'assistant';
   });
   protected readonly canCommitEdit = computed(() => this.editDraft().trim().length > 0);
+  protected readonly hasReasoning = computed(() => {
+    const reasoning = this.message().reasoning;
+    if (!reasoning) {
+      return false;
+    }
+    const hasDetails = (reasoning.details?.length ?? 0) > 0;
+    const hasSummary = Boolean(reasoning.summary);
+    const hasTokens = reasoning.tokensUsed !== undefined;
+    return hasDetails || hasSummary || hasTokens;
+  });
+  protected readonly reasoningDetails = computed(() =>
+    [...(this.message().reasoning?.details ?? [])].sort((a, b) => a.index - b.index)
+  );
+  protected readonly reasoningTokenWarning = computed(() => {
+    const msg = this.message();
+    if (!msg.reasoning?.tokensUsed || !msg.tokensOut) {
+      return null;
+    }
+    const percentage = (msg.reasoning.tokensUsed / msg.tokensOut) * 100;
+    if (percentage > 70) {
+      return 'High reasoning token usage';
+    }
+    return null;
+  });
+
+  constructor() {
+    effect(() => {
+      const current = this.message();
+      if (current.id !== this.lastMessageId) {
+        const isVisible = current.reasoning?.visible ?? false;
+        this.reasoningCollapsed.set(!isVisible);
+        this.lastMessageId = current.id;
+      }
+    });
+  }
 
   protected onSwitchMode(next: ViewMode): void {
     this.mode.set(next);
@@ -163,5 +200,9 @@ export class MessageItemComponent {
       messageId: this.message().id,
       included: checkbox.checked
     });
+  }
+
+  protected toggleReasoningVisibility(): void {
+    this.reasoningCollapsed.update((current) => !current);
   }
 }

@@ -17,6 +17,29 @@ export const messageStateSchema = z.enum([
   'failed'
 ]);
 
+const reasoningDetailSchema = z.object({
+  type: z.enum(['reasoning.summary', 'reasoning.encrypted', 'reasoning.text']),
+  content: z.string(),
+  index: z.number().int().nonnegative(),
+  id: z.string().optional()
+});
+
+const reasoningDataSchema = z.object({
+  details: z.array(reasoningDetailSchema).optional(),
+  summary: z.string().optional(),
+  tokensUsed: z.number().int().nonnegative().optional(),
+  visible: z.boolean().optional()
+});
+
+const reasoningConfigSchema = z.object({
+  enabled: z.boolean(),
+  effort: z.enum(['low', 'medium', 'high']).optional(),
+  maxTokens: z.number().int().positive().optional(),
+  showInChat: z.boolean(),
+  captureInHistory: z.boolean(),
+  summaryVerbosity: z.enum(['auto', 'concise', 'detailed']).optional()
+});
+
 export const chatThreadSchema = z.object({
   id: idSchema,
   title: z.string().min(1),
@@ -33,7 +56,8 @@ export const chatThreadSchema = z.object({
   protected: z.boolean().optional(),
   systemPrompt: z.string().optional(),
   temperature: z.number().min(0).max(2).optional(),
-  folderId: idSchema.optional()
+  folderId: idSchema.optional(),
+  reasoningConfig: reasoningConfigSchema.optional()
 });
 
 export const chatMessageSchema = z.object({
@@ -51,7 +75,8 @@ export const chatMessageSchema = z.object({
   compactedFrom: z.array(idSchema).min(1).optional(),
   compactedSummary: z.string().optional(),
   state: messageStateSchema,
-  error: z.string().optional()
+  error: z.string().optional(),
+  reasoning: reasoningDataSchema.optional()
 });
 
 export const chatThreadsSchema = z.array(chatThreadSchema);

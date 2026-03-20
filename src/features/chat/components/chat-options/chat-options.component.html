@@ -52,6 +52,82 @@
         ></textarea>
       </div>
 
+      <!-- Reasoning Controls -->
+      <div class="chat-options__field">
+        <label class="chat-options__label">
+          Extended Thinking
+          <span class="chat-options__hint">Let models expose their reasoning process</span>
+        </label>
+
+        <div class="chat-options__toggle-group">
+          <label class="chat-options__checkbox">
+            <input
+              type="checkbox"
+              [checked]="reasoningEnabled()"
+              (change)="handleReasoningToggle($event)"
+            />
+            <span>Enable reasoning</span>
+          </label>
+
+          @if (reasoningEnabled()) {
+            <label class="chat-options__checkbox">
+              <input
+                type="checkbox"
+                [checked]="showReasoningInChat()"
+                (change)="handleShowReasoningToggle($event)"
+              />
+              <span>Show thinking in chat</span>
+            </label>
+
+            <label class="chat-options__checkbox">
+              <input
+                type="checkbox"
+                [checked]="captureInHistory()"
+                (change)="handleCaptureInHistoryToggle($event)"
+              />
+              <span>Capture thinking in history & exports</span>
+            </label>
+
+            <label class="chat-options__label chat-options__label--inline">
+              Summary verbosity
+              <select
+                class="chat-options__select"
+                [value]="reasoningSummaryVerbosity()"
+                (change)="handleReasoningSummaryVerbosityChange($event)"
+              >
+                <option value="auto">Auto (model decides)</option>
+                <option value="concise">Concise recap</option>
+                <option value="detailed">Detailed chain-of-thought</option>
+              </select>
+            </label>
+
+            @if (supportsReasoningEffort()) {
+              <select
+                class="chat-options__select"
+                [value]="reasoningEffort()"
+                (change)="handleReasoningEffortChange($event)"
+              >
+                <option value="low">Low effort (20% tokens)</option>
+                <option value="medium">Medium effort (50% tokens)</option>
+                <option value="high">High effort (80% tokens)</option>
+              </select>
+            }
+
+            @if (supportsReasoningMaxTokens()) {
+              <input
+                type="number"
+                class="chat-options__input"
+                inputmode="numeric"
+                min="1"
+                placeholder="Max reasoning tokens"
+                [value]="reasoningMaxTokens() ?? ''"
+                (change)="handleReasoningMaxTokensChange($event)"
+              />
+            }
+          }
+        </div>
+      </div>
+
       <!-- Temperature -->
       <div class="chat-options__field">
         <label class="chat-options__label" for="temperature">

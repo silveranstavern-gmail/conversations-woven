@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
-import { ChatThread } from '@models/chat';
+import { ChatThread, ReasoningConfig } from '@models/chat';
 import { ChatAdaptersService } from '../../data/chat-adapters.service';
 import { ChatThreadsService } from '../../data/chat-threads.service';
 import { ModelSelectorComponent } from '@shared/ui/model-selector/model-selector.component';
@@ -19,6 +19,14 @@ export class ChatOptionsComponent {
   private readonly layoutService = inject(LayoutService);
 
   public readonly thread = input<ChatThread | undefined>();
+  private readonly defaultReasoningConfig: ReasoningConfig = {
+    enabled: false,
+    effort: undefined,
+    maxTokens: undefined,
+    showInChat: false,
+    captureInHistory: true,
+    summaryVerbosity: 'auto'
+  };
 
   protected readonly models = this.adapters.models;
   protected readonly isRightSidebarOpen = this.layoutService.isRightSidebarOpen;
@@ -45,6 +53,45 @@ export class ChatOptionsComponent {
 
   protected readonly systemPrompt = computed(() => this.thread()?.systemPrompt ?? '');
   protected readonly temperature = computed(() => this.thread()?.temperature ?? 1);
+  protected readonly reasoningConfig = computed<ReasoningConfig>(() => {
+    const current = this.thread()?.reasoningConfig;
+    return {
+      ...this.defaultReasoningConfig,
+      ...current
+    };
+  });
+  protected readonly reasoningEnabled = computed(() => this.reasoningConfig().enabled);
+  protected readonly showReasoningInChat = computed(() => this.reasoningConfig().showInChat);
+  protected readonly reasoningEffort = computed(() => this.reasoningConfig().effort ?? 'medium');
+  protected readonly reasoningMaxTokens = computed(() => this.reasoningConfig().maxTokens);
+  protected readonly captureInHistory = computed(() => this.reasoningConfig().captureInHistory);
+  protected readonly reasoningSummaryVerbosity = computed(
+    () => this.reasoningConfig().summaryVerbosity ?? 'auto'
+  );
+  protected readonly supportsReasoningEffort = computed(() => {
+    const modelId = this.preferredModelId();
+    if (!modelId) {
+      return false;
+    }
+    const descriptor = this.adapters.getModelById(modelId);
+    if (!descriptor) {
+      return false;
+    }
+    const provider = descriptor.providerId.toLowerCase();
+    return provider.includes('openai') || descriptor.id.toLowerCase().includes('gpt');
+  });
+  protected readonly supportsReasoningMaxTokens = computed(() => {
+    const modelId = this.preferredModelId();
+    if (!modelId) {
+      return false;
+    }
+    const descriptor = this.adapters.getModelById(modelId);
+    if (!descriptor) {
+      return false;
+    }
+    const provider = descriptor.providerId.toLowerCase();
+    return provider.includes('anthropic') || descriptor.id.toLowerCase().includes('claude');
+  });
 
   private systemPromptDraft = signal('');
   private temperatureDraft = signal<number | undefined>(undefined);
@@ -82,6 +129,74 @@ export class ChatOptionsComponent {
   protected handleTemperatureChange(event: Event): void {
     const value = (event.target as HTMLInputElement).value;
     this.temperatureDraft.set(value ? parseFloat(value) : undefined);
+  }
+
+  protected handleReasoningToggle(event: Event): void {
+    const checkbox = event.target as HTMLInputElement | null;
+    if (!checkbox) {
+      return;
+    }
+    const enabled = checkbox.checked;
+    this.persistReasoningConfig({
+      enabled,
+      showInChat: enabled ? true : false
+    });
+  }
+
+  protected handleShowReasoningToggle(event: Event): void {
+    const checkbox = event.target as HTMLInputElement | null;
+    if (!checkbox) {
+      return;
+    }
+    this.persistReasoningConfig({ showInChat: checkbox.checked });
+  }
+
+  protected handleReasoningEffortChange(event: Event): void {
+    const select = event.target as HTMLSelectElement | null;
+    if (!select) {
+      return;
+    }
+    const value = select.value as ReasoningConfig['effort'];
+    this.persistReasoningConfig({ effort: value });
+  }
+
+  protected handleReasoningMaxTokensChange(event: Event): void {
+    const inputEl = event.target as HTMLInputElement | null;
+    if (!inputEl) {
+      return;
+    }
+    const value = inputEl.value.trim();
+    const parsed = value ? Number.parseInt(value, 10) : undefined;
+    this.persistReasoningConfig({ maxTokens: Number.isNaN(parsed) ? undefined : parsed });
+  }
+
+  protected handleCaptureInHistoryToggle(event: Event): void {
+    const checkbox = event.target as HTMLInputElement | null;
+    if (!checkbox) {
+      return;
+    }
+    this.persistReasoningConfig({ captureInHistory: checkbox.checked });
+  }
+
+  protected handleReasoningSummaryVerbosityChange(event: Event): void {
+    const select = event.target as HTMLSelectElement | null;
+    if (!select) {
+      return;
+    }
+    const value = select.value as ReasoningConfig['summaryVerbosity'];
+    this.persistReasoningConfig({ summaryVerbosity: value });
+  }
+
+  private persistReasoningConfig(patch: Partial<ReasoningConfig>): void {
+    const current = this.thread();
+    if (!current) {
+      return;
+    }
+    const merged = {
+      ...this.reasoningConfig(),
+      ...patch
+    };
+    void this.threads.updateThreadSettings(current.id, { reasoningConfig: merged });
   }
 
   protected handleSaveSettings(): void {

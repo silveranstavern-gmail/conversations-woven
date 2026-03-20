@@ -1,6 +1,6 @@
 import { computed, effect, inject, Injectable, resource, signal } from '@angular/core';
 import { Id } from '@models/chat';
-import type { ChatThread } from '@models/chat';
+import type { ChatThread, ReasoningConfig } from '@models/chat';
 import { IdbService } from '@core/services/persistence/idb.service';
 import { ChatAdaptersService } from './chat-adapters.service';
 
@@ -9,7 +9,17 @@ interface CreateThreadOptions {
   tags?: string[];
   preferredModelId?: string;
   folderId?: Id;
+  reasoningConfig?: Partial<ReasoningConfig>;
 }
+
+const DEFAULT_REASONING_CONFIG: ReasoningConfig = {
+  enabled: false,
+  effort: undefined,
+  maxTokens: undefined,
+  showInChat: false,
+  captureInHistory: true,
+  summaryVerbosity: 'auto'
+};
 
 @Injectable({
   providedIn: 'root'
@@ -77,7 +87,8 @@ export class ChatThreadsService {
       messageCount: 0,
       tags: options.tags ?? ['draft'],
       version: 1,
-      folderId: options.folderId
+      folderId: options.folderId,
+      reasoningConfig: this.buildReasoningConfig(options.reasoningConfig)
     };
 
     await this.idb.putThread(thread);
@@ -270,16 +281,26 @@ export class ChatThreadsService {
 
   async updateThreadSettings(
     id: Id,
-    settings: { systemPrompt?: string; temperature?: number }
+    settings: { systemPrompt?: string; temperature?: number; reasoningConfig?: Partial<ReasoningConfig> }
   ): Promise<void> {
     const thread = await this.idb.getThread(id);
     if (!thread) {
       return;
     }
+    const nextReasoningConfig =
+      settings.reasoningConfig !== undefined
+        ? this.buildReasoningConfig({
+            ...thread.reasoningConfig,
+            ...settings.reasoningConfig
+          })
+        : thread.reasoningConfig ?? this.buildReasoningConfig();
     const updated: ChatThread = {
       ...thread,
-      systemPrompt: settings.systemPrompt,
-      temperature: settings.temperature,
+      systemPrompt:
+        'systemPrompt' in settings ? settings.systemPrompt : thread.systemPrompt,
+      temperature:
+        'temperature' in settings ? settings.temperature : thread.temperature,
+      reasoningConfig: nextReasoningConfig,
       updatedAt: new Date().toISOString()
     };
     await this.idb.putThread(updated);
@@ -375,5 +396,12 @@ export class ChatThreadsService {
 
   private isKnownModel(modelId: string): boolean {
     return this.adapters.models().some((model) => model.id === modelId);
+  }
+
+  private buildReasoningConfig(config?: Partial<ReasoningConfig>): ReasoningConfig {
+    return {
+      ...DEFAULT_REASONING_CONFIG,
+      ...config
+    };
   }
 }

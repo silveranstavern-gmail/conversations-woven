@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, input, OnDestroy, viewChild, AfterViewInit } from '@angular/core';
-import { ChatMessage, ChatThread, Id } from '@models/chat';
+import { ChatMessage, ChatThread, Id, ReasoningConfig } from '@models/chat';
 import { MessageListComponent } from '../message-list/message-list.component';
 import { ComposerComponent, ComposerSubmitPayload } from '../composer/composer.component';
 import { MessageStateService } from '../../data/message-state.service';
@@ -251,13 +251,17 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
   }
 
   protected handleCopySelection(): void {
+    const thread = this.thread();
+    if (!thread) {
+      return;
+    }
     const ids = this.selectedMessageIds();
     if (!ids.length || typeof navigator === 'undefined' || !navigator.clipboard) {
       return;
     }
     const idSet = new Set(ids);
     const ordered = this.messages().filter((message) => idSet.has(message.id));
-    const markdown = this.formatMessagesMarkdown(ordered);
+    const markdown = this.formatMessagesMarkdown(ordered, thread.reasoningConfig ?? null);
     if (!markdown.trim()) {
       return;
     }
@@ -294,7 +298,10 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
     void this.threads.renameThread(thread.id, nextTitle.trim());
   }
 
-  private formatMessagesMarkdown(messages: ChatMessage[]): string {
+  private formatMessagesMarkdown(
+    messages: ChatMessage[],
+    reasoningConfig: ReasoningConfig | null
+  ): string {
     if (!messages.length) {
       return '';
     }
@@ -304,14 +311,30 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
           message.role === 'assistant' ? 'Assistant' : message.role === 'user' ? 'You' : message.role;
         const timestamp = new Date(message.createdAt).toLocaleString();
         const body = (message.rawMd ?? '').trim();
-        return `### ${author} · ${timestamp}\n\n${body}`;
+        const includeReasoning =
+          (reasoningConfig?.captureInHistory ?? true) && (message.reasoning?.visible ?? false);
+        let reasoning = '';
+        if (includeReasoning && message.reasoning) {
+          const summaryLine = message.reasoning.summary
+            ? `> ${message.reasoning.summary}`
+            : null;
+          const detailLines =
+            message.reasoning.details
+              ?.filter((detail) => detail.type === 'reasoning.text' || detail.type === 'reasoning.summary')
+              .map((detail) => `> ${detail.content}`) ?? [];
+          const lines = [summaryLine, ...detailLines].filter(Boolean) as string[];
+          if (lines.length) {
+            reasoning = `\n\n**Thinking Process:**\n${lines.join('\n')}`;
+          }
+        }
+        return `### ${author} · ${timestamp}\n\n${body}${reasoning}`;
       })
       .join('\n\n---\n\n');
   }
 
   private buildThreadDocument(thread: ChatThread, messages: ChatMessage[]): string {
     const header = `# ${thread.title}\n\nExported ${new Date().toLocaleString()}\n`;
-    const body = this.formatMessagesMarkdown(messages);
+    const body = this.formatMessagesMarkdown(messages, thread.reasoningConfig ?? null);
     return body ? `${header}\n${body}` : header;
   }
 

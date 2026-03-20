@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import type { ChatMessage, ChatThread, Id } from '@models/chat';
+import type { ChatMessage, ChatThread, Id, ReasoningConfig } from '@models/chat';
 import type { ChatTurn } from '../adapters/llm-adapter';
 import { MessageStateService } from './message-state.service';
 import { SelectionStateService } from './selection-state.service';
@@ -18,6 +18,7 @@ export interface PromptContext {
     history: number;
     total: number;
   };
+  reasoningConfig: ReasoningConfig | null;
 }
 
 export interface PromptRequestContext {
@@ -25,6 +26,7 @@ export interface PromptRequestContext {
   userMessageTokens: number;
   estimatedTotalTokens: number;
   turns: ChatTurn[];
+  reasoningConfig: ReasoningConfig | null;
 }
 
 @Injectable({
@@ -49,7 +51,8 @@ export class ContextEngineService {
           system: 0,
           history: 0,
           total: 0
-        }
+        },
+        reasoningConfig: null
       };
     }
 
@@ -65,7 +68,7 @@ export class ContextEngineService {
       ? this.messageState.estimateTokens(thread.systemPrompt) * 2
       : 0;
 
-    let turns = this.mapMessagesToTurns(selectedMessages);
+    let turns = this.mapMessagesToTurns(selectedMessages, thread.reasoningConfig);
     if (thread.systemPrompt && !turns.some((turn) => turn.role === 'system')) {
       const systemTurn: ChatTurn = { role: 'system', content: thread.systemPrompt };
       turns = [systemTurn, ...turns, systemTurn];
@@ -84,7 +87,8 @@ export class ContextEngineService {
         system: systemTokens,
         history: historyTokens,
         total: systemTokens + historyTokens
-      }
+      },
+      reasoningConfig: thread.reasoningConfig ?? null
     };
   }
 
@@ -104,7 +108,8 @@ export class ContextEngineService {
       context,
       userMessageTokens: userTokens,
       estimatedTotalTokens: context.tokens.total + userTokens + buffer,
-      turns
+      turns,
+      reasoningConfig: context.reasoningConfig
     };
   }
 
@@ -114,12 +119,44 @@ export class ContextEngineService {
       .filter((message) => message.role !== 'assistant' || message.state === 'complete');
   }
 
-  private mapMessagesToTurns(messages: ChatMessage[]): ChatTurn[] {
+  private mapMessagesToTurns(
+    messages: ChatMessage[],
+    reasoningConfig: ReasoningConfig | null = null
+  ): ChatTurn[] {
+    const captureReasoning = reasoningConfig?.captureInHistory ?? false;
     return messages
-      .map((message) => ({
-        role: message.role,
-        content: message.rawMd ?? ''
-      }))
-      .filter((turn) => turn.content.trim().length > 0) as ChatTurn[];
+      .map((message) => {
+        const turn: ChatTurn = {
+          role: message.role,
+          content: message.rawMd ?? ''
+        };
+        if (
+          captureReasoning &&
+          message.role === 'assistant' &&
+          message.reasoning?.details?.length
+        ) {
+          turn.reasoningDetails = [...message.reasoning.details];
+        }
+        return turn;
+      })
+      .filter((turn) => {
+        const hasContent = turn.content.trim().length > 0;
+        const hasReasoning = captureReasoning && !!turn.reasoningDetails?.length;
+        return hasContent || hasReasoning;
+      }) as ChatTurn[];
+  }
+
+  calculateReasoningStats(messages: ChatMessage[]) {
+    const withReasoning = messages.filter((message) => message.reasoning?.tokensUsed);
+    const totalReasoningTokens = withReasoning.reduce(
+      (sum, message) => sum + (message.reasoning?.tokensUsed ?? 0),
+      0
+    );
+    return {
+      messagesWithReasoning: withReasoning.length,
+      totalReasoningTokens,
+      averageReasoningPerMessage:
+        withReasoning.length > 0 ? totalReasoningTokens / withReasoning.length : 0
+    };
   }
 }

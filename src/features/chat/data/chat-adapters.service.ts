@@ -1,5 +1,12 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { LlmCapabilities, LlmModelDescriptor, ChatTurn, LLM_ADAPTER_TOKEN } from '../adapters/llm-adapter';
+import {
+  LlmCapabilities,
+  LlmModelDescriptor,
+  ChatTurn,
+  LLM_ADAPTER_TOKEN,
+  StreamChatOptions,
+  GenerateTextOptions
+} from '../adapters/llm-adapter';
 import { ModelCardData } from '@features/settings/components/models/model-card.model';
 
 export interface ChatModelOption {
@@ -281,7 +288,7 @@ export class ChatAdaptersService {
   streamModel(
     modelId: string,
     turns: ChatTurn[],
-    opts: { maxTokens?: number; temperature?: number; system?: string }
+    opts: Omit<StreamChatOptions, 'model'> = {}
   ) {
     const model = this.getModelById(modelId);
     if (!model) {
@@ -297,14 +304,15 @@ export class ChatAdaptersService {
       model: model.adapterModelId,
       maxTokens: opts.maxTokens,
       temperature: opts.temperature,
-      system: opts.system
+      system: opts.system,
+      reasoning: opts.reasoning
     });
   }
 
   generateText(
     modelId: string,
     turns: ChatTurn[],
-    opts: { maxTokens?: number; temperature?: number; system?: string }
+    opts: Omit<GenerateTextOptions, 'model'> = {}
   ): Promise<string> {
     const model = this.getModelById(modelId);
     if (!model) {

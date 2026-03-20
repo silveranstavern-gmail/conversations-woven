@@ -67,6 +67,49 @@
     </section>
   }
 
+  @if (hasReasoning()) {
+    <section class="message__reasoning">
+      <button type="button" class="message__reasoning-toggle" (click)="toggleReasoningVisibility()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-6"/><path d="M6 7h.01"/><path d="M18 7h.01"/><path d="M10 7h4"/><path d="M8 20h8"/><path d="M9 13a3 3 0 1 1 6 0"/></svg>
+        <span>
+          {{ reasoningCollapsed() ? 'Show' : 'Hide' }} thinking
+          @if (message().reasoning?.tokensUsed !== undefined) {
+            <span class="message__reasoning-badge">
+              {{ message().reasoning?.tokensUsed }} tokens
+            </span>
+          }
+        </span>
+      </button>
+      @if (reasoningTokenWarning(); as warning) {
+        <p class="message__reasoning-warning">{{ warning }}</p>
+      }
+      @if (!reasoningCollapsed()) {
+        <div class="message__reasoning-content">
+          @if (message().reasoning?.summary) {
+            <div class="message__reasoning-summary">
+              <strong>Summary:</strong> {{ message().reasoning?.summary }}
+            </div>
+          }
+          @if (!message().reasoning?.summary && !(message().reasoning?.details?.length)) {
+            <p class="text-muted">No reasoning details returned.</p>
+          }
+
+          @for (detail of reasoningDetails(); track detail.id ?? detail.index) {
+            <div class="message__reasoning-detail" [attr.data-type]="detail.type">
+              @if (detail.type === 'reasoning.text') {
+                <pre>{{ detail.content }}</pre>
+              } @else if (detail.type === 'reasoning.summary') {
+                <p><em>{{ detail.content }}</em></p>
+              } @else {
+                <p class="text-muted">[Encrypted reasoning content]</p>
+              }
+            </div>
+          }
+        </div>
+      }
+    </section>
+  }
+
   @if (isEditing()) {
     <section class="message__edit">
       <textarea

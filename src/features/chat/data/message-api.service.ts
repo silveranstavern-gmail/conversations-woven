@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import type { ChatMessage, Id } from '@models/chat';
+import type { ChatMessage, Id, ReasoningDetail } from '@models/chat';
 import { ChatAdaptersService } from './chat-adapters.service';
 import { MessageStateService } from './message-state.service';
 import { ChatThreadsService } from './chat-threads.service';
@@ -33,6 +33,7 @@ export class MessageApiService {
     if (!thread) {
       return;
     }
+    const reasoningConfig = thread.reasoningConfig ?? null;
 
     // --- VALIDATION START ---
     const requestContext = this.contextEngine.buildRequestContext(thread, content);
@@ -71,7 +72,14 @@ export class MessageApiService {
       state: 'streaming',
       model: model.id,
       tokensIn: 0,
-      tokensOut: 0
+      tokensOut: 0,
+      reasoning: reasoningConfig?.enabled
+        ? {
+            details: [],
+            tokensUsed: 0,
+            visible: reasoningConfig.showInChat
+          }
+        : undefined
     };
     // Persist immediately so a quick reload doesn't drop the pending assistant response
     await this.messageState.upsertMessage(assistantMessage);
@@ -79,12 +87,21 @@ export class MessageApiService {
 
     try {
       const stream = await this.adapters.streamModel(model.id, requestContext.turns, {
-        temperature: thread.temperature
+        temperature: thread.temperature,
+        reasoning: reasoningConfig?.enabled
+          ? {
+              effort: reasoningConfig.effort,
+              maxTokens: reasoningConfig.maxTokens,
+              summaryVerbosity: reasoningConfig.summaryVerbosity,
+              exclude: false
+            }
+          : undefined
       });
       let workingAssistant = assistantMessage;
       let hasContent = false;
       let lastSaved = Date.now();
       let isFirstContent = true;
+      const reasoningBuffer: ReasoningDetail[] = [];
 
       for await (const chunk of stream) {
         const patch: Partial<ChatMessage> = {
@@ -95,11 +112,24 @@ export class MessageApiService {
           hasContent = true;
           patch.rawMd = `${workingAssistant.rawMd ?? ''}${chunk.deltaText}`;
         }
+        if (chunk.deltaReasoning && workingAssistant.reasoning) {
+          reasoningBuffer.push(chunk.deltaReasoning);
+          patch.reasoning = {
+            ...workingAssistant.reasoning,
+            details: [...reasoningBuffer]
+          };
+        }
         if (chunk.usage?.promptTokens !== undefined) {
           patch.tokensIn = chunk.usage.promptTokens;
         }
         if (chunk.usage?.completionTokens !== undefined) {
           patch.tokensOut = chunk.usage.completionTokens;
+        }
+        if (chunk.usage?.reasoningTokens !== undefined && workingAssistant.reasoning) {
+          patch.reasoning = {
+            ...(patch.reasoning ?? workingAssistant.reasoning),
+            tokensUsed: chunk.usage.reasoningTokens
+          };
         }
 
         // Update signal immediately for UI responsiveness
