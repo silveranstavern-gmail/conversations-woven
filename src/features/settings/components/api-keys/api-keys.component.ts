@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { SettingsSectionComponent } from '../ui/settings-section/settings-section.component';
 import { KeychainService } from '@core/services/keychain.service';
+import { DialogService } from '@core/services/dialog.service';
 import { ButtonDirective } from '@shared/ui/button/button.directive';
 import { TooltipDirective } from '@shared/ui/tooltip/tooltip.directive';
 
@@ -20,6 +21,7 @@ interface ProviderDefinition {
 })
 export class ApiKeysComponent {
   private readonly keychain = inject(KeychainService);
+  private readonly dialogService = inject(DialogService);
 
   protected readonly providers = signal<ProviderDefinition[]>([
     {
@@ -32,11 +34,13 @@ export class ApiKeysComponent {
 
   protected readonly passphrase = signal('');
   protected readonly unlockError = signal('');
+  protected readonly keychainMessage = signal('');
   protected readonly drafts = signal<Record<string, string>>({});
   protected readonly providerMessages = signal<Record<string, string>>({});
 
   protected readonly isUnlocked = this.keychain.isUnlocked;
   protected readonly storedProviders = this.keychain.storedProviders;
+  protected readonly hasStoredProviders = computed(() => this.storedProviders().length > 0);
   protected readonly configuredProviders = computed(() =>
     new Set(this.keychain.storedProviders())
   );
@@ -59,6 +63,7 @@ export class ApiKeysComponent {
     const nextValue = (event.target as HTMLInputElement | null)?.value ?? '';
     this.passphrase.set(nextValue);
     this.unlockError.set('');
+    this.keychainMessage.set('');
   }
 
   protected async handleUnlock(): Promise<void> {
@@ -73,11 +78,15 @@ export class ApiKeysComponent {
       return;
     }
     this.passphrase.set('');
+    this.keychainMessage.set('');
   }
 
   protected handleLock(): void {
     this.keychain.lock();
     this.drafts.set({});
+    this.passphrase.set('');
+    this.unlockError.set('');
+    this.keychainMessage.set('');
   }
 
   protected async handleSave(providerId: string): Promise<void> {
@@ -98,6 +107,34 @@ export class ApiKeysComponent {
   protected async handleRemove(providerId: string): Promise<void> {
     await this.keychain.deleteKey(providerId);
     this.setProviderMessage(providerId, 'API key removed.');
+  }
+
+  protected async handleClearAll(): Promise<void> {
+    if (!this.hasStoredProviders()) {
+      return;
+    }
+
+    const confirmed = await this.dialogService.confirm({
+      title: 'Clear saved keychains',
+      message:
+        'Delete all saved API keys from this device? This removes every encrypted keychain entry and lets you create a new passphrase the next time you save a key.',
+      confirmLabel: 'Clear all',
+      cancelLabel: 'Keep keys',
+      danger: true
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    await this.keychain.clearAllKeys();
+    this.passphrase.set('');
+    this.unlockError.set('');
+    this.keychainMessage.set(
+      'All saved API keys were cleared. You can now create a new passphrase.'
+    );
+    this.drafts.set({});
+    this.providerMessages.set({});
   }
 
   protected async handleValidate(providerId: string): Promise<void> {

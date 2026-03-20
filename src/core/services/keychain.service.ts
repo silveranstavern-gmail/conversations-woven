@@ -81,6 +81,13 @@ export class KeychainService {
     }
   }
 
+  async clearAllKeys(): Promise<void> {
+    const providerIds = this.storedProviders();
+    await Promise.all(providerIds.map((providerId) => this.idb.deleteKv(this.buildKey(providerId))));
+    this.lock();
+    await this.refresh();
+  }
+
   async readKey(providerId: string): Promise<string | null> {
     const passphrase = this.ensurePassphrase();
     const payload = await this.idb.getKv<EncryptedPayload>(this.buildKey(providerId));

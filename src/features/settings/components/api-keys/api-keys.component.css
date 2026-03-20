@@ -13,6 +13,37 @@
   border-radius: var(--radius-md);
 }
 
+.keychain h3 {
+  margin: 0;
+}
+
+.keychain__header {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.keychain__header .text-muted {
+  margin: var(--space-1) 0 0;
+}
+
+.keychain__actions {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.keychain__actions .text-muted,
+.keychain__message {
+  margin: 0;
+}
+
+.keychain__message {
+  color: var(--color-text-muted);
+}
+
 .keychain label {
   display: flex;
   flex-direction: column;
@@ -32,7 +63,7 @@
 }
 
 .form-error {
-  color: var(--color-accent);
+  color: var(--color-danger);
   margin: 0;
 }
 
@@ -103,5 +134,13 @@
 .provider-card__message {
   margin: 0;
   font-size: 0.85rem;
-  color: var(--color-muted);
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 640px) {
+  .keychain__header,
+  .keychain__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }

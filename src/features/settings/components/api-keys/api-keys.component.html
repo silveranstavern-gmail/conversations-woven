@@ -5,10 +5,39 @@
 >
   <div class="settings-section__body-content api-keys">
   <article class="surface-card keychain">
-    <h3>Keychain</h3>
+    <div class="keychain__header">
+      <div>
+        <h3>Keychain</h3>
+        <p class="text-muted">
+          Clear removes every saved API key so you can start over with a new passphrase.
+        </p>
+      </div>
+      <span
+        appTooltip
+        [disabled]="!hasStoredProviders()"
+        [isEmpty]="!hasStoredProviders()"
+        message="No saved keychains to clear"
+        position="top"
+        align="center"
+        size="md"
+      >
+        <button
+          type="button"
+          appButton
+          variant="danger"
+          size="sm"
+          [disabled]="!hasStoredProviders()"
+          (click)="handleClearAll()"
+        >
+          Clear
+        </button>
+      </span>
+    </div>
     @if (isUnlocked()) {
-      <p class="text-muted">Keychain unlocked for this session.</p>
-      <button type="button" appButton variant="ghost" (click)="handleLock()">Lock</button>
+      <div class="keychain__actions">
+        <p class="text-muted">Keychain unlocked for this session.</p>
+        <button type="button" appButton variant="ghost" size="sm" (click)="handleLock()">Lock</button>
+      </div>
     } @else {
       <label>
         <span>Passphrase</span>
@@ -22,11 +51,14 @@
       @if (unlockError()) {
         <p class="form-error">{{ unlockError() }}</p>
       }
-      <button type="button" appButton variant="ghost" (click)="handleUnlock()">Unlock</button>
+      <button type="button" appButton variant="ghost" size="sm" (click)="handleUnlock()">Unlock</button>
       <p class="text-muted small">
         If this is your first time storing keys, choose any passphrase you like. Remember it — we
         cannot recover lost passphrases.
       </p>
+    }
+    @if (keychainMessage()) {
+      <p class="keychain__message">{{ keychainMessage() }}</p>
     }
   </article>
 
