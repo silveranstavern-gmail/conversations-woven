@@ -1,4 +1,4 @@
-import { AfterViewInit, ChangeDetectionStrategy, Component, computed, ElementRef, inject, input, output, signal, viewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, input, output, viewChild } from '@angular/core';
 import { UserPreferencesService } from '@core/services/preference/user-preferences.service';
 import { KeychainService } from '@core/services/keychain.service';
 import { TooltipDirective } from '@shared/ui/tooltip/tooltip.directive';
@@ -22,11 +22,12 @@ export class ComposerComponent implements AfterViewInit {
   private readonly keychain = inject(KeychainService);
 
   public readonly disabled = input(false);
+  public readonly draft = input('');
   public readonly modelId = input<string | null>(null);
 
+  public readonly draftChange = output<string>();
   public readonly submitMessage = output<ComposerSubmitPayload>();
 
-  protected readonly draft = signal('');
   protected readonly sendHotkey = this.preferences.sendHotkey;
   protected readonly isUnlocked = this.keychain.isUnlocked;
   protected readonly storedProviders = this.keychain.storedProviders;
@@ -79,9 +80,13 @@ export class ComposerComponent implements AfterViewInit {
       content: this.draft().trim(),
       modelId
     });
-    this.draft.set('');
-    // Reset textarea height after clearing
-    setTimeout(() => this.autoResize(), 0);
+  }
+
+  constructor() {
+    effect(() => {
+      this.draft();
+      queueMicrotask(() => this.autoResize());
+    });
   }
 
   protected onKeydown(event: KeyboardEvent): void {
@@ -116,8 +121,15 @@ export class ComposerComponent implements AfterViewInit {
     if (!textarea) {
       return;
     }
-    this.draft.set(textarea.value);
+    this.setDraft(textarea.value);
     this.autoResize();
+  }
+
+  private setDraft(value: string): void {
+    if (value === this.draft()) {
+      return;
+    }
+    this.draftChange.emit(value);
   }
 
   private autoResize(): void {
@@ -127,6 +139,12 @@ export class ComposerComponent implements AfterViewInit {
     }
     const el = ref.nativeElement;
     el.style.height = 'auto';
-    el.style.height = el.scrollHeight + 'px';
+    const maxHeight = Number.parseFloat(getComputedStyle(el).maxHeight);
+    const nextHeight = Number.isFinite(maxHeight) && maxHeight > 0
+      ? Math.min(el.scrollHeight, maxHeight)
+      : el.scrollHeight;
+
+    el.style.height = `${nextHeight}px`;
+    el.style.overflowY = el.scrollHeight > nextHeight ? 'auto' : 'hidden';
   }
 }

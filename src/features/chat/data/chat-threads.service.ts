@@ -266,7 +266,7 @@ export class ChatThreadsService {
     if (!this.isKnownModel(modelId)) {
       return;
     }
-    const thread = await this.idb.getThread(id);
+    const thread = this.getThreadSnapshot(id) ?? (await this.idb.getThread(id));
     if (!thread || thread.preferredModelId === modelId) {
       return;
     }
@@ -275,8 +275,13 @@ export class ChatThreadsService {
       preferredModelId: modelId,
       updatedAt: new Date().toISOString()
     };
-    await this.idb.putThread(updated);
     this.upsertThreadInState(updated);
+    try {
+      await this.idb.putThread(updated);
+    } catch (error) {
+      console.error('Failed to persist preferred model change', error);
+      await this.reloadFromStore();
+    }
   }
 
   async updateThreadSettings(

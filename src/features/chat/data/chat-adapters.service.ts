@@ -37,6 +37,12 @@ export interface ChatModelVisibilityOption extends ChatModelOption {
   enabled: boolean;
 }
 
+export interface ResolvedChatModelSelection {
+  modelId: string | null;
+  model: ChatModelOption | null;
+  source: 'thread' | 'default' | 'first-available' | 'unresolved';
+}
+
 export interface ModelPreset {
   version: 1;
   exportedAt: string;
@@ -182,6 +188,54 @@ export class ChatAdaptersService {
     }
     const { enabled: _enabled, ...rest } = match;
     return rest;
+  }
+
+  resolveModelSelection(preferredModelId?: string | null): ResolvedChatModelSelection {
+    const enabledModels = this.models();
+
+    if (preferredModelId) {
+      const preferred = enabledModels.find((model) => model.id === preferredModelId);
+      if (preferred) {
+        return {
+          modelId: preferred.id,
+          model: preferred,
+          source: 'thread'
+        };
+      }
+
+      // Preserve the thread's explicit choice while the model catalog is still loading.
+      if (enabledModels.length === 0) {
+        return {
+          modelId: preferredModelId,
+          model: null,
+          source: 'unresolved'
+        };
+      }
+    }
+
+    const defaultModel = this.defaultModel();
+    if (defaultModel) {
+      return {
+        modelId: defaultModel.id,
+        model: defaultModel,
+        source: 'default'
+      };
+    }
+
+    const firstModel = enabledModels[0] ?? null;
+    if (firstModel) {
+      return {
+        modelId: firstModel.id,
+        model: firstModel,
+        source: 'first-available'
+      };
+    }
+
+    return {
+      modelId: null,
+      model: null,
+      source: 'unresolved'
+    };
   }
 
   setModelEnabled(id: string, enabled: boolean): void {

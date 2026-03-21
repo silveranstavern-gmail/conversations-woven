@@ -150,6 +150,24 @@ export class MessageStateService {
     return next;
   }
 
+  replaceMessageSignal(message: ChatMessage): ChatMessage | null {
+    const exists = this.messages().some((item) => item.id === message.id);
+    if (!exists) {
+      return null;
+    }
+    this.messagesResource.value.update((current) => {
+      const safeCurrent = current ?? [];
+      const index = safeCurrent.findIndex((item) => item.id === message.id);
+      if (index < 0) {
+        return safeCurrent;
+      }
+      const clone = [...safeCurrent];
+      clone[index] = message;
+      return this.sortMessages(clone);
+    });
+    return message;
+  }
+
   async updateMessage(id: Id, patch: Partial<ChatMessage>): Promise<ChatMessage | null> {
     const existing = this.messages().find((message) => message.id === id);
     if (!existing) {

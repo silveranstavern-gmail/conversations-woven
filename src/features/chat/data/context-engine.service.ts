@@ -69,8 +69,11 @@ export class ContextEngineService {
       : 0;
 
     let turns = this.mapMessagesToTurns(selectedMessages, thread.reasoningConfig);
-    if (thread.systemPrompt && !turns.some((turn) => turn.role === 'system')) {
+    if (thread.systemPrompt) {
       const systemTurn: ChatTurn = { role: 'system', content: thread.systemPrompt };
+      // Keep the thread-level sandwich strategy explicit. This wraps the entire request
+      // with the configured system prompt without duplicating any internal system turns
+      // that may already exist inside the conversation history.
       turns = [systemTurn, ...turns, systemTurn];
     }
 

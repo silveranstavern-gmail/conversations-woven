@@ -32,8 +32,14 @@ export class SelectionStateService {
     // Reset context selection when thread changes
     effect(() => {
       const threadId = this.threads.selectedThreadId();
+      const messages = this.messageState.messages();
+      const isContextSelectionActive = this.isContextSelectionActive();
       if (threadId) {
-        this.initializeContextForThread(threadId);
+        if (isContextSelectionActive) {
+          this.initializeContextForThread(threadId);
+          return;
+        }
+        this.resetContextForThread(threadId, messages);
       } else {
         // Clear context selection when no thread is selected
         this.contextSelections.update((current) => {
@@ -140,7 +146,7 @@ export class SelectionStateService {
       // When turning off, reset context for current thread
       const threadId = this.threads.selectedThreadId();
       if (threadId) {
-        this.initializeContextForThread(threadId);
+        this.resetContextForThread(threadId);
       }
     }
   }
@@ -166,7 +172,7 @@ export class SelectionStateService {
     // Default: select all messages in the thread for context
     const messages = this.messageState.messages().filter((m) => m.threadId === threadId);
     const allIds = new Set(messages.map((m) => m.id));
-    
+
     this.contextSelections.update((selections) => {
       // Only initialize if not already set (preserve user's manual selection)
       if (!selections[threadId]) {
@@ -175,5 +181,27 @@ export class SelectionStateService {
       return selections;
     });
   }
-}
 
+  private resetContextForThread(
+    threadId: Id,
+    messages: Array<{ id: Id; threadId?: Id }> = this.messageState.messages()
+  ): void {
+    const allIds = new Set(
+      messages.filter((message) => message.threadId === threadId).map((message) => message.id)
+    );
+    this.contextSelections.update((selections) => {
+      const current = selections[threadId];
+      if (
+        current &&
+        current.size === allIds.size &&
+        Array.from(allIds).every((id) => current.has(id))
+      ) {
+        return selections;
+      }
+      return {
+        ...selections,
+        [threadId]: allIds
+      };
+    });
+  }
+}

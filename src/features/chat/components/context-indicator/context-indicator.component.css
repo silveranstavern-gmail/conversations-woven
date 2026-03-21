@@ -3,7 +3,7 @@
   align-items: center;
   gap: var(--space-2);
   font-size: 0.75rem;
-  color: var(--color-muted);
+  color: var(--color-text-muted);
   padding: 0.25rem 0.5rem;
   border-radius: var(--radius-md);
   background: var(--color-surface);
@@ -12,15 +12,15 @@
 }
 
 .context-indicator--warning {
-  color: var(--color-warning, #d97706);
-  border-color: var(--color-warning, #d97706);
-  background: color-mix(in oklch, var(--color-warning, #d97706) 10%, transparent);
+  color: var(--color-brand);
+  border-color: color-mix(in oklch, var(--color-brand) 45%, var(--color-border));
+  background: color-mix(in oklch, var(--color-brand) 10%, var(--color-surface));
 }
 
 .context-indicator--error {
   color: var(--color-danger);
   border-color: var(--color-danger);
-  background: color-mix(in oklch, var(--color-danger) 10%, transparent);
+  background: color-mix(in oklch, var(--color-danger) 10%, var(--color-surface));
 }
 
 .context-bar {
@@ -33,15 +33,14 @@
 
 .context-bar__fill {
   height: 100%;
-  background: var(--color-muted);
-  transition: width 0.3s ease, background-color 0.3s ease;
+  background: var(--color-text-muted);
+  transition: width var(--transition-base), background-color var(--transition-base);
 }
 
 .context-indicator--warning .context-bar__fill {
-  background: var(--color-warning, #d97706);
+  background: var(--color-brand);
 }
 
 .context-indicator--error .context-bar__fill {
   background: var(--color-danger);
 }
-

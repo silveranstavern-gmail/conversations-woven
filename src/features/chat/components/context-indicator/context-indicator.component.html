@@ -3,10 +3,19 @@
   [class.context-indicator--warning]="isWarning()"
   [class.context-indicator--error]="isError()"
   [title]="tooltip()"
+  role="status"
+  [attr.aria-label]="displayText()"
 >
-  <div class="context-bar" role="progressbar" [attr.aria-valuenow]="percentage()" aria-valuemin="0" aria-valuemax="100">
-    <div class="context-bar__fill" [style.width.%]="percentage()"></div>
-  </div>
-  <span>{{ usage() | number }} / {{ limit() | number }} tokens</span>
+  @if (showProgressBar()) {
+    <div
+      class="context-bar"
+      role="progressbar"
+      [attr.aria-valuenow]="percentage()"
+      aria-valuemin="0"
+      aria-valuemax="100"
+    >
+      <div class="context-bar__fill" [style.width.%]="percentage()"></div>
+    </div>
+  }
+  <span>{{ displayText() }}</span>
 </div>
-

@@ -36,19 +36,7 @@ export class ChatOptionsComponent {
     if (!currentThread) {
       return null;
     }
-    const available = this.models();
-    // First check thread's preferred model
-    const threadPreferred = currentThread.preferredModelId;
-    if (threadPreferred && available.some((model) => model.id === threadPreferred)) {
-      return threadPreferred;
-    }
-    // Then check for default model
-    const defaultModel = this.adapters.defaultModel();
-    if (defaultModel && available.some((model) => model.id === defaultModel.id)) {
-      return defaultModel.id;
-    }
-    // Fallback to first available
-    return available[0]?.id ?? null;
+    return this.adapters.resolveModelSelection(currentThread.preferredModelId ?? null).modelId;
   });
 
   protected readonly systemPrompt = computed(() => this.thread()?.systemPrompt ?? '');
@@ -217,4 +205,3 @@ export class ChatOptionsComponent {
   protected readonly systemPromptDraftValue = this.systemPromptDraft.asReadonly();
   protected readonly temperatureDraftValue = this.temperatureDraft.asReadonly();
 }
-

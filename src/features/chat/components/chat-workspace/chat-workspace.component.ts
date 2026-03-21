@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, input, OnDestroy, viewChild, AfterViewInit } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, input, OnDestroy, signal, viewChild } from '@angular/core';
 import { ChatMessage, ChatThread, Id, ReasoningConfig } from '@models/chat';
 import { MessageListComponent } from '../message-list/message-list.component';
 import { ComposerComponent, ComposerSubmitPayload } from '../composer/composer.component';
@@ -24,7 +24,10 @@ import { ContextIndicatorComponent } from '../context-indicator/context-indicato
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
+  private static readonly EMPTY_COMPOSER_DRAFT_KEY = '__empty__';
   private readonly scrollContainer = viewChild<ElementRef<HTMLDivElement>>('scrollContainer');
+  private readonly composerDrafts = signal<Record<string, string>>({});
+  private readonly isSubmittingComposer = signal(false);
 
   public readonly thread = input<ChatThread | undefined>();
   public readonly hasThreads = input<boolean>(false);
@@ -53,35 +56,54 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
     () => this.selectionCount() >= 2 && !this.isLoading() && !this.isStreaming()
   );
   protected readonly promptContext = computed(() => this.contextEngine.buildContext(this.thread() ?? null));
-  protected readonly preferredModelId = computed(() => {
+  protected readonly visibleMessagesBelongToCurrentThread = computed(() => {
     const currentThread = this.thread();
     if (!currentThread) {
+      return false;
+    }
+    return this.messages().some((message) => message.threadId === currentThread.id);
+  });
+  protected readonly modelSelection = computed(() => {
+    const currentThread = this.thread();
+    if (!currentThread) {
+      return this.adapters.resolveModelSelection(null);
+    }
+    return this.adapters.resolveModelSelection(currentThread.preferredModelId ?? null);
+  });
+  protected readonly preferredModelId = computed(() => {
+    return this.modelSelection().modelId;
+  });
+
+  protected readonly currentModelLimit = computed<number | null>(() => {
+    const model = this.modelSelection().model;
+    return typeof model?.contextLength === 'number' && model.contextLength > 0
+      ? model.contextLength
+      : null;
+  });
+  protected readonly composerDraft = computed(() => {
+    return this.composerDrafts()[this.getComposerDraftKey()] ?? '';
+  });
+  protected readonly estimatedDraftTokens = computed(() => {
+    const draft = this.composerDraft().trim();
+    return draft ? this.messageState.estimateTokens(draft) : 0;
+  });
+
+  protected readonly isContextUsageLoading = computed(() => {
+    const currentThread = this.thread();
+    if (!currentThread) {
+      return false;
+    }
+    return (
+      this.isLoading() &&
+      currentThread.messageCount > 0 &&
+      !this.visibleMessagesBelongToCurrentThread()
+    );
+  });
+
+  protected readonly currentContextTokens = computed<number | null>(() => {
+    if (this.isContextUsageLoading()) {
       return null;
     }
-    const available = this.adapters.models();
-    // First check thread's preferred model
-    const threadPreferred = currentThread.preferredModelId;
-    if (threadPreferred && available.some((model) => model.id === threadPreferred)) {
-      return threadPreferred;
-    }
-    // Then check for default model
-    const defaultModel = this.adapters.defaultModel();
-    if (defaultModel && available.some((model) => model.id === defaultModel.id)) {
-      return defaultModel.id;
-    }
-    // Fallback to first available
-    return available[0]?.id ?? null;
-  });
-
-  // --- NEW COMPUTEDS FOR CONTEXT INDICATOR ---
-  protected readonly currentModelLimit = computed(() => {
-    const id = this.preferredModelId();
-    if (!id) return 0;
-    const model = this.adapters.getModelById(id);
-    return model?.contextLength || 4096;
-  });
-
-  protected readonly estimatedCurrentTokens = computed(() => {
     return this.promptContext().tokens.total;
   });
 
@@ -96,7 +118,12 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
   });
 
   protected readonly composerDisabled = computed(
-    () => !this.thread() || this.isLoading() || this.isStreaming() || !this.preferredModelId()
+    () =>
+      this.isSubmittingComposer() ||
+      !this.thread() ||
+      this.isLoading() ||
+      this.isStreaming() ||
+      !this.modelSelection().model
   );
 
   protected readonly isContextSelectionActive = this.selectionState.isContextSelectionActive.asReadonly();
@@ -191,7 +218,11 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
     if (!threadId) {
       return;
     }
-    void this.messageApi.sendUserMessage(payload.content, payload.modelId, threadId);
+    void this.submitComposerMessage(payload, threadId);
+  }
+
+  protected handleComposerDraftChange(nextDraft: string): void {
+    this.setComposerDraft(this.getComposerDraftKey(), nextDraft);
   }
 
   protected handleCopyMessage(messageId: Id): void {
@@ -358,5 +389,51 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
       .replace(/^-+|-+$/g, '');
     const base = safe || 'chat-thread';
     return `${base}-${new Date().toISOString().replace(/[:]/g, '-')}`;
+  }
+
+  private async submitComposerMessage(
+    payload: ComposerSubmitPayload,
+    threadId: Id
+  ): Promise<void> {
+    if (this.isSubmittingComposer()) {
+      return;
+    }
+    this.isSubmittingComposer.set(true);
+    try {
+      const didStart = await this.messageApi.sendUserMessage(
+        payload.content,
+        payload.modelId,
+        threadId
+      );
+      if (!didStart) {
+        return;
+      }
+      this.setComposerDraft(threadId, '');
+    } catch (error) {
+      console.error('Failed to send message', error);
+    } finally {
+      this.isSubmittingComposer.set(false);
+    }
+  }
+
+  private setComposerDraft(threadId: Id, draft: string): void {
+    this.composerDrafts.update((current) => {
+      const existing = current[threadId] ?? '';
+      if (existing === draft) {
+        return current;
+      }
+      if (!draft) {
+        const { [threadId]: _removed, ...rest } = current;
+        return rest;
+      }
+      return {
+        ...current,
+        [threadId]: draft
+      };
+    });
+  }
+
+  private getComposerDraftKey(): Id {
+    return this.thread()?.id ?? ChatWorkspaceComponent.EMPTY_COMPOSER_DRAFT_KEY;
   }
 }

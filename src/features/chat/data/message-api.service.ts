@@ -1,5 +1,6 @@
 import { inject, Injectable } from '@angular/core';
-import type { ChatMessage, Id, ReasoningDetail } from '@models/chat';
+import type { ChatMessage, ChatThread, Id, ReasoningDetail } from '@models/chat';
+import type { ChatTurn } from '../adapters/llm-adapter';
 import { ChatAdaptersService } from './chat-adapters.service';
 import { MessageStateService } from './message-state.service';
 import { ChatThreadsService } from './chat-threads.service';
@@ -16,36 +17,46 @@ export class MessageApiService {
   private readonly dialog = inject(DialogService);
   private readonly contextEngine = inject(ContextEngineService);
 
-  async sendUserMessage(rawMd: string, modelId: string, threadId: Id): Promise<void> {
+  async sendUserMessage(rawMd: string, modelId: string, threadId: Id): Promise<boolean> {
     if (this.messageState.isStreaming()) {
-      return;
+      return false;
     }
     const content = rawMd.trim();
     if (!threadId || !content) {
-      return;
+      return false;
     }
     const model = this.adapters.getModelById(modelId);
     if (!model) {
-      return;
+      await this.dialog.alert({
+        title: 'Selected Model Unavailable',
+        message: 'The selected model is no longer available. Choose another model and try again.'
+      });
+      return false;
     }
 
     const thread = this.threads.getThreadSnapshot(threadId);
     if (!thread) {
-      return;
+      return false;
     }
     const reasoningConfig = thread.reasoningConfig ?? null;
 
     // --- VALIDATION START ---
-    const requestContext = this.contextEngine.buildRequestContext(thread, content);
+    const requestBuffer = 200;
+    const requestContext = this.contextEngine.buildRequestContext(thread, content, requestBuffer);
     const totalEstimated = requestContext.estimatedTotalTokens;
-    const limit = model.contextLength || 4096;
+    const limit = model.contextLength > 0 ? model.contextLength : null;
 
-    if (totalEstimated > limit) {
+    if (limit !== null && totalEstimated > limit) {
       await this.dialog.alert({
         title: 'Context Limit Exceeded',
-        message: `This conversation exceeds the model's context limit (~${totalEstimated} / ${limit} tokens).\n\nPlease compact previous messages, delete irrelevant ones, or select a specific context range to proceed.`
+        message:
+          `This request is estimated at ~${totalEstimated.toLocaleString()} tokens for ${model.label}, ` +
+          `which exceeds the model limit of ${limit.toLocaleString()}.\n\n` +
+          `Current context: ~${requestContext.context.tokens.total.toLocaleString()} tokens.\n` +
+          `Your draft plus response buffer: ~${(requestContext.userMessageTokens + requestBuffer).toLocaleString()} tokens.\n\n` +
+          'Please compact previous messages, trim the draft, or switch to a model with a larger context window.'
       });
-      return;
+      return false;
     }
     // --- VALIDATION END ---
 
@@ -84,9 +95,25 @@ export class MessageApiService {
     // Persist immediately so a quick reload doesn't drop the pending assistant response
     await this.messageState.upsertMessage(assistantMessage);
     this.messageState.setStreamingMessageId(assistantMessage.id);
+    void this.streamAssistantResponse(model.id, requestContext.turns, thread, assistantMessage).catch(
+      (error) => {
+        console.error('Failed to finalize assistant stream', error);
+        this.messageState.setStreamingMessageId(null);
+      }
+    );
+    return true;
+  }
 
+  private async streamAssistantResponse(
+    modelId: string,
+    turns: ChatTurn[],
+    thread: ChatThread,
+    assistantMessage: ChatMessage
+  ): Promise<void> {
+    const reasoningConfig = thread.reasoningConfig ?? null;
+    let workingAssistant = assistantMessage;
     try {
-      const stream = await this.adapters.streamModel(model.id, requestContext.turns, {
+      const stream = await this.adapters.streamModel(modelId, turns, {
         temperature: thread.temperature,
         reasoning: reasoningConfig?.enabled
           ? {
@@ -97,7 +124,6 @@ export class MessageApiService {
             }
           : undefined
       });
-      let workingAssistant = assistantMessage;
       let hasContent = false;
       let lastSaved = Date.now();
       let isFirstContent = true;
@@ -132,11 +158,15 @@ export class MessageApiService {
           };
         }
 
-        // Update signal immediately for UI responsiveness
-        const updated = this.messageState.updateMessageSignal(assistantMessage.id, patch);
-        if (updated) {
-          workingAssistant = updated;
-        }
+        workingAssistant = {
+          ...workingAssistant,
+          ...patch,
+          revision: workingAssistant.revision + 1
+        };
+
+        // Update the visible signal when this thread is still active, but keep the local
+        // working copy authoritative so switching chats mid-stream does not drop content.
+        this.messageState.replaceMessageSignal(workingAssistant);
 
         const now = Date.now();
         // Save if: chunk is done, OR 1s passed, OR this is the first content chunk (for safety)
@@ -149,12 +179,25 @@ export class MessageApiService {
         }
       }
 
-      if (!hasContent) {
-        await this.messageState.updateMessage(assistantMessage.id, { state: 'complete' });
+      if (!hasContent && workingAssistant.state !== 'complete') {
+        workingAssistant = {
+          ...workingAssistant,
+          state: 'complete',
+          revision: workingAssistant.revision + 1
+        };
+        this.messageState.replaceMessageSignal(workingAssistant);
+        await this.messageState.upsertMessage(workingAssistant);
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to stream response';
-      await this.messageState.updateMessage(assistantMessage.id, { state: 'failed', error: message });
+      workingAssistant = {
+        ...workingAssistant,
+        state: 'failed',
+        error: message,
+        revision: workingAssistant.revision + 1
+      };
+      this.messageState.replaceMessageSignal(workingAssistant);
+      await this.messageState.upsertMessage(workingAssistant);
     } finally {
       this.messageState.setStreamingMessageId(null);
     }
