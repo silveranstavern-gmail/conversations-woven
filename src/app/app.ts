@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, effect, inject } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { AppUpdateService } from '@core/services/app-update.service';
 import { KeychainService } from '@core/services/keychain.service';
 import { DialogService } from '@core/services/dialog.service';
 import { UserPreferencesService } from '@core/services/preference/user-preferences.service';
@@ -14,6 +15,7 @@ import { LoadingOverlayComponent } from '@shared/ui/loading-overlay/loading-over
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class App {
+  private readonly appUpdateService = inject(AppUpdateService);
   private readonly keychain = inject(KeychainService);
   private readonly dialogService = inject(DialogService);
   private readonly preferences = inject(UserPreferencesService);
@@ -23,6 +25,8 @@ export class App {
   protected readonly isUnlocked = this.keychain.isUnlocked;
 
   constructor() {
+    void this.appUpdateService;
+
     // Ensure preferences are applied on app initialization
     // This provides a reactive layer in addition to the service's direct application
     effect(() => {
