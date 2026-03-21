@@ -41,6 +41,7 @@ export interface GenerateTextOptions {
   maxTokens?: number;
   temperature?: number;
   system?: string;
+  jsonMode?: boolean;
 }
 
 export interface LlmModelDescriptor {

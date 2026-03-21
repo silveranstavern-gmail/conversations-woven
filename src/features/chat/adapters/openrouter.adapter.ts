@@ -2,7 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { KeychainService } from '@core/services/keychain.service';
 import type { ReasoningDetail } from '@models/chat';
 import OpenAI from 'openai';
-import { ChatTurn, LlmAdapter, LlmModelDescriptor, StreamChunk, StreamChatOptions } from './llm-adapter';
+import { ChatTurn, GenerateTextOptions, LlmAdapter, LlmModelDescriptor, StreamChunk, StreamChatOptions } from './llm-adapter';
 
 @Injectable({
   providedIn: 'root'
@@ -178,7 +178,7 @@ export class OpenRouterAdapter implements LlmAdapter {
 
   async generateText(
     turns: ChatTurn[],
-    opts: { model: string; maxTokens?: number; temperature?: number; system?: string }
+    opts: GenerateTextOptions
   ): Promise<string> {
     const apiKey = await this.keychain.readKey('openrouter');
     if (!apiKey) {
@@ -221,15 +221,34 @@ export class OpenRouterAdapter implements LlmAdapter {
     }
 
     try {
-      const completion = await client.chat.completions.create({
+      const requestPayload: OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming = {
         model: opts.model,
         messages,
         stream: false, // Set to false for a single response
         max_tokens: opts.maxTokens,
         temperature: opts.temperature
-      });
+      };
 
-      return completion.choices[0]?.message?.content ?? '';
+      if (opts.jsonMode) {
+        requestPayload.response_format = { type: 'json_object' };
+      }
+
+      const completion = await client.chat.completions.create(requestPayload);
+
+      const message = completion.choices[0]?.message;
+      const content = this.extractMessageText(message?.content);
+      if (content) {
+        return content;
+      }
+
+      const finishReason = completion.choices[0]?.finish_reason ?? 'unknown';
+      const refusal =
+        typeof (message as { refusal?: unknown } | undefined)?.refusal === 'string'
+          ? (message as { refusal?: string }).refusal
+          : null;
+      throw new Error(
+        `OpenRouter returned an empty completion (finish_reason: ${finishReason}${refusal ? `, refusal: ${refusal}` : ''}).`
+      );
     } catch (error) {
       if (error instanceof OpenAI.APIError) {
         const fragments: string[] = [];
@@ -268,5 +287,28 @@ export class OpenRouterAdapter implements LlmAdapter {
 
       throw new Error(`OpenRouter API Error: ${(error as Error).message}`);
     }
+  }
+
+  private extractMessageText(content: OpenAI.Chat.Completions.ChatCompletionMessage['content']): string {
+    if (typeof content === 'string') {
+      return content;
+    }
+    if (!content || !Array.isArray(content)) {
+      return '';
+    }
+
+    const parts = content as Array<string | { text?: string }>;
+
+    return parts
+      .map((part: string | { text?: string }) => {
+        if (typeof part === 'string') {
+          return part;
+        }
+        if (part && typeof part === 'object' && 'text' in part && typeof part.text === 'string') {
+          return part.text;
+        }
+        return '';
+      })
+      .join('');
   }
 }

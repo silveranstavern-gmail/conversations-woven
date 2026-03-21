@@ -382,7 +382,8 @@ export class ChatAdaptersService {
       model: model.adapterModelId,
       maxTokens: opts.maxTokens,
       temperature: opts.temperature,
-      system: opts.system
+      system: opts.system,
+      jsonMode: opts.jsonMode
     });
   }
 
