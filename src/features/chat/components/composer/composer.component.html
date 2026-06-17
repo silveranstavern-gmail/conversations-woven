@@ -18,6 +18,22 @@
           [pending]="contextPending()"
         />
       }
+
+      @if (contextModeDetail()) {
+        <button
+          type="button"
+          class="composer-toolbar__context-mode"
+          appButton
+          variant="ghost"
+          size="sm"
+          [class.active]="isContextSelectionActive()"
+          [title]="contextModeDetail() ?? contextModeLabel()"
+          (click)="handleContextModeToggle()"
+        >
+          <span class="composer-toolbar__mode-dot" aria-hidden="true"></span>
+          <span>{{ contextModeLabel() }}</span>
+        </button>
+      }
     </div>
   }
 

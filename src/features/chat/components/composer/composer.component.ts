@@ -2,6 +2,7 @@ import { AfterViewInit, ChangeDetectionStrategy, Component, computed, effect, El
 import { UserPreferencesService } from '@core/services/preference/user-preferences.service';
 import { KeychainService } from '@core/services/keychain.service';
 import { TooltipDirective } from '@shared/ui/tooltip/tooltip.directive';
+import { ButtonDirective } from '@shared/ui/button/button.directive';
 import { ModelSelectorComponent } from '@shared/ui/model-selector/model-selector.component';
 import { ContextIndicatorComponent } from '../context-indicator/context-indicator.component';
 
@@ -12,7 +13,7 @@ export interface ComposerSubmitPayload {
 
 @Component({
   selector: 'app-composer',
-  imports: [TooltipDirective, ModelSelectorComponent, ContextIndicatorComponent],
+  imports: [TooltipDirective, ButtonDirective, ModelSelectorComponent, ContextIndicatorComponent],
   templateUrl: './composer.component.html',
   styleUrl: './composer.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -30,10 +31,14 @@ export class ComposerComponent implements AfterViewInit {
   public readonly contextUsage = input<number | null>(null);
   public readonly contextLimit = input<number | null>(null);
   public readonly contextPending = input(0);
+  public readonly contextModeLabel = input('Full history');
+  public readonly contextModeDetail = input<string | null>(null);
+  public readonly isContextSelectionActive = input(false);
 
   public readonly draftChange = output<string>();
   public readonly submitMessage = output<ComposerSubmitPayload>();
   public readonly modelSelected = output<string>();
+  public readonly contextModeToggled = output<void>();
 
   protected readonly sendHotkey = this.preferences.sendHotkey;
   protected readonly isUnlocked = this.keychain.isUnlocked;
@@ -81,6 +86,10 @@ export class ComposerComponent implements AfterViewInit {
 
   protected handleModelSelected(modelId: string): void {
     this.modelSelected.emit(modelId);
+  }
+
+  protected handleContextModeToggle(): void {
+    this.contextModeToggled.emit();
   }
 
   protected onSubmit(): void {

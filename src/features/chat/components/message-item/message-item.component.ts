@@ -54,6 +54,9 @@ export class MessageItemComponent {
   protected readonly timestamp = computed(() => new Date(this.message().createdAt));
   protected readonly compactedCount = computed(() => this.message().compactedFrom?.length ?? 0);
   protected readonly isCompacted = computed(() => this.compactedCount() > 0);
+  protected readonly contextStatusLabel = computed(() =>
+    this.isContextSelected() ? 'In context' : 'Excluded'
+  );
   protected readonly status = computed<MessageViewStatus | null>(() => {
     const message = this.message();
     switch (message.state) {

@@ -20,120 +20,156 @@
   </header>
 
   <div class="chat-options__content">
-    @if (thread(); as current) {
-      <!-- Model Selector -->
-      <div class="chat-options__field">
-        <label class="chat-options__label" for="model-selector">
-          Model
-          <span class="chat-options__hint">Choose the AI model for this conversation</span>
-        </label>
+    @if (thread()) {
+      <section class="chat-options__group">
+        <div class="chat-options__section-heading">
+          <div>
+            <p class="chat-options__eyebrow">OpenRouter run</p>
+            <h3>Model</h3>
+          </div>
+          <span class="badge badge--ghost">{{ selectedModelProvider() }}</span>
+        </div>
+
         <app-model-selector
           id="model-selector"
           [selectedModelId]="preferredModelId()"
           [disabled]="false"
           (modelSelected)="handleModelSelected($event)"
         />
-      </div>
 
-      <!-- System Instructions -->
-      <div class="chat-options__field">
-        <label class="chat-options__label" for="system-prompt">
-          System Instructions
-          <span class="chat-options__hint">Optional instructions that guide the AI's behavior</span>
-        </label>
+        <div class="chat-options__metrics">
+          <div>
+            <span class="chat-options__metric-value">{{ selectedModelContext() }}</span>
+            <span class="chat-options__metric-label">context</span>
+          </div>
+          <div>
+            <span class="chat-options__metric-value">{{ selectedModelOutput() }}</span>
+            <span class="chat-options__metric-label">completion</span>
+          </div>
+        </div>
+
+        <div class="chat-options__badges" aria-label="Selected model capabilities">
+          @for (badge of selectedModelBadges(); track badge) {
+            <span class="badge badge--neutral">{{ badge }}</span>
+          }
+        </div>
+      </section>
+
+      <section class="chat-options__group">
+        <div class="chat-options__section-heading">
+          <div>
+            <p class="chat-options__eyebrow">Instruction payload</p>
+            <h3>System</h3>
+          </div>
+          <span class="chat-options__micro-stat">{{ systemPromptStats() }}</span>
+        </div>
+
         <textarea
           id="system-prompt"
           class="chat-options__textarea"
           [value]="systemPromptDraftValue()"
           (input)="handleSystemPromptChange($event)"
           (blur)="handleSaveSettings()"
-          placeholder="You are a helpful assistant..."
+          placeholder="Set the behavior, constraints, or experiment frame for this thread."
           rows="4"
         ></textarea>
-      </div>
+      </section>
 
-      <!-- Reasoning Controls -->
-      <div class="chat-options__field">
-        <label class="chat-options__label">
-          Extended Thinking
-          <span class="chat-options__hint">Let models expose their reasoning process</span>
-        </label>
+      <section class="chat-options__group">
+        <div class="chat-options__section-heading">
+          <div>
+            <p class="chat-options__eyebrow">Thinking</p>
+            <h3>Reasoning</h3>
+          </div>
+          <span class="chat-options__micro-stat">{{ reasoningSummary() }}</span>
+        </div>
 
-        <div class="chat-options__toggle-group">
-          <label class="chat-options__checkbox">
+        <div class="chat-options__switch-row">
+          <label class="chat-options__switch">
             <input
               type="checkbox"
               [checked]="reasoningEnabled()"
               (change)="handleReasoningToggle($event)"
             />
-            <span>Enable reasoning</span>
+            <span>Reasoning</span>
           </label>
-
           @if (reasoningEnabled()) {
-            <label class="chat-options__checkbox">
+            <label class="chat-options__switch">
               <input
                 type="checkbox"
                 [checked]="showReasoningInChat()"
                 (change)="handleShowReasoningToggle($event)"
               />
-              <span>Show thinking in chat</span>
+              <span>Visible</span>
             </label>
-
-            <label class="chat-options__checkbox">
+            <label class="chat-options__switch">
               <input
                 type="checkbox"
                 [checked]="captureInHistory()"
                 (change)="handleCaptureInHistoryToggle($event)"
               />
-              <span>Capture thinking in history & exports</span>
+              <span>In history</span>
             </label>
+          }
+        </div>
 
-            <label class="chat-options__label chat-options__label--inline">
-              Summary verbosity
+        @if (reasoningEnabled()) {
+          <div class="chat-options__reasoning-grid">
+            <label class="chat-options__label">
+              Summary
               <select
                 class="chat-options__select"
                 [value]="reasoningSummaryVerbosity()"
                 (change)="handleReasoningSummaryVerbosityChange($event)"
               >
-                <option value="auto">Auto (model decides)</option>
-                <option value="concise">Concise recap</option>
-                <option value="detailed">Detailed chain-of-thought</option>
+                <option value="auto">Auto</option>
+                <option value="concise">Concise</option>
+                <option value="detailed">Detailed</option>
               </select>
             </label>
 
             @if (supportsReasoningEffort()) {
-              <select
-                class="chat-options__select"
-                [value]="reasoningEffort()"
-                (change)="handleReasoningEffortChange($event)"
-              >
-                <option value="low">Low effort (20% tokens)</option>
-                <option value="medium">Medium effort (50% tokens)</option>
-                <option value="high">High effort (80% tokens)</option>
-              </select>
+              <label class="chat-options__label">
+                Effort
+                <select
+                  class="chat-options__select"
+                  [value]="reasoningEffort()"
+                  (change)="handleReasoningEffortChange($event)"
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </label>
             }
 
             @if (supportsReasoningMaxTokens()) {
-              <input
-                type="number"
-                class="chat-options__input"
-                inputmode="numeric"
-                min="1"
-                placeholder="Max reasoning tokens"
-                [value]="reasoningMaxTokens() ?? ''"
-                (change)="handleReasoningMaxTokensChange($event)"
-              />
+              <label class="chat-options__label">
+                Token cap
+                <input
+                  type="number"
+                  class="chat-options__input"
+                  inputmode="numeric"
+                  min="1"
+                  placeholder="Auto"
+                  [value]="reasoningMaxTokens() ?? ''"
+                  (change)="handleReasoningMaxTokensChange($event)"
+                />
+              </label>
             }
-          }
-        </div>
-      </div>
+          </div>
+        }
+      </section>
 
-      <!-- Temperature -->
-      <div class="chat-options__field">
-        <label class="chat-options__label" for="temperature">
-          Temperature
-          <span class="chat-options__hint">Controls randomness (0.0 = deterministic, 2.0 = creative)</span>
-        </label>
+      <section class="chat-options__group">
+        <div class="chat-options__section-heading">
+          <div>
+            <p class="chat-options__eyebrow">Sampling</p>
+            <h3>Temperature</h3>
+          </div>
+          <span class="chat-options__micro-stat">{{ temperatureTone() }}</span>
+        </div>
+
         <div class="chat-options__slider-container">
           <input
             id="temperature"
@@ -148,7 +184,19 @@
           />
           <span class="chat-options__slider-value">{{ (temperatureDraftValue() ?? temperature()).toFixed(1) }}</span>
         </div>
-      </div>
+
+        <div class="chat-options__preset-row" aria-label="Temperature presets">
+          <button type="button" appButton variant="ghost" size="sm" (click)="handleTemperaturePreset(0.2)">
+            Focus
+          </button>
+          <button type="button" appButton variant="ghost" size="sm" (click)="handleTemperaturePreset(0.7)">
+            Balance
+          </button>
+          <button type="button" appButton variant="ghost" size="sm" (click)="handleTemperaturePreset(1.1)">
+            Explore
+          </button>
+        </div>
+      </section>
     } @else {
       <div class="chat-options__empty">
         <p class="text-muted">Select a conversation to configure settings</p>
@@ -156,4 +204,3 @@
     }
   </div>
 </aside>
-

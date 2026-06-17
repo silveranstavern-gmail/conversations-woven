@@ -14,57 +14,88 @@
       <div class="workspace__stream-container">
 
         <!-- Selection Toolbar (Conditional) -->
-        @if (hasSelection()) {
+        @if (hasSelection() || isContextSelectionActive()) {
           <div class="workspace__selection surface-card">
-            <p class="workspace__selection-label">
-              {{ selectionCount() }} message{{ selectionCount() === 1 ? '' : 's' }} selected
-            </p>
+            <div class="workspace__selection-summary">
+              @if (hasSelection()) {
+                <p class="workspace__selection-label">
+                  {{ selectionCount() }} message{{ selectionCount() === 1 ? '' : 's' }} selected
+                </p>
+              }
+              @if (isContextSelectionActive()) {
+                <p class="workspace__selection-detail text-muted">
+                  {{ contextModeDetail() }}
+                </p>
+              }
+            </div>
             <div class="workspace__selection-actions">
-              <button type="button" appButton variant="ghost" size="sm" (click)="handleSelectAll()">
-                Select all
-              </button>
-              <button
-                type="button"
-                appButton
-                variant="ghost"
-                size="sm"
-                (click)="handleCopySelection()"
-              >
-                Copy
-              </button>
-              <span
-                appTooltip
-                [requiresUnlock]="true"
-                [disabled]="!canCompactSelection()"
-                [hasSelection]="selectionCount() >= 2"
-                message="Select at least 2 messages to compact"
-                position="top"
-                align="center"
-                size="sm"
-              >
+              @if (isContextSelectionActive()) {
                 <button
                   type="button"
                   appButton
                   variant="ghost"
                   size="sm"
-                  (click)="handleCompactSelection()"
-                  [disabled]="!canCompactSelection() || !isUnlocked() || storedProviders().length === 0"
+                  (click)="handleIncludeAllContext()"
                 >
-                  Compact
+                  Include all
                 </button>
-              </span>
-              <button
-                type="button"
-                appButton
-                variant="danger"
-                size="sm"
-                (click)="handleDeleteSelected()"
-              >
-                Delete
-              </button>
-              <button type="button" appButton variant="ghost" size="sm" (click)="handleClearSelection()">
-                Clear
-              </button>
+                <button
+                  type="button"
+                  appButton
+                  variant="secondary"
+                  size="sm"
+                  (click)="handleToggleContextSelection()"
+                >
+                  Use full history
+                </button>
+              }
+              @if (hasSelection()) {
+                <button type="button" appButton variant="ghost" size="sm" (click)="handleSelectAll()">
+                  Select all
+                </button>
+                <button
+                  type="button"
+                  appButton
+                  variant="ghost"
+                  size="sm"
+                  (click)="handleCopySelection()"
+                >
+                  Copy
+                </button>
+                <span
+                  appTooltip
+                  [requiresUnlock]="true"
+                  [disabled]="!canCompactSelection()"
+                  [hasSelection]="selectionCount() >= 2"
+                  message="Select at least 2 messages to compact"
+                  position="top"
+                  align="center"
+                  size="sm"
+                >
+                  <button
+                    type="button"
+                    appButton
+                    variant="ghost"
+                    size="sm"
+                    (click)="handleCompactSelection()"
+                    [disabled]="!canCompactSelection() || !isUnlocked() || storedProviders().length === 0"
+                  >
+                    Compact
+                  </button>
+                </span>
+                <button
+                  type="button"
+                  appButton
+                  variant="danger"
+                  size="sm"
+                  (click)="handleDeleteSelected()"
+                >
+                  Delete
+                </button>
+                <button type="button" appButton variant="ghost" size="sm" (click)="handleClearSelection()">
+                  Clear
+                </button>
+              }
             </div>
           </div>
         }
@@ -96,8 +127,12 @@
           [contextUsage]="composerContextUsage()"
           [contextLimit]="currentModelLimit()"
           [contextPending]="estimatedDraftTokens()"
+          [contextModeLabel]="contextModeLabel()"
+          [contextModeDetail]="contextModeDetail()"
+          [isContextSelectionActive]="isContextSelectionActive()"
           (draftChange)="handleComposerDraftChange($event)"
           (modelSelected)="handleModelSelected($event)"
+          (contextModeToggled)="handleToggleContextSelection()"
           (submitMessage)="handleComposerSubmit($event)"
         />
       </div>
@@ -126,8 +161,12 @@
           [contextUsage]="composerContextUsage()"
           [contextLimit]="currentModelLimit()"
           [contextPending]="estimatedDraftTokens()"
+          [contextModeLabel]="contextModeLabel()"
+          [contextModeDetail]="contextModeDetail()"
+          [isContextSelectionActive]="isContextSelectionActive()"
           (draftChange)="handleComposerDraftChange($event)"
           (modelSelected)="handleModelSelected($event)"
+          (contextModeToggled)="handleToggleContextSelection()"
           (submitMessage)="handleComposerSubmit($event)"
         />
       </div>

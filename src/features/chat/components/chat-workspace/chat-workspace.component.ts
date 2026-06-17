@@ -104,6 +104,39 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
       ? model.contextLength
       : null;
   });
+  protected readonly currentThreadMessageCount = computed(() => {
+    const current = this.thread();
+    if (!current) {
+      return 0;
+    }
+    return this.messages().filter((message) => message.threadId === current.id).length;
+  });
+  protected readonly contextIncludedCount = computed(() => {
+    const current = this.thread();
+    if (!current) {
+      return 0;
+    }
+    return this.promptContext().messages.length;
+  });
+  protected readonly contextModeLabel = computed(() => {
+    if (!this.thread()) {
+      return 'Full history';
+    }
+    if (!this.isContextSelectionActive()) {
+      return 'Full history';
+    }
+    return `Curated ${this.contextIncludedCount()}/${this.currentThreadMessageCount()}`;
+  });
+  protected readonly contextModeDetail = computed(() => {
+    const current = this.thread();
+    if (!current) {
+      return null;
+    }
+    if (!this.isContextSelectionActive()) {
+      return 'Every complete message in this thread is eligible for the next request.';
+    }
+    return `${this.contextIncludedCount()} of ${this.currentThreadMessageCount()} messages are included in the next request.`;
+  });
   protected readonly composerDraft = computed(() => {
     return this.composerDrafts()[this.getComposerDraftKey()] ?? '';
   });
@@ -316,7 +349,22 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
   }
 
   protected handleToggleContextSelection(): void {
+    if (!this.thread()) {
+      return;
+    }
     this.selectionState.toggleContextSelection(!this.isContextSelectionActive());
+  }
+
+  protected handleIncludeAllContext(): void {
+    const threadId = this.thread()?.id;
+    if (!threadId) {
+      return;
+    }
+    for (const message of this.messages()) {
+      if (message.threadId === threadId) {
+        this.selectionState.setContextForMessage(threadId, message.id, true);
+      }
+    }
   }
 
   protected handleContextSelectionChange(event: { messageId: Id; included: boolean }): void {
@@ -392,14 +440,16 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
           (reasoningConfig?.captureInHistory ?? true) && (message.reasoning?.visible ?? false);
         let reasoning = '';
         if (includeReasoning && message.reasoning) {
-          const summaryLine = message.reasoning.summary
-            ? `> ${message.reasoning.summary}`
-            : null;
+          const summaryLines = message.reasoning.summary
+            ? message.reasoning.summary.split(/\r?\n/).map((line) => line ? `> ${line}` : '>')
+            : [];
           const detailLines =
             normalizeReasoningDetails(message.reasoning.details ?? [])
               .filter((detail) => detail.type === 'reasoning.text' || detail.type === 'reasoning.summary')
-              .map((detail) => `> ${detail.content}`);
-          const lines = [summaryLine, ...detailLines].filter(Boolean) as string[];
+              .flatMap((detail) =>
+                detail.content.split(/\r?\n/).map((line) => line ? `> ${line}` : '>')
+              );
+          const lines = [...summaryLines, ...detailLines];
           if (lines.length) {
             reasoning = `\n\n**Thinking Process:**\n${lines.join('\n')}`;
           }

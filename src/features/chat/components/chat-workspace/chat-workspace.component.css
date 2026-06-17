@@ -120,13 +120,26 @@
   box-shadow: var(--shadow-sm);
 }
 
+.workspace__selection-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 14rem;
+}
+
 .workspace__selection-label {
   margin: 0;
   font-weight: 500;
+}
+
+.workspace__selection-detail {
+  margin: 0;
+  font-size: 0.8rem;
 }
 
 .workspace__selection-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  justify-content: flex-end;
 }

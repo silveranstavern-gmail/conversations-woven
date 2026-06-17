@@ -28,7 +28,17 @@
     </div>
 
     <div class="message__meta">
-      <p class="message__author">{{ authorLabel() }}</p>
+      <div class="message__meta-line">
+        <p class="message__author">{{ authorLabel() }}</p>
+        @if (isContextSelectionActive()) {
+          <span
+            class="message__context-badge"
+            [class.message__context-badge--excluded]="!isContextSelected()"
+          >
+            {{ contextStatusLabel() }}
+          </span>
+        }
+      </div>
       <p class="message__timestamp text-muted">{{ timestamp() | date: 'short' }}</p>
     </div>
 

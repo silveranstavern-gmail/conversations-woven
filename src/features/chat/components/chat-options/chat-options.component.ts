@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, input, si
 import { ChatThread, ReasoningConfig } from '@models/chat';
 import { ChatAdaptersService } from '../../data/chat-adapters.service';
 import { ChatThreadsService } from '../../data/chat-threads.service';
+import { MessageStateService } from '../../data/message-state.service';
 import { ModelSelectorComponent } from '@shared/ui/model-selector/model-selector.component';
 import { LayoutService } from '@core/services/layout.service';
 import { ButtonDirective } from '@shared/ui/button/button.directive';
@@ -14,8 +15,10 @@ import { ButtonDirective } from '@shared/ui/button/button.directive';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ChatOptionsComponent {
+  private readonly numberFormatter = new Intl.NumberFormat();
   private readonly adapters = inject(ChatAdaptersService);
   private readonly threads = inject(ChatThreadsService);
+  private readonly messageState = inject(MessageStateService);
   private readonly layoutService = inject(LayoutService);
 
   public readonly thread = input<ChatThread | undefined>();
@@ -41,6 +44,45 @@ export class ChatOptionsComponent {
 
   protected readonly systemPrompt = computed(() => this.thread()?.systemPrompt ?? '');
   protected readonly temperature = computed(() => this.thread()?.temperature ?? 1);
+  protected readonly selectedModel = computed(() => {
+    const modelId = this.preferredModelId();
+    return modelId ? this.adapters.getModelById(modelId) ?? null : null;
+  });
+  protected readonly selectedModelProvider = computed(() => {
+    return this.selectedModel()?.providerId ?? 'OpenRouter';
+  });
+  protected readonly selectedModelContext = computed(() => {
+    const contextLength = this.selectedModel()?.contextLength ?? 0;
+    return contextLength > 0 ? `${this.formatNumber(contextLength)} tokens` : 'Unknown';
+  });
+  protected readonly selectedModelOutput = computed(() => {
+    const maxTokens = this.selectedModel()?.capabilities.maxTokens ?? 0;
+    return maxTokens > 0 ? `${this.formatNumber(maxTokens)} max output` : 'Output varies';
+  });
+  protected readonly selectedModelBadges = computed(() => {
+    const model = this.selectedModel();
+    if (!model) {
+      return ['Loading'];
+    }
+    const badges = ['Streaming'];
+    if (model.filterCapabilities.json || model.capabilities.jsonMode) {
+      badges.push('JSON');
+    }
+    if (model.filterCapabilities.tools || model.capabilities.tools) {
+      badges.push('Tools');
+    }
+    if (model.filterCapabilities.image) {
+      badges.push('Image input');
+    }
+    return badges;
+  });
+  protected readonly systemPromptStats = computed(() => {
+    const draft = this.systemPromptDraft().trim();
+    if (!draft) {
+      return 'No system payload';
+    }
+    return `${this.formatNumber(this.messageState.estimateTokens(draft) * 2)} estimated tokens`;
+  });
   protected readonly reasoningConfig = computed<ReasoningConfig>(() => {
     const current = this.thread()?.reasoningConfig;
     return {
@@ -56,6 +98,27 @@ export class ChatOptionsComponent {
   protected readonly reasoningSummaryVerbosity = computed(
     () => this.reasoningConfig().summaryVerbosity ?? 'auto'
   );
+  protected readonly reasoningSummary = computed(() => {
+    if (!this.reasoningEnabled()) {
+      return 'Off';
+    }
+    const visibility = this.showReasoningInChat() ? 'visible' : 'hidden';
+    const capture = this.captureInHistory() ? 'captured' : 'not captured';
+    return `${visibility}, ${capture}`;
+  });
+  protected readonly temperatureTone = computed(() => {
+    const value = this.temperatureDraft() ?? this.temperature();
+    if (value <= 0.3) {
+      return 'Precise';
+    }
+    if (value <= 0.8) {
+      return 'Balanced';
+    }
+    if (value <= 1.3) {
+      return 'Exploratory';
+    }
+    return 'Divergent';
+  });
   protected readonly supportsReasoningEffort = computed(() => {
     const modelId = this.preferredModelId();
     if (!modelId) {
@@ -117,6 +180,11 @@ export class ChatOptionsComponent {
   protected handleTemperatureChange(event: Event): void {
     const value = (event.target as HTMLInputElement).value;
     this.temperatureDraft.set(value ? parseFloat(value) : undefined);
+  }
+
+  protected handleTemperaturePreset(value: number): void {
+    this.temperatureDraft.set(value);
+    this.handleSaveSettings();
   }
 
   protected handleReasoningToggle(event: Event): void {
@@ -204,4 +272,8 @@ export class ChatOptionsComponent {
 
   protected readonly systemPromptDraftValue = this.systemPromptDraft.asReadonly();
   protected readonly temperatureDraftValue = this.temperatureDraft.asReadonly();
+
+  private formatNumber(value: number): string {
+    return this.numberFormatter.format(Math.max(0, Math.round(value)));
+  }
 }
