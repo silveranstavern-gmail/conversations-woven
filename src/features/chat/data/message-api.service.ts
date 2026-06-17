@@ -6,6 +6,7 @@ import { MessageStateService } from './message-state.service';
 import { ChatThreadsService } from './chat-threads.service';
 import { DialogService } from '@core/services/dialog.service';
 import { ContextEngineService } from './context-engine.service';
+import { mergeReasoningDetail } from '../utils/reasoning-details';
 
 @Injectable({
   providedIn: 'root'
@@ -127,7 +128,7 @@ export class MessageApiService {
       let hasContent = false;
       let lastSaved = Date.now();
       let isFirstContent = true;
-      const reasoningBuffer: ReasoningDetail[] = [];
+      let reasoningBuffer: ReasoningDetail[] = [...(workingAssistant.reasoning?.details ?? [])];
 
       for await (const chunk of stream) {
         const patch: Partial<ChatMessage> = {
@@ -139,7 +140,7 @@ export class MessageApiService {
           patch.rawMd = `${workingAssistant.rawMd ?? ''}${chunk.deltaText}`;
         }
         if (chunk.deltaReasoning && workingAssistant.reasoning) {
-          reasoningBuffer.push(chunk.deltaReasoning);
+          reasoningBuffer = mergeReasoningDetail(reasoningBuffer, chunk.deltaReasoning);
           patch.reasoning = {
             ...workingAssistant.reasoning,
             details: [...reasoningBuffer]

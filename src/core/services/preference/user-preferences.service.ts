@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { DestroyRef, inject, Injectable, signal } from '@angular/core';
 
 type ThemePreference = 'system' | 'light' | 'dark';
 
@@ -24,6 +24,8 @@ const DEFAULT_PREFERENCES: PreferencesSnapshot = {
   providedIn: 'root'
 })
 export class UserPreferencesService {
+  private readonly destroyRef = inject(DestroyRef);
+
   private readonly themeSignal = signal<ThemePreference>(DEFAULT_PREFERENCES.theme);
   private readonly fontScaleSignal = signal(DEFAULT_PREFERENCES.fontScale);
   private readonly sendHotkeySignal = signal<SendHotkeyMode>(DEFAULT_PREFERENCES.sendHotkey);
@@ -36,6 +38,23 @@ export class UserPreferencesService {
 
   constructor() {
     this.hydrateFromStorage();
+    this.setupSystemThemeListener();
+  }
+
+  private setupSystemThemeListener(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => {
+      if (this.themeSignal() === 'system') {
+        this.applyThemeToDOM('system');
+      }
+    };
+    mediaQuery.addEventListener('change', handleChange);
+    this.destroyRef.onDestroy(() => {
+      mediaQuery.removeEventListener('change', handleChange);
+    });
   }
 
   setTheme(theme: ThemePreference): void {
@@ -114,7 +133,7 @@ export class UserPreferencesService {
     }
   }
 
-  private applyFontScaleToDOM(value: number): void {
+  applyFontScaleToDOM(value: number): void {
     if (typeof document === 'undefined') {
       return;
     }

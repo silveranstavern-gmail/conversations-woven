@@ -1,4 +1,4 @@
-import { DecimalPipe, DOCUMENT, TitleCasePipe } from '@angular/common';
+import { DecimalPipe, TitleCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { UserPreferencesService, SendHotkeyMode } from '@core/services/preference/user-preferences.service';
 import { ButtonDirective } from '@shared/ui/button/button.directive';
@@ -13,7 +13,6 @@ type ThemePreference = 'system' | 'light' | 'dark';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ThemeFontComponent {
-  private readonly document = inject(DOCUMENT);
   private readonly preferences = inject(UserPreferencesService);
 
   protected readonly themeOptions: ThemePreference[] = ['system', 'light', 'dark'];
@@ -30,12 +29,6 @@ export class ThemeFontComponent {
   );
 
   constructor() {
-    effect(() => {
-      this.applyTheme(this.themePreference());
-    });
-    effect(() => {
-      this.applyFontScale(this.fontScale());
-    });
     // Sync slider value when preference changes externally
     effect(() => {
       this.sliderValue.set(this.fontScale());
@@ -51,7 +44,7 @@ export class ThemeFontComponent {
     const nextValue = Number((event.target as HTMLInputElement).value);
     this.sliderValue.set(nextValue);
     // Apply visual change immediately
-    this.applyFontScale(nextValue);
+    this.preferences.applyFontScaleToDOM(nextValue);
   }
 
   protected onScaleCommit(event: Event): void {
@@ -64,21 +57,4 @@ export class ThemeFontComponent {
     this.preferences.setSendHotkey(mode);
   }
 
-  private applyTheme(preference: ThemePreference): void {
-    const root = this.document?.documentElement;
-    if (!root) {
-      return;
-    }
-
-    if (preference === 'system') {
-      root.removeAttribute('data-theme');
-      return;
-    }
-
-    root.setAttribute('data-theme', preference);
-  }
-
-  private applyFontScale(value: number): void {
-    this.document?.documentElement.style.setProperty('--font-scale', value.toString());
-  }
 }

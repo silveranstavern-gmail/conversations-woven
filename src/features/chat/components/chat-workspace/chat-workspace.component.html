@@ -1,8 +1,8 @@
 <section class="workspace">
-  
+
   @if (thread(); as current) {
-    <app-chat-header 
-      [thread]="current" 
+    <app-chat-header
+      [thread]="current"
       [subtitle]="headerSubtitle()"
       [messageCount]="messages().length"
       (titleClicked)="handleTitleClick()"
@@ -12,7 +12,7 @@
     <!-- Message Stream -->
     <div class="workspace__body" #scrollContainer>
       <div class="workspace__stream-container">
-        
+
         <!-- Selection Toolbar (Conditional) -->
         @if (hasSelection()) {
           <div class="workspace__selection surface-card">
@@ -32,14 +32,14 @@
               >
                 Copy
               </button>
-              <span 
-                appTooltip 
+              <span
+                appTooltip
                 [requiresUnlock]="true"
-                [disabled]="!canCompactSelection()" 
-                [hasSelection]="selectionCount() >= 2" 
-                message="Select at least 2 messages to compact" 
-                position="top" 
-                align="center" 
+                [disabled]="!canCompactSelection()"
+                [hasSelection]="selectionCount() >= 2"
+                message="Select at least 2 messages to compact"
+                position="top"
+                align="center"
                 size="sm"
               >
                 <button
@@ -89,21 +89,15 @@
     <!-- Composer -->
     <div class="workspace__composer-dock">
       <div class="workspace__composer-wrapper">
-        
-        <!-- NEW CONTEXT INDICATOR -->
-        <div class="workspace__context-bar">
-          <app-context-indicator 
-            [usage]="currentContextTokens()" 
-            [pending]="estimatedDraftTokens()"
-            [limit]="currentModelLimit()" 
-          />
-        </div>
-
         <app-composer
           [disabled]="composerDisabled()"
           [draft]="composerDraft()"
-          [modelId]="preferredModelId()"
+          [modelId]="composerModelId()"
+          [contextUsage]="composerContextUsage()"
+          [contextLimit]="currentModelLimit()"
+          [contextPending]="estimatedDraftTokens()"
           (draftChange)="handleComposerDraftChange($event)"
+          (modelSelected)="handleModelSelected($event)"
           (submitMessage)="handleComposerSubmit($event)"
         />
       </div>
@@ -113,17 +107,27 @@
     <!-- Hero / Empty State -->
     <div class="workspace__empty-state">
       <div class="workspace__empty-brand">
-        <div class="workspace__logo">🧶</div>
-        <h2 class="workspace__empty-title">How can I help you?</h2>
+        <div class="workspace__logo" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <div class="workspace__empty-text">
+          <h2 class="workspace__empty-title">Start a new conversation</h2>
+          <p class="workspace__empty-subtitle text-muted">
+            Pick a model below and type your first message to begin.
+          </p>
+        </div>
       </div>
-      
-      <!-- Centered Composer -->
-      <div class="workspace__composer-wrapper" style="max-width: 650px; width: 90%;">
+
+      <div class="workspace__composer-wrapper workspace__composer-wrapper--empty">
         <app-composer
-          [disabled]="false"
+          [disabled]="emptyStateComposerDisabled()"
           [draft]="composerDraft()"
-          [modelId]="preferredModelId()"
+          [modelId]="composerModelId()"
+          [contextUsage]="composerContextUsage()"
+          [contextLimit]="currentModelLimit()"
+          [contextPending]="estimatedDraftTokens()"
           (draftChange)="handleComposerDraftChange($event)"
+          (modelSelected)="handleModelSelected($event)"
           (submitMessage)="handleComposerSubmit($event)"
         />
       </div>

@@ -1,5 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, inject } from '@angular/core';
-import { DOCUMENT } from '@angular/common';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AppUpdateService } from '@core/services/app-update.service';
 import { KeychainService } from '@core/services/keychain.service';
@@ -19,37 +18,13 @@ export class App {
   private readonly keychain = inject(KeychainService);
   private readonly dialogService = inject(DialogService);
   private readonly preferences = inject(UserPreferencesService);
-  private readonly document = inject(DOCUMENT);
   private readonly router = inject(Router);
 
   protected readonly isUnlocked = this.keychain.isUnlocked;
 
   constructor() {
     void this.appUpdateService;
-
-    // Ensure preferences are applied on app initialization
-    // This provides a reactive layer in addition to the service's direct application
-    effect(() => {
-      const theme = this.preferences.theme();
-      const root = this.document?.documentElement;
-      if (root) {
-        if (theme === 'system') {
-          // Detect system preference
-          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          root.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
-        } else {
-          root.setAttribute('data-theme', theme);
-        }
-      }
-    });
-
-    effect(() => {
-      const fontScale = this.preferences.fontScale();
-      const root = this.document?.documentElement;
-      if (root) {
-        root.style.setProperty('--font-scale', fontScale.toString());
-      }
-    });
+    void this.preferences;
   }
 
   protected async handleKeychainAction(): Promise<void> {

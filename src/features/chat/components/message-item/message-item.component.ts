@@ -4,6 +4,8 @@ import { ChatMessage, Id } from '@models/chat';
 import { MarkdownRendererComponent } from '@shared/ui/markdown-renderer/markdown-renderer.component';
 import { ButtonDirective } from '@shared/ui/button/button.directive';
 import { TooltipDirective } from '@shared/ui/tooltip/tooltip.directive';
+import { OverflowMenuComponent } from '@shared/ui/overflow-menu/overflow-menu.component';
+import { normalizeReasoningDetails } from '../../utils/reasoning-details';
 
 type ViewMode = 'rendered' | 'raw';
 type MessageViewStatus = {
@@ -14,7 +16,7 @@ type MessageViewStatus = {
 
 @Component({
   selector: 'app-message-item',
-  imports: [DatePipe, MarkdownRendererComponent, ButtonDirective, TooltipDirective],
+  imports: [DatePipe, MarkdownRendererComponent, ButtonDirective, TooltipDirective, OverflowMenuComponent],
   templateUrl: './message-item.component.html',
   styleUrl: './message-item.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -99,7 +101,7 @@ export class MessageItemComponent {
     return hasDetails || hasSummary || hasTokens;
   });
   protected readonly reasoningDetails = computed(() =>
-    [...(this.message().reasoning?.details ?? [])].sort((a, b) => a.index - b.index)
+    normalizeReasoningDetails(this.message().reasoning?.details ?? [])
   );
   protected readonly reasoningTokenWarning = computed(() => {
     const msg = this.message();

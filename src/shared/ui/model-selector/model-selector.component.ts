@@ -7,6 +7,9 @@ import { ChatAdaptersService } from '@features/chat/data/chat-adapters.service';
   templateUrl: './model-selector.component.html',
   styleUrl: './model-selector.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '[class.model-selector-host--compact]': 'compact()'
+  }
 })
 export class ModelSelectorComponent {
   private readonly adapters = inject(ChatAdaptersService);
@@ -14,8 +17,31 @@ export class ModelSelectorComponent {
   public readonly disabled = input(false);
   public readonly selectedModelId = input<string | null>(null);
   public readonly customOptions = input<{ id: string; label: string }[]>([]);
+  public readonly compact = input(false);
 
   public readonly modelSelected = output<string>();
+
+  protected readonly selectedLabel = computed(() => {
+    const id = this.selectedModelId();
+    if (!id) {
+      return null;
+    }
+    const match = this.displayModels().find((option) => option.id === id);
+    return match?.label ?? id;
+  });
+
+  protected readonly selectedModel = computed(() => {
+    const id = this.selectedModelId();
+    if (!id) {
+      return null;
+    }
+    return this.adapters.getModelById(id) ?? null;
+  });
+
+  protected readonly providerLabel = computed(() => {
+    const model = this.selectedModel();
+    return model?.providerId ?? null;
+  });
 
   protected readonly displayModels = computed(() => {
     const custom = this.customOptions();

@@ -2,6 +2,8 @@ import { AfterViewInit, ChangeDetectionStrategy, Component, computed, effect, El
 import { UserPreferencesService } from '@core/services/preference/user-preferences.service';
 import { KeychainService } from '@core/services/keychain.service';
 import { TooltipDirective } from '@shared/ui/tooltip/tooltip.directive';
+import { ModelSelectorComponent } from '@shared/ui/model-selector/model-selector.component';
+import { ContextIndicatorComponent } from '../context-indicator/context-indicator.component';
 
 export interface ComposerSubmitPayload {
   content: string;
@@ -10,7 +12,7 @@ export interface ComposerSubmitPayload {
 
 @Component({
   selector: 'app-composer',
-  imports: [TooltipDirective],
+  imports: [TooltipDirective, ModelSelectorComponent, ContextIndicatorComponent],
   templateUrl: './composer.component.html',
   styleUrl: './composer.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -24,9 +26,14 @@ export class ComposerComponent implements AfterViewInit {
   public readonly disabled = input(false);
   public readonly draft = input('');
   public readonly modelId = input<string | null>(null);
+  public readonly showToolbar = input(true);
+  public readonly contextUsage = input<number | null>(null);
+  public readonly contextLimit = input<number | null>(null);
+  public readonly contextPending = input(0);
 
   public readonly draftChange = output<string>();
   public readonly submitMessage = output<ComposerSubmitPayload>();
+  public readonly modelSelected = output<string>();
 
   protected readonly sendHotkey = this.preferences.sendHotkey;
   protected readonly isUnlocked = this.keychain.isUnlocked;
@@ -46,6 +53,10 @@ export class ComposerComponent implements AfterViewInit {
     return mode === 'enter' ? 'Enter to send, Shift+Enter for new line' : 'Ctrl/⌘ + Enter to send';
   });
 
+  protected readonly showContextIndicator = computed(
+    () => this.showToolbar() && (this.contextUsage() !== null || this.contextLimit() !== null)
+  );
+
   protected readonly isSendDisabled = computed(() => {
     return this.disabled() || !this.draft().trim() || !this.modelId() || !this.isUnlocked();
   });
@@ -55,7 +66,7 @@ export class ComposerComponent implements AfterViewInit {
       return null;
     }
     // Unlock/Key messages are handled by TooltipDirective via [requiresUnlock]="true"
-    
+
     if (!this.modelId()) {
       return 'Select a model to send messages';
     }
@@ -67,6 +78,10 @@ export class ComposerComponent implements AfterViewInit {
     }
     return null; // Allow default fallbacks if any
   });
+
+  protected handleModelSelected(modelId: string): void {
+    this.modelSelected.emit(modelId);
+  }
 
   protected onSubmit(): void {
     if (this.isSendDisabled() || !this.draft().trim() || this.disabled()) {

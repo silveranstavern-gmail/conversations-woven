@@ -3,13 +3,19 @@
   width: 100%;
 }
 
+:host.model-selector-host--compact {
+  display: inline-flex;
+  width: auto;
+  max-width: 100%;
+}
+
 select {
   width: 100%;
   margin-top: 0.25rem;
   padding: 0.4rem;
   border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
-  background-color: var(--color-surface-0);
+  background-color: var(--color-base);
   color: var(--color-text);
   font-family: inherit;
   font-size: 0.9rem;
@@ -20,3 +26,95 @@ select:disabled {
   cursor: not-allowed;
 }
 
+/* Compact variant: inline pill that overlays a native select for accessibility */
+.model-selector--compact {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  max-width: 100%;
+  padding: 0.25rem 0.35rem 0.25rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-base);
+  color: var(--color-text);
+  font-size: 0.8rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color var(--transition-base), background-color var(--transition-base);
+  width: auto;
+}
+
+.model-selector--compact:hover {
+  border-color: var(--color-border-hover);
+  background: var(--color-surface-hover);
+}
+
+.model-selector--compact:focus-within {
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px var(--color-brand-subtle);
+}
+
+.model-selector--compact.model-selector--empty {
+  color: var(--color-text-muted);
+}
+
+.model-selector__compact-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  pointer-events: none;
+}
+
+.model-selector__compact-name {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 22ch;
+}
+
+.model-selector__compact-provider {
+  flex-shrink: 0;
+  text-transform: uppercase;
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  padding: 0.1rem 0.35rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-hover);
+}
+
+.model-selector__compact-select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  /* Keep visible color/background so the native <option> popup is readable in
+     both themes. The closed select is hidden via opacity, not via transparent
+     color (transparent color leaks into the dropdown options on Chromium/Win). */
+  background-color: var(--color-base);
+  color: var(--color-text);
+  cursor: pointer;
+  opacity: 0;
+}
+
+.model-selector__compact-select option {
+  color: var(--color-text);
+  background-color: var(--color-base);
+}
+
+.model-selector__compact-select:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.model-selector__compact-chevron {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}

@@ -1,16 +1,45 @@
-<select
-  [disabled]="disabled() || displayModels().length === 0"
-  [value]="selectedModelId() ?? ''"
-  (change)="onModelChange($event)"
->
-  @for (option of displayModels(); track option.id) {
-    <option [value]="option.id">
-      @if (isDefault(option.id)) {
-        ⭐ {{ option.label }}
-      } @else {
-        {{ option.label }}
+@if (compact()) {
+  <div class="model-selector model-selector--compact" [class.model-selector--empty]="displayModels().length === 0">
+    <span class="model-selector__compact-label" aria-hidden="true">
+      <span class="model-selector__compact-name">{{ selectedLabel() ?? 'Select a model' }}</span>
+      @if (providerLabel()) {
+        <span class="model-selector__compact-provider">{{ providerLabel() }}</span>
       }
-    </option>
-  }
-</select>
+    </span>
+    <select
+      class="model-selector__compact-select"
+      [disabled]="disabled() || displayModels().length === 0"
+      [value]="selectedModelId() ?? ''"
+      (change)="onModelChange($event)"
+      [attr.aria-label]="'Model: ' + (selectedLabel() ?? 'Select a model')"
+    >
+      @for (option of displayModels(); track option.id) {
+        <option [value]="option.id">
+          @if (isDefault(option.id)) {
+            ⭐ {{ option.label }}
+          } @else {
+            {{ option.label }}
+          }
+        </option>
+      }
+    </select>
+    <svg class="model-selector__compact-chevron" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+  </div>
+} @else {
+  <select
+    [disabled]="disabled() || displayModels().length === 0"
+    [value]="selectedModelId() ?? ''"
+    (change)="onModelChange($event)"
+  >
+    @for (option of displayModels(); track option.id) {
+      <option [value]="option.id">
+        @if (isDefault(option.id)) {
+          ⭐ {{ option.label }}
+        } @else {
+          {{ option.label }}
+        }
+      </option>
+    }
+  </select>
+}
 

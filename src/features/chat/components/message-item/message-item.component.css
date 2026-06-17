@@ -64,8 +64,8 @@
 }
 
 .message__toolbar {
-  display: flex;
-  gap: 0.35rem;
+  display: inline-flex;
+  align-items: center;
 }
 
 .message__compaction {

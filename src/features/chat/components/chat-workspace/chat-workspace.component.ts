@@ -1,4 +1,5 @@
 import { AfterViewInit, ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, input, OnDestroy, signal, viewChild } from '@angular/core';
+import { Router } from '@angular/router';
 import { ChatMessage, ChatThread, Id, ReasoningConfig } from '@models/chat';
 import { MessageListComponent } from '../message-list/message-list.component';
 import { ComposerComponent, ComposerSubmitPayload } from '../composer/composer.component';
@@ -14,11 +15,11 @@ import { DialogService } from '@core/services/dialog.service';
 import { ButtonDirective } from '@shared/ui/button/button.directive';
 import { TooltipDirective } from '@shared/ui/tooltip/tooltip.directive';
 import { ChatHeaderComponent } from '../chat-header/chat-header.component';
-import { ContextIndicatorComponent } from '../context-indicator/context-indicator.component';
+import { normalizeReasoningDetails } from '../../utils/reasoning-details';
 
 @Component({
   selector: 'app-chat-workspace',
-  imports: [MessageListComponent, ComposerComponent, ButtonDirective, TooltipDirective, ChatHeaderComponent, ContextIndicatorComponent],
+  imports: [MessageListComponent, ComposerComponent, ButtonDirective, TooltipDirective, ChatHeaderComponent],
   templateUrl: './chat-workspace.component.html',
   styleUrl: './chat-workspace.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -41,6 +42,7 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
   private readonly threads = inject(ChatThreadsService);
   private readonly keychain = inject(KeychainService);
   private readonly dialogService = inject(DialogService);
+  private readonly router = inject(Router);
 
   protected readonly isUnlocked = this.keychain.isUnlocked;
   protected readonly storedProviders = this.keychain.storedProviders;
@@ -73,6 +75,28 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
   protected readonly preferredModelId = computed(() => {
     return this.modelSelection().modelId;
   });
+
+  private readonly pendingEmptyStateModelId = signal<string | null>(null);
+
+  protected readonly composerModelId = computed(() => {
+    const current = this.thread();
+    if (current) {
+      return this.preferredModelId();
+    }
+    return this.pendingEmptyStateModelId() ?? this.preferredModelId();
+  });
+
+  protected readonly composerContextUsage = computed(() => {
+    const current = this.thread();
+    if (!current) {
+      return 0;
+    }
+    return this.currentContextTokens();
+  });
+
+  protected readonly emptyStateComposerDisabled = computed(
+    () => this.isSubmittingComposer() || !this.modelSelection().model
+  );
 
   protected readonly currentModelLimit = computed<number | null>(() => {
     const model = this.modelSelection().model;
@@ -146,6 +170,13 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
         }, 50);
       }
     });
+
+    // Clear the empty-state model preference once a real thread is active.
+    effect(() => {
+      if (this.thread()) {
+        this.pendingEmptyStateModelId.set(null);
+      }
+    });
   }
 
   ngAfterViewInit(): void {
@@ -214,11 +245,26 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
   }
 
   protected handleComposerSubmit(payload: ComposerSubmitPayload): void {
-    const threadId = this.thread()?.id;
-    if (!threadId) {
+    if (this.isSubmittingComposer()) {
       return;
     }
-    void this.submitComposerMessage(payload, threadId);
+    const existing = this.thread();
+    if (existing) {
+      void this.runSubmit(payload, existing.id);
+      return;
+    }
+    // Empty state: spin up a new thread on first send, then deliver the message.
+    void this.runSubmitFromEmpty(payload);
+  }
+
+  protected handleModelSelected(modelId: string): void {
+    const current = this.thread();
+    if (current) {
+      void this.threads.setPreferredModel(current.id, modelId);
+      return;
+    }
+    // Empty state: remember the choice so the first message creates a thread with this model.
+    this.pendingEmptyStateModelId.set(modelId);
   }
 
   protected handleComposerDraftChange(nextDraft: string): void {
@@ -350,9 +396,9 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
             ? `> ${message.reasoning.summary}`
             : null;
           const detailLines =
-            message.reasoning.details
-              ?.filter((detail) => detail.type === 'reasoning.text' || detail.type === 'reasoning.summary')
-              .map((detail) => `> ${detail.content}`) ?? [];
+            normalizeReasoningDetails(message.reasoning.details ?? [])
+              .filter((detail) => detail.type === 'reasoning.text' || detail.type === 'reasoning.summary')
+              .map((detail) => `> ${detail.content}`);
           const lines = [summaryLine, ...detailLines].filter(Boolean) as string[];
           if (lines.length) {
             reasoning = `\n\n**Thinking Process:**\n${lines.join('\n')}`;
@@ -391,13 +437,24 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
     return `${base}-${new Date().toISOString().replace(/[:]/g, '-')}`;
   }
 
-  private async submitComposerMessage(
-    payload: ComposerSubmitPayload,
-    threadId: Id
-  ): Promise<void> {
-    if (this.isSubmittingComposer()) {
-      return;
+  private async runSubmitFromEmpty(payload: ComposerSubmitPayload): Promise<void> {
+    this.isSubmittingComposer.set(true);
+    try {
+      const created = await this.threads.createThread({
+        preferredModelId: payload.modelId
+      });
+      void this.router.navigate(['/chat', created.id]);
+      // The empty-state draft is keyed off the sentinel; clear it now that we have a real thread.
+      this.setComposerDraft(ChatWorkspaceComponent.EMPTY_COMPOSER_DRAFT_KEY, '');
+      await this.messageApi.sendUserMessage(payload.content, payload.modelId, created.id);
+    } catch (error) {
+      console.error('Failed to start new conversation', error);
+    } finally {
+      this.isSubmittingComposer.set(false);
     }
+  }
+
+  private async runSubmit(payload: ComposerSubmitPayload, threadId: Id): Promise<void> {
     this.isSubmittingComposer.set(true);
     try {
       const didStart = await this.messageApi.sendUserMessage(

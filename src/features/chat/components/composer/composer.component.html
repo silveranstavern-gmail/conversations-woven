@@ -1,5 +1,26 @@
 <div class="composer-shell" [class.disabled]="disabled()">
-  
+
+  @if (showToolbar()) {
+    <div class="composer-toolbar">
+      <app-model-selector
+        class="composer-toolbar__model"
+        [compact]="true"
+        [selectedModelId]="modelId()"
+        [disabled]="disabled()"
+        (modelSelected)="handleModelSelected($event)"
+      />
+
+      @if (showContextIndicator()) {
+        <app-context-indicator
+          class="composer-toolbar__context"
+          [usage]="contextUsage()"
+          [limit]="contextLimit()"
+          [pending]="contextPending()"
+        />
+      }
+    </div>
+  }
+
   <textarea
     #textarea
     class="composer-input"
@@ -13,16 +34,16 @@
 
   <div class="composer-footer">
     <div class="composer-actions">
-      <span 
-        appTooltip 
+      <span
+        appTooltip
         [requiresUnlock]="true"
-        [disabled]="isSendDisabled()" 
+        [disabled]="isSendDisabled()"
         [message]="sendTooltipMessage()"
-        position="top" 
-        align="center" 
+        position="top"
+        align="center"
         size="sm"
       >
-        <button 
+        <button
           class="send-btn"
           type="button"
           [disabled]="isSendDisabled()"

@@ -1,0 +1,25 @@
+<div class="overflow-menu__trigger">
+  <button
+    #trigger
+    type="button"
+    appButton
+    variant="ghost"
+    size="icon"
+    [disabled]="disabled()"
+    [attr.aria-label]="triggerAriaLabel()"
+    [attr.aria-haspopup]="true"
+    [attr.aria-expanded]="isOpen()"
+    [title]="triggerTitle() ?? ''"
+    (click)="toggle()"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+  </button>
+</div>
+
+@if (isOpen()) {
+  <div class="overflow-menu__panel" role="menu" [attr.aria-label]="triggerAriaLabel()">
+    <div class="overflow-menu__list" (click)="onMenuItemClick()">
+      <ng-content></ng-content>
+    </div>
+  </div>
+}
