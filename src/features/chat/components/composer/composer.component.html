@@ -1,12 +1,19 @@
 <div class="composer-shell" [class.disabled]="disabled()">
 
+  @if (catalogError(); as error) {
+    <p role="alert" class="composer-notice">{{ error }} <button type="button" appButton variant="ghost" size="sm" (click)="retryModels()">Retry</button></p>
+  } @else if (catalogLoading()) {
+    <p role="status" class="composer-notice">Loading OpenRouter models…</p>
+  } @else if (unavailableModel()) {
+    <p role="status" class="composer-notice">This model is unavailable or disabled. Choose another model below, or enable it in Settings.</p>
+  }
   @if (showToolbar()) {
     <div class="composer-toolbar">
       <app-model-selector
         class="composer-toolbar__model"
         [compact]="true"
         [selectedModelId]="modelId()"
-        [disabled]="disabled()"
+        [disabled]="isStreaming()"
         (modelSelected)="handleModelSelected($event)"
       />
 
@@ -38,37 +45,50 @@
   }
 
   <textarea
+    aria-label="Message draft"
     #textarea
     class="composer-input"
     [placeholder]="placeholderText()"
     [value]="draft()"
-    [disabled]="disabled()"
+    [disabled]="isStreaming()"
     (input)="onDraftInput($event)"
     (keydown)="onKeydown($event)"
     rows="1"
   ></textarea>
 
+  @if (attachmentError(); as error) { <p role="alert" class="composer-notice">{{ error }}</p> }
   <div class="composer-footer">
+    <div class="composer-attachments">
+      <input #fileInput type="file" accept=".md,.txt,text/plain,text/markdown" multiple hidden (change)="handleFiles($event)" />
+      <button type="button" appButton variant="ghost" size="sm" [disabled]="isStreaming() || readingFiles()" (click)="fileInput.click()">
+        {{ readingFiles() ? 'Reading…' : 'Attach text' }}
+      </button>
+      <span class="text-muted">.md / .txt · added to your editable draft</span>
+    </div>
     <div class="composer-actions">
-      <span
-        appTooltip
-        [requiresUnlock]="true"
-        [disabled]="isSendDisabled()"
-        [message]="sendTooltipMessage()"
-        position="top"
-        align="center"
-        size="sm"
-      >
-        <button
-          class="send-btn"
-          type="button"
+      @if (isStreaming()) {
+        <button type="button" appButton variant="secondary" size="sm" (click)="stopGeneration.emit()">Stop generation</button>
+      } @else {
+        <span
+          appTooltip
+          [requiresUnlock]="true"
           [disabled]="isSendDisabled()"
-          (click)="onSubmit()"
-          aria-label="Send Message"
+          [message]="sendTooltipMessage()"
+          position="top"
+          align="center"
+          size="sm"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
-        </button>
-      </span>
+          <button
+            class="send-btn"
+            type="button"
+            [disabled]="isSendDisabled()"
+            (click)="onSubmit()"
+            aria-label="Send Message"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+          </button>
+        </span>
+      }
     </div>
   </div>
 </div>

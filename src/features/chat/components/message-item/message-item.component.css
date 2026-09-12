@@ -224,3 +224,5 @@
   border-color: var(--color-brand);
   background: color-mix(in oklch, var(--color-brand) 10%, transparent);
 }
+
+.message__model { font-size: .72rem; overflow-wrap: anywhere; }

@@ -90,14 +90,11 @@ export class ChatOptionsComponent {
       ...current
     };
   });
-  protected readonly reasoningEnabled = computed(() => this.reasoningConfig().enabled);
+  protected readonly reasoningEnabled = computed(() => this.reasoningCapabilities()?.mandatory || this.reasoningConfig().enabled);
   protected readonly showReasoningInChat = computed(() => this.reasoningConfig().showInChat);
-  protected readonly reasoningEffort = computed(() => this.reasoningConfig().effort ?? 'medium');
+  protected readonly reasoningEffort = computed(() => this.reasoningCapabilities()?.efforts.includes(this.reasoningConfig().effort!) ? this.reasoningConfig().effort : '');
   protected readonly reasoningMaxTokens = computed(() => this.reasoningConfig().maxTokens);
   protected readonly captureInHistory = computed(() => this.reasoningConfig().captureInHistory);
-  protected readonly reasoningSummaryVerbosity = computed(
-    () => this.reasoningConfig().summaryVerbosity ?? 'auto'
-  );
   protected readonly reasoningSummary = computed(() => {
     if (!this.reasoningEnabled()) {
       return 'Off';
@@ -119,41 +116,43 @@ export class ChatOptionsComponent {
     }
     return 'Divergent';
   });
-  protected readonly supportsReasoningEffort = computed(() => {
-    const modelId = this.preferredModelId();
-    if (!modelId) {
-      return false;
+  protected readonly supportsTemperature = computed(() => this.selectedModel()?.capabilities.supportedParameters.includes('temperature') ?? false);
+  protected readonly supportsOutputLimit = computed(() => this.selectedModel()?.capabilities.supportedParameters.includes('max_tokens') ?? false);
+  protected readonly reasoningCapabilities = computed(() => this.selectedModel()?.capabilities.reasoning);
+  protected readonly supportsReasoningEffort = computed(() => !!this.reasoningCapabilities()?.efforts.length);
+  protected readonly supportsReasoningMaxTokens = computed(() => this.reasoningCapabilities()?.maxTokens ?? false);
+  protected readonly outputLimit = computed(() => Math.min(this.thread()?.maxOutputTokens ?? 4096, this.selectedModel()?.capabilities.maxTokens ?? 4096));
+
+  protected handleOutputLimitChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const value = input.value.trim() ? Number(input.value) : undefined;
+    if (value !== undefined && (!input.checkValidity() || !Number.isInteger(value))) {
+      input.reportValidity();
+      return;
     }
-    const descriptor = this.adapters.getModelById(modelId);
-    if (!descriptor) {
-      return false;
-    }
-    const provider = descriptor.providerId.toLowerCase();
-    return provider.includes('openai') || descriptor.id.toLowerCase().includes('gpt');
-  });
-  protected readonly supportsReasoningMaxTokens = computed(() => {
-    const modelId = this.preferredModelId();
-    if (!modelId) {
-      return false;
-    }
-    const descriptor = this.adapters.getModelById(modelId);
-    if (!descriptor) {
-      return false;
-    }
-    const provider = descriptor.providerId.toLowerCase();
-    return provider.includes('anthropic') || descriptor.id.toLowerCase().includes('claude');
-  });
+    const current = this.thread();
+    if (current) void this.threads.updateThreadSettings(current.id, { maxOutputTokens: value });
+  }
+
+  protected handleResetTemperature(): void {
+    this.temperatureDraft.set(undefined);
+    this.handleSaveSettings();
+  }
 
   private systemPromptDraft = signal('');
   private temperatureDraft = signal<number | undefined>(undefined);
 
   constructor() {
     // Initialize drafts from thread
+    let lastSettings = '';
     effect(() => {
       const currentThread = this.thread();
+      const settingsKey = JSON.stringify([currentThread?.id, currentThread?.systemPrompt, currentThread?.temperature]);
+      if (settingsKey === lastSettings) return;
+      lastSettings = settingsKey;
       if (currentThread) {
         this.systemPromptDraft.set(currentThread.systemPrompt ?? '');
-        this.temperatureDraft.set(currentThread.temperature ?? 1);
+        this.temperatureDraft.set(currentThread.temperature);
       }
     });
   }
@@ -213,7 +212,7 @@ export class ChatOptionsComponent {
       return;
     }
     const value = select.value as ReasoningConfig['effort'];
-    this.persistReasoningConfig({ effort: value });
+    this.persistReasoningConfig({ effort: value || undefined, maxTokens: undefined });
   }
 
   protected handleReasoningMaxTokensChange(event: Event): void {
@@ -222,8 +221,12 @@ export class ChatOptionsComponent {
       return;
     }
     const value = inputEl.value.trim();
-    const parsed = value ? Number.parseInt(value, 10) : undefined;
-    this.persistReasoningConfig({ maxTokens: Number.isNaN(parsed) ? undefined : parsed });
+    const parsed = value ? Number(value) : undefined;
+    if (parsed !== undefined && (!inputEl.checkValidity() || !Number.isInteger(parsed))) {
+      inputEl.reportValidity();
+      return;
+    }
+    this.persistReasoningConfig({ maxTokens: parsed, effort: undefined });
   }
 
   protected handleCaptureInHistoryToggle(event: Event): void {
@@ -232,15 +235,6 @@ export class ChatOptionsComponent {
       return;
     }
     this.persistReasoningConfig({ captureInHistory: checkbox.checked });
-  }
-
-  protected handleReasoningSummaryVerbosityChange(event: Event): void {
-    const select = event.target as HTMLSelectElement | null;
-    if (!select) {
-      return;
-    }
-    const value = select.value as ReasoningConfig['summaryVerbosity'];
-    this.persistReasoningConfig({ summaryVerbosity: value });
   }
 
   private persistReasoningConfig(patch: Partial<ReasoningConfig>): void {

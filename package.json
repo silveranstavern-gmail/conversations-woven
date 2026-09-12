@@ -21,15 +21,18 @@
     ]
   },
   "private": true,
+  "engines": {
+    "node": "^22.22.3 || ^24.15.0 || >=26.0.0"
+  },
   "dependencies": {
-    "@angular/cdk": "^20.2.12",
-    "@angular/common": "^20.3.9",
-    "@angular/compiler": "^20.3.9",
-    "@angular/core": "^20.3.9",
-    "@angular/forms": "^20.3.9",
-    "@angular/platform-browser": "^20.3.9",
-    "@angular/router": "^20.3.9",
-    "@angular/service-worker": "^20.3.9",
+    "@angular/cdk": "^22.1.6",
+    "@angular/common": "^22.1.6",
+    "@angular/compiler": "^22.1.6",
+    "@angular/core": "^22.1.6",
+    "@angular/forms": "^22.1.6",
+    "@angular/platform-browser": "^22.1.6",
+    "@angular/router": "^22.1.6",
+    "@angular/service-worker": "^22.1.6",
     "dexie": "^4.2.1",
     "dompurify": "^3.3.0",
     "marked": "^17.0.0",
@@ -39,18 +42,19 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@angular/build": "^20.3.9",
-    "@angular/cli": "^20.3.9",
-    "@angular/compiler-cli": "^20.3.9",
-    "@angular/pwa": "^20.3.9",
+    "@angular/build": "^22.1.8",
+    "@angular/cli": "^22.1.8",
+    "@angular/compiler-cli": "^22.1.6",
+    "@angular/pwa": "^22.1.8",
     "@babel/types": "^7.28.5",
     "@types/jasmine": "~5.1.0",
     "jasmine-core": "~5.9.0",
+    "istanbul-lib-instrument": "^6.0.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
-    "typescript": "~5.9.2"
+    "typescript": "~6.0.3"
   }
 }

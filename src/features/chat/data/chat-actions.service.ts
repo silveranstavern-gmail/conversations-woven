@@ -29,7 +29,8 @@ export class ChatActionsService {
   private readonly dialog = inject(DialogService);
   private readonly loadingOverlay = inject(LoadingOverlayService);
 
-  async branchFromMessage(messageId: Id): Promise<void> {
+  async branchFromMessage(messageId: Id): Promise<Id | undefined> {
+    if (this.messageState.isStreaming()) return;
     const thread = this.threads.activeThread();
     if (!thread) {
       return;
@@ -44,31 +45,44 @@ export class ChatActionsService {
     const newThread = await this.threads.createThread({
       title: branchTitle,
       preferredModelId: thread.preferredModelId,
-      tags: thread.tags
+      tags: thread.tags,
+      folderId: thread.folderId,
+      systemPrompt: thread.systemPrompt,
+      temperature: thread.temperature,
+      maxOutputTokens: thread.maxOutputTokens,
+      reasoningConfig: thread.reasoningConfig
     });
     const clonedMessages = this.cloneMessagesForThread(newThread.id, branchSource);
     await this.messageState.bulkReplaceMessages(newThread.id, clonedMessages);
-    await this.threads.setMessageCount(newThread.id, clonedMessages.length);
+    return newThread.id;
   }
 
-  async editMessageContent(messageId: Id, rawMd: string): Promise<void> {
+  async editMessageContent(messageId: Id, rawMd: string): Promise<boolean> {
+    if (this.messageState.isStreaming()) return false;
     const nextContent = rawMd.trim();
     if (!nextContent) {
-      return;
+      return false;
     }
     const target = this.messageState.getMessageById(messageId);
     if (!target) {
-      return;
+      return false;
     }
     if (target.state === 'streaming' || target.state === 'sending') {
-      return;
+      return false;
     }
+    if (target.rawMd === nextContent && target.state === 'complete') return true;
     await this.messageState.updateMessage(messageId, {
       rawMd: nextContent,
+      renderedMd: undefined,
+      reasoning: undefined,
+      tokensIn: undefined,
+      tokensOut: undefined,
+      finishReason: undefined,
       error: undefined,
-      state: target.state === 'failed' ? 'complete' : target.state
+      state: 'complete'
     });
     await this.threads.touchThread(target.threadId);
+    return true;
   }
 
   async compactSelection(): Promise<void> {
@@ -191,6 +205,7 @@ export class ChatActionsService {
   }
 
   async deleteSelectedMessages(): Promise<void> {
+    if (this.messageState.isStreaming()) return;
     const ids = [...this.selectionState.selectedMessageIds()];
     if (!ids.length) {
       return;

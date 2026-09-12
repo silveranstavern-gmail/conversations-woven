@@ -10,6 +10,7 @@
         <div class="message-list__item">
           <app-message-item
             [message]="message"
+            [busy]="busy()"
             [isActive]="message.id === activeMessageId()"
             [isSelected]="selectedSet().has(message.id)"
             [isContextSelectionActive]="isContextSelectionActive()"
@@ -19,7 +20,6 @@
             (copyMessage)="onCopy($event)"
             (selectionChange)="onSelectionChanged($event)"
             (restoreCompaction)="onRestore($event)"
-            (updateMessage)="onUpdate($event)"
             (contextSelectionChange)="onContextSelectionChange($event)"
           />
         </div>

@@ -1,3 +1,4 @@
+import { isInteractiveTextModel, modelCapabilities, openRouterModelSchema, supportedOptions } from '../utils/openrouter-models';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import {
   LlmCapabilities,
@@ -65,6 +66,9 @@ const MODEL_PREFERENCES_KEY = 'model-preferences';
 export class ChatAdaptersService {
   private readonly adapters = inject(LLM_ADAPTER_TOKEN);
 
+  readonly isLoading = signal(false);
+  readonly loadError = signal<string | null>(null);
+
   private readonly allModelsSignal = signal<ChatModelOption[]>([]);
 
   private readonly disabledModelIds = signal<string[]>(this.hydrateDisabledModelIds());
@@ -110,16 +114,25 @@ export class ChatAdaptersService {
     void this.initializeModels();
   }
 
-  private async initializeModels(): Promise<void> {
+  async initializeModels(): Promise<void> {
+    if (this.isLoading()) return;
+    this.isLoading.set(true);
+    this.loadError.set(null);
     try {
-      const response = await fetch('https://openrouter.ai/api/v1/models');
+      const response = await fetch('https://openrouter.ai/api/v1/models', { signal: AbortSignal.timeout(15000) });
       if (!response.ok) {
         throw new Error('Failed to fetch models from OpenRouter');
       }
 
-      const { data } = (await response.json()) as { data: any[] };
+      const { data } = (await response.json()) as { data?: unknown };
+      if (!Array.isArray(data)) throw new Error('OpenRouter returned an invalid model catalog.');
 
-      const models: ChatModelOption[] = data.map((model: any) => {
+      const models: ChatModelOption[] = data.flatMap((entry: unknown) => {
+        const parsed = openRouterModelSchema.safeParse(entry);
+        if (!parsed.success) return [];
+        const model = parsed.data;
+        // This workspace renders text responses; exclude dedicated image/audio generators.
+        if (!isInteractiveTextModel(model)) return [];
         // 1. Parse Provider (e.g., "anthropic" from "anthropic/claude...")
         const providerId = model.id.split('/')[0] || 'unknown';
         
@@ -147,15 +160,10 @@ export class ChatAdaptersService {
           filterCapabilities: {
             image: inputModalities.includes('image'),
             video: inputModalities.includes('video'),
-            tools: supportedParams.includes('tools') || model.supported_features?.includes('tools') || false,
-            json: supportedParams.includes('response_format') || model.supported_features?.includes('json_mode') || supportedParams.includes('structured_outputs') || false
+            tools: supportedParams.includes('tools'),
+            json: supportedParams.includes('response_format') || supportedParams.includes('structured_outputs')
           },
-          capabilities: {
-            streaming: true, // Assume all OpenRouter models support streaming
-            tools: supportedParams.includes('tools') || model.supported_features?.includes('tools') || false,
-            jsonMode: supportedParams.includes('response_format') || model.supported_features?.includes('json_mode') || false,
-            maxTokens: model.top_provider?.max_completion_tokens ?? model.context_length ?? 8000
-          },
+          capabilities: modelCapabilities(model),
           details: {
             description: model.description ?? '',
             pricing: {
@@ -174,10 +182,13 @@ export class ChatAdaptersService {
         };
       });
 
+      if (!models.length) throw new Error('No compatible chat models returned by OpenRouter.');
       this.allModelsSignal.set(models);
     } catch (error) {
       console.error('Error initializing models:', error);
-      // Optionally, set a fallback or error state
+      this.loadError.set('Could not load OpenRouter models. Check your connection and retry.');
+    } finally {
+      this.isLoading.set(false);
     }
   }
 
@@ -203,14 +214,7 @@ export class ChatAdaptersService {
         };
       }
 
-      // Preserve the thread's explicit choice while the model catalog is still loading.
-      if (enabledModels.length === 0) {
-        return {
-          modelId: preferredModelId,
-          model: null,
-          source: 'unresolved'
-        };
-      }
+      return { modelId: preferredModelId, model: null, source: 'unresolved' };
     }
 
     const defaultModel = this.defaultModel();
@@ -355,11 +359,8 @@ export class ChatAdaptersService {
     }
 
     return adapter.streamChat(turns, {
-      model: model.adapterModelId,
-      maxTokens: opts.maxTokens,
-      temperature: opts.temperature,
-      system: opts.system,
-      reasoning: opts.reasoning
+      ...supportedOptions(model.capabilities, opts),
+      model: model.adapterModelId
     });
   }
 
@@ -379,11 +380,9 @@ export class ChatAdaptersService {
     }
 
     return adapter.generateText(turns, {
+      ...supportedOptions(model.capabilities, opts),
       model: model.adapterModelId,
-      maxTokens: opts.maxTokens,
-      temperature: opts.temperature,
-      system: opts.system,
-      jsonMode: opts.jsonMode
+      jsonMode: model.capabilities.jsonMode && opts.jsonMode
     });
   }
 

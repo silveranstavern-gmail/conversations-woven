@@ -1,5 +1,6 @@
 <section class="workspace">
 
+  @if (copyStatus()) { <p role="status" class="workspace__feedback">{{ copyStatus() }}</p> }
   @if (thread(); as current) {
     <app-chat-header
       [thread]="current"
@@ -62,6 +63,7 @@
                 >
                   Copy
                 </button>
+                <button type="button" appButton variant="ghost" size="sm" (click)="handleExportSelection()">Export selected</button>
                 <span
                   appTooltip
                   [requiresUnlock]="true"
@@ -88,7 +90,7 @@
                   appButton
                   variant="danger"
                   size="sm"
-                  (click)="handleDeleteSelected()"
+                  [disabled]="isStreaming()" (click)="handleDeleteSelected()"
                 >
                   Delete
                 </button>
@@ -102,6 +104,7 @@
 
         <app-message-list
           [messages]="messages()"
+          [busy]="isStreaming()"
           [activeMessageId]="activeMessageId()"
           [selectedIds]="selectedMessageIds()"
           [isContextSelectionActive]="isContextSelectionActive()"
@@ -111,18 +114,25 @@
           (copyMessage)="handleCopyMessage($event)"
           (selectionChange)="handleSelectionChange($event)"
           (restoreCompaction)="handleRestoreCompaction($event)"
-          (updateMessage)="handleUpdateMessage($event)"
           (contextSelectionChange)="handleContextSelectionChange($event)"
         />
       </div>
     </div>
 
+    <details class="workspace__context-preview">
+      <summary>Preview context · {{ contextIncludedCount() }} messages · draft is appended when sent</summary>
+      <p class="text-muted">Text sent before your draft, in request order. The system prompt wraps the history. Captured reasoning is included only when supported by the selected model.</p>
+      <pre>{{ contextPreview() || 'No history selected. Only your draft will be sent.' }}</pre>
+    </details>
     <!-- Composer -->
     <div class="workspace__composer-dock">
       <div class="workspace__composer-wrapper">
         <app-composer
           [disabled]="composerDisabled()"
           [draft]="composerDraft()"
+          [draftKey]="thread()?.id ?? ''"
+          [isStreaming]="isStreaming()"
+          (stopGeneration)="handleStopGeneration()"
           [modelId]="composerModelId()"
           [contextUsage]="composerContextUsage()"
           [contextLimit]="currentModelLimit()"
@@ -157,6 +167,9 @@
         <app-composer
           [disabled]="emptyStateComposerDisabled()"
           [draft]="composerDraft()"
+          [draftKey]="thread()?.id ?? ''"
+          [isStreaming]="isStreaming()"
+          (stopGeneration)="handleStopGeneration()"
           [modelId]="composerModelId()"
           [contextUsage]="composerContextUsage()"
           [contextLimit]="currentModelLimit()"

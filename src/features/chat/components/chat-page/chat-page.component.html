@@ -1,11 +1,18 @@
 <section class="chat-layout">
+  <nav class="chat-layout__mobile-nav" aria-label="Chat panels">
+    <button type="button" appButton variant="ghost" size="sm" [attr.aria-expanded]="isSidebarOpen()" (click)="layoutService.toggleSidebar()">Conversations</button>
+    <button type="button" appButton variant="ghost" size="sm" [attr.aria-expanded]="isRightSidebarOpen()" (click)="layoutService.toggleRightSidebar()">Run settings</button>
+  </nav>
+  @if (isSidebarOpen() || isRightSidebarOpen()) {
+    <button type="button" class="chat-layout__backdrop" aria-label="Close chat panels" (click)="layoutService.closePanels()"></button>
+  }
   <!-- Left Sidebar: Thread List -->
   <aside 
     class="chat-layout__sidebar-wrapper chat-layout__sidebar-wrapper--left"
     [class.chat-layout__sidebar-wrapper--collapsed]="!isSidebarOpen()"
     [attr.aria-expanded]="isSidebarOpen()"
   >
-    <div class="chat-layout__sidebar-content">
+    <div class="chat-layout__sidebar-content" [inert]="!isSidebarOpen()">
       <app-thread-list
         [threads]="threads()"
         [activeThreadId]="activeThreadId()"
@@ -59,7 +66,7 @@
     [class.chat-layout__sidebar-wrapper--collapsed]="!isRightSidebarOpen()"
     [attr.aria-expanded]="isRightSidebarOpen()"
   >
-    <div class="chat-layout__sidebar-content">
+    <div class="chat-layout__sidebar-content" [inert]="!isRightSidebarOpen()">
       <app-chat-options [thread]="activeThread() ?? undefined" />
     </div>
 

@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal } from '@angular/core';
+import { ChatActionsService } from '../../data/chat-actions.service';
+import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, input, output, signal, viewChild } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { ChatMessage, Id } from '@models/chat';
 import { MarkdownRendererComponent } from '@shared/ui/markdown-renderer/markdown-renderer.component';
@@ -23,6 +24,7 @@ type MessageViewStatus = {
 })
 export class MessageItemComponent {
   public readonly message = input.required<ChatMessage>();
+  public readonly busy = input(false);
   public readonly isActive = input(false);
   public readonly isSelected = input(false);
   public readonly isContextSelectionActive = input(false);
@@ -33,7 +35,6 @@ export class MessageItemComponent {
   public readonly branchFrom = output<ChatMessage['id']>();
   public readonly copyMessage = output<ChatMessage['id']>();
   public readonly restoreCompaction = output<ChatMessage['id']>();
-  public readonly updateMessage = output<{ id: Id; content: string }>();
   public readonly selectionChange = output<{
     id: ChatMessage['id'];
     selected: boolean;
@@ -42,7 +43,11 @@ export class MessageItemComponent {
   public readonly contextSelectionChange = output<{ messageId: Id; included: boolean }>();
 
   protected readonly mode = signal<ViewMode>('rendered');
+  private readonly chatActions = inject(ChatActionsService);
+  private readonly editTextarea = viewChild<ElementRef<HTMLTextAreaElement>>('editTextarea');
   protected readonly isEditing = signal(false);
+  protected readonly isSaving = signal(false);
+  protected readonly saveError = signal<string | null>(null);
   protected readonly editDraft = signal('');
   protected readonly reasoningCollapsed = signal(true);
 
@@ -64,7 +69,7 @@ export class MessageItemComponent {
         return {
           kind: 'info',
           title: 'Generating response...',
-          detail: 'Waiting for the model to return tokens.'
+          detail: message.rawMd ? 'Receiving tokens.' : 'Waiting for the model to return tokens.'
         };
       case 'sending':
         return {
@@ -72,6 +77,8 @@ export class MessageItemComponent {
           title: 'Sending message...',
           detail: 'Queued for delivery.'
         };
+      case 'stopped':
+        return { kind: 'info', title: 'Generation stopped', detail: 'Partial text is kept and excluded from future requests. Edit and save it to include it.' };
       case 'failed':
         return {
           kind: 'error',
@@ -79,12 +86,12 @@ export class MessageItemComponent {
           detail: message.error ?? 'The model did not return any content.'
         };
       default:
-        return null;
+        return message.finishReason === 'length' ? { kind: 'info', title: 'Output limit reached', detail: 'The response may be incomplete. Increase maximum output tokens in Run Settings for a longer response.' } : null;
     }
   });
   protected readonly canEdit = computed(() => {
     const message = this.message();
-    if (message.compactedFrom?.length) {
+    if (this.busy() || message.compactedFrom?.length) {
       return false;
     }
     if (message.state === 'streaming' || message.state === 'sending') {
@@ -100,7 +107,7 @@ export class MessageItemComponent {
     }
     const hasDetails = (reasoning.details?.length ?? 0) > 0;
     const hasSummary = Boolean(reasoning.summary);
-    const hasTokens = reasoning.tokensUsed !== undefined;
+    const hasTokens = (reasoning.tokensUsed ?? 0) > 0;
     return hasDetails || hasSummary || hasTokens;
   });
   protected readonly reasoningDetails = computed(() =>
@@ -119,6 +126,7 @@ export class MessageItemComponent {
   });
 
   constructor() {
+    effect(() => this.editTextarea()?.nativeElement.focus());
     effect(() => {
       const current = this.message();
       if (current.id !== this.lastMessageId) {
@@ -149,8 +157,15 @@ export class MessageItemComponent {
     if (!this.canEdit()) {
       return;
     }
+    this.saveError.set(null);
     this.editDraft.set(this.message().rawMd ?? '');
     this.isEditing.set(true);
+  }
+
+  protected handleEditKeydown(event: KeyboardEvent): void {
+    if (event.isComposing) return;
+    if (event.key === 'Escape') { event.preventDefault(); this.handleCancelEdit(); }
+    if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) { event.preventDefault(); this.handleSaveEdit(); }
   }
 
   protected handleEditInput(event: Event): void {
@@ -162,20 +177,28 @@ export class MessageItemComponent {
   }
 
   protected handleCancelEdit(): void {
+    if (this.isSaving()) return;
     this.isEditing.set(false);
     this.editDraft.set('');
   }
 
-  protected handleSaveEdit(): void {
-    if (!this.canCommitEdit()) {
-      return;
+  protected async handleSaveEdit(): Promise<void> {
+    if (!this.canEdit() || !this.canCommitEdit() || this.isSaving()) return;
+    this.isSaving.set(true);
+    this.saveError.set(null);
+    try {
+      const saved = await this.chatActions.editMessageContent(this.message().id, this.editDraft().trim());
+      if (saved) {
+        this.isEditing.set(false);
+        this.editDraft.set('');
+      } else {
+        this.saveError.set('This message cannot be edited right now. Your draft has been kept.');
+      }
+    } catch {
+      this.saveError.set('Could not save changes. Your draft has been kept; check available browser storage and retry.');
+    } finally {
+      this.isSaving.set(false);
     }
-    this.updateMessage.emit({
-      id: this.message().id,
-      content: this.editDraft().trim()
-    });
-    this.isEditing.set(false);
-    this.editDraft.set('');
   }
 
   protected handleSelectionToggle(event: MouseEvent): void {

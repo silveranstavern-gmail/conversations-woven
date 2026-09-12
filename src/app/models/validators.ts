@@ -14,14 +14,17 @@ export const messageStateSchema = z.enum([
   'sending',
   'streaming',
   'complete',
-  'failed'
+  'failed',
+  'stopped'
 ]);
 
 const reasoningDetailSchema = z.object({
   type: z.enum(['reasoning.summary', 'reasoning.encrypted', 'reasoning.text']),
   content: z.string(),
   index: z.number().int().nonnegative(),
-  id: z.string().optional()
+  id: z.string().optional(),
+  format: z.string().optional(),
+  signature: z.string().optional()
 });
 
 const reasoningDataSchema = z.object({
@@ -33,7 +36,7 @@ const reasoningDataSchema = z.object({
 
 const reasoningConfigSchema = z.object({
   enabled: z.boolean(),
-  effort: z.enum(['low', 'medium', 'high']).optional(),
+  effort: z.enum(['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max']).optional(),
   maxTokens: z.number().int().positive().optional(),
   showInChat: z.boolean(),
   captureInHistory: z.boolean(),
@@ -56,6 +59,7 @@ export const chatThreadSchema = z.object({
   protected: z.boolean().optional(),
   systemPrompt: z.string().optional(),
   temperature: z.number().min(0).max(2).optional(),
+  maxOutputTokens: z.number().int().positive().optional(),
   folderId: idSchema.optional(),
   reasoningConfig: reasoningConfigSchema.optional()
 });
@@ -75,6 +79,7 @@ export const chatMessageSchema = z.object({
   compactedFrom: z.array(idSchema).min(1).optional(),
   compactedSummary: z.string().optional(),
   state: messageStateSchema,
+  finishReason: z.string().optional(),
   error: z.string().optional(),
   reasoning: reasoningDataSchema.optional()
 });

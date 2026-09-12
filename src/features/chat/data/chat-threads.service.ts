@@ -9,6 +9,9 @@ interface CreateThreadOptions {
   tags?: string[];
   preferredModelId?: string;
   folderId?: Id;
+  systemPrompt?: string;
+  temperature?: number;
+  maxOutputTokens?: number;
   reasoningConfig?: Partial<ReasoningConfig>;
 }
 
@@ -88,6 +91,9 @@ export class ChatThreadsService {
       tags: options.tags ?? ['draft'],
       version: 1,
       folderId: options.folderId,
+      systemPrompt: options.systemPrompt,
+      temperature: options.temperature,
+      maxOutputTokens: options.maxOutputTokens,
       reasoningConfig: this.buildReasoningConfig(options.reasoningConfig)
     };
 
@@ -236,6 +242,7 @@ export class ChatThreadsService {
 
   async setMessageCount(id: Id, count: number): Promise<void> {
     const safeCount = Math.max(0, count);
+    if (this.getThreadSnapshot(id)?.messageCount === safeCount) return;
     const thread = await this.idb.getThread(id);
     if (!thread) {
       return;
@@ -286,7 +293,7 @@ export class ChatThreadsService {
 
   async updateThreadSettings(
     id: Id,
-    settings: { systemPrompt?: string; temperature?: number; reasoningConfig?: Partial<ReasoningConfig> }
+    settings: { systemPrompt?: string; temperature?: number; maxOutputTokens?: number; reasoningConfig?: Partial<ReasoningConfig> }
   ): Promise<void> {
     const thread = await this.idb.getThread(id);
     if (!thread) {
@@ -305,6 +312,7 @@ export class ChatThreadsService {
         'systemPrompt' in settings ? settings.systemPrompt : thread.systemPrompt,
       temperature:
         'temperature' in settings ? settings.temperature : thread.temperature,
+      maxOutputTokens: 'maxOutputTokens' in settings ? settings.maxOutputTokens : thread.maxOutputTokens,
       reasoningConfig: nextReasoningConfig,
       updatedAt: new Date().toISOString()
     };

@@ -143,3 +143,9 @@
   gap: 0.5rem;
   justify-content: flex-end;
 }
+
+.workspace__context-preview { padding: var(--space-2) var(--space-4); border-top: 1px solid var(--color-border); font-size: .8rem; }
+.workspace__context-preview summary { cursor: pointer; }
+.workspace__context-preview pre { max-height: 240px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.workspace__feedback { margin: 0; padding: var(--space-2) var(--space-4); font-size: .8rem; }

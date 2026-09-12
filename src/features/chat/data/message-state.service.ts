@@ -23,7 +23,7 @@ export class MessageStateService {
       return from(this.persistence.listMessages(threadId)).pipe(
         map((messages) => {
           const current = this.messagesResource.value();
-          const merged = this.mergeMessages(current ?? [], messages);
+          const merged = this.mergeMessages((current ?? []).filter(message => message.threadId === threadId), messages);
           return this.sortMessages(merged);
         }),
         catchError((error) => {
@@ -56,7 +56,6 @@ export class MessageStateService {
         if (currentActive !== null) {
           this.activeMessageIdSignal.set(null);
         }
-        this.streamingMessageIdSignal.set(null);
         return;
       }
 
@@ -143,7 +142,7 @@ export class MessageStateService {
       if (index >= 0) {
         const clone = [...safeCurrent];
         clone[index] = next;
-        return this.sortMessages(clone);
+        return clone;
       }
       return safeCurrent;
     });
@@ -151,6 +150,7 @@ export class MessageStateService {
   }
 
   replaceMessageSignal(message: ChatMessage): ChatMessage | null {
+    if (message.threadId !== this.threads.selectedThreadId()) return null;
     const exists = this.messages().some((item) => item.id === message.id);
     if (!exists) {
       return null;
@@ -163,7 +163,7 @@ export class MessageStateService {
       }
       const clone = [...safeCurrent];
       clone[index] = message;
-      return this.sortMessages(clone);
+      return clone;
     });
     return message;
   }

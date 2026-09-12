@@ -5,6 +5,8 @@ export interface ReasoningDetail {
   content: string;
   index: number;
   id?: string;
+  format?: string;
+  signature?: string;
 }
 
 export interface ReasoningData {
@@ -14,9 +16,11 @@ export interface ReasoningData {
   visible?: boolean;
 }
 
+export type ReasoningEffort = 'none' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh' | 'max';
+
 export interface ReasoningConfig {
   enabled: boolean;
-  effort?: 'low' | 'medium' | 'high';
+  effort?: ReasoningEffort;
   maxTokens?: number;
   showInChat: boolean;
   captureInHistory: boolean;
@@ -39,11 +43,12 @@ export interface ChatThread {
   protected?: boolean;
   systemPrompt?: string;
   temperature?: number;
+  maxOutputTokens?: number;
   folderId?: Id;
   reasoningConfig?: ReasoningConfig;
 }
 
-export type MessageState = 'draft' | 'sending' | 'streaming' | 'complete' | 'failed';
+export type MessageState = 'draft' | 'sending' | 'streaming' | 'complete' | 'failed' | 'stopped';
 
 export interface ChatMessage {
   id: Id;
@@ -61,5 +66,6 @@ export interface ChatMessage {
   compactedSummary?: string;
   state: MessageState;
   error?: string;
+  finishReason?: string;
   reasoning?: ReasoningData;
 }

@@ -75,128 +75,134 @@
         ></textarea>
       </section>
 
-      <section class="chat-options__group">
-        <div class="chat-options__section-heading">
-          <div>
-            <p class="chat-options__eyebrow">Thinking</p>
-            <h3>Reasoning</h3>
+      @if (reasoningCapabilities()) {
+        <section class="chat-options__group">
+          <div class="chat-options__section-heading">
+            <div>
+              <p class="chat-options__eyebrow">Thinking</p>
+              <h3>Reasoning</h3>
+            </div>
+            <span class="chat-options__micro-stat">{{ reasoningSummary() }}</span>
           </div>
-          <span class="chat-options__micro-stat">{{ reasoningSummary() }}</span>
-        </div>
 
-        <div class="chat-options__switch-row">
-          <label class="chat-options__switch">
-            <input
-              type="checkbox"
-              [checked]="reasoningEnabled()"
-              (change)="handleReasoningToggle($event)"
-            />
-            <span>Reasoning</span>
-          </label>
-          @if (reasoningEnabled()) {
+          <div class="chat-options__switch-row">
             <label class="chat-options__switch">
               <input
                 type="checkbox"
-                [checked]="showReasoningInChat()"
-                (change)="handleShowReasoningToggle($event)"
+                [checked]="reasoningEnabled()"
+                [disabled]="reasoningCapabilities()?.mandatory"
+                (change)="handleReasoningToggle($event)"
               />
-              <span>Visible</span>
+              <span>{{ reasoningCapabilities()?.mandatory ? 'Reasoning (required by model)' : 'Reasoning' }}</span>
             </label>
-            <label class="chat-options__switch">
-              <input
-                type="checkbox"
-                [checked]="captureInHistory()"
-                (change)="handleCaptureInHistoryToggle($event)"
-              />
-              <span>In history</span>
-            </label>
-          }
-        </div>
-
-        @if (reasoningEnabled()) {
-          <div class="chat-options__reasoning-grid">
-            <label class="chat-options__label">
-              Summary
-              <select
-                class="chat-options__select"
-                [value]="reasoningSummaryVerbosity()"
-                (change)="handleReasoningSummaryVerbosityChange($event)"
-              >
-                <option value="auto">Auto</option>
-                <option value="concise">Concise</option>
-                <option value="detailed">Detailed</option>
-              </select>
-            </label>
-
-            @if (supportsReasoningEffort()) {
-              <label class="chat-options__label">
-                Effort
-                <select
-                  class="chat-options__select"
-                  [value]="reasoningEffort()"
-                  (change)="handleReasoningEffortChange($event)"
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
-              </label>
-            }
-
-            @if (supportsReasoningMaxTokens()) {
-              <label class="chat-options__label">
-                Token cap
+            @if (reasoningEnabled()) {
+              <label class="chat-options__switch">
                 <input
-                  type="number"
-                  class="chat-options__input"
-                  inputmode="numeric"
-                  min="1"
-                  placeholder="Auto"
-                  [value]="reasoningMaxTokens() ?? ''"
-                  (change)="handleReasoningMaxTokensChange($event)"
+                  type="checkbox"
+                  [checked]="showReasoningInChat()"
+                  (change)="handleShowReasoningToggle($event)"
                 />
+                <span>Visible</span>
+              </label>
+              <label class="chat-options__switch">
+                <input
+                  type="checkbox"
+                  [checked]="captureInHistory()"
+                  (change)="handleCaptureInHistoryToggle($event)"
+                />
+                <span>In history</span>
               </label>
             }
           </div>
-        }
-      </section>
 
-      <section class="chat-options__group">
-        <div class="chat-options__section-heading">
-          <div>
-            <p class="chat-options__eyebrow">Sampling</p>
-            <h3>Temperature</h3>
+          @if (reasoningEnabled()) {
+            <div class="chat-options__reasoning-grid">
+              @if (supportsReasoningEffort()) {
+                <label class="chat-options__label">
+                  Effort
+                  <select
+                    class="chat-options__select"
+                    [value]="reasoningEffort()"
+                    (change)="handleReasoningEffortChange($event)"
+                  >
+                    <option value="">Model default</option>
+                    @for (effort of reasoningCapabilities()?.efforts ?? []; track effort) {
+                      <option [value]="effort">{{ effort }}</option>
+                    }
+                  </select>
+                </label>
+              }
+
+              @if (supportsReasoningMaxTokens()) {
+                <label class="chat-options__label">
+                  Token cap
+                  <input
+                    type="number"
+                    class="chat-options__input"
+                    inputmode="numeric"
+                    min="1"
+                    step="1"
+                    [max]="outputLimit() - 1"
+                    placeholder="Auto"
+                    [value]="reasoningMaxTokens() ?? ''"
+                    (change)="handleReasoningMaxTokensChange($event)"
+                  />
+                </label>
+              }
+            </div>
+          }
+        </section>
+
+      }
+
+      @if (supportsTemperature()) {
+        <section class="chat-options__group">
+          <div class="chat-options__section-heading">
+            <div>
+              <p class="chat-options__eyebrow">Sampling</p>
+              <h3>Temperature</h3>
+            </div>
+            <span class="chat-options__micro-stat">{{ temperatureDraftValue() === undefined ? 'Model default' : temperatureTone() }}</span>
           </div>
-          <span class="chat-options__micro-stat">{{ temperatureTone() }}</span>
-        </div>
 
-        <div class="chat-options__slider-container">
-          <input
-            id="temperature"
-            type="range"
-            class="chat-options__slider"
-            min="0"
-            max="2"
-            step="0.1"
-            [value]="temperatureDraftValue() ?? temperature()"
-            (input)="handleTemperatureChange($event)"
-            (change)="handleSaveSettings()"
-          />
-          <span class="chat-options__slider-value">{{ (temperatureDraftValue() ?? temperature()).toFixed(1) }}</span>
-        </div>
+          <div class="chat-options__slider-container">
+            <input
+              id="temperature"
+              type="range"
+              class="chat-options__slider"
+              min="0"
+              max="2"
+              step="0.1"
+              [value]="temperatureDraftValue() ?? temperature()"
+              (input)="handleTemperatureChange($event)"
+              (change)="handleSaveSettings()"
+            />
+            <span class="chat-options__slider-value">{{ (temperatureDraftValue() ?? temperature()).toFixed(1) }}</span>
+          </div>
 
-        <div class="chat-options__preset-row" aria-label="Temperature presets">
-          <button type="button" appButton variant="ghost" size="sm" (click)="handleTemperaturePreset(0.2)">
-            Focus
-          </button>
-          <button type="button" appButton variant="ghost" size="sm" (click)="handleTemperaturePreset(0.7)">
-            Balance
-          </button>
-          <button type="button" appButton variant="ghost" size="sm" (click)="handleTemperaturePreset(1.1)">
-            Explore
-          </button>
-        </div>
-      </section>
+          <div class="chat-options__preset-row" aria-label="Temperature presets">
+            <button type="button" appButton variant="ghost" size="sm" (click)="handleResetTemperature()">Default</button>
+            <button type="button" appButton variant="ghost" size="sm" (click)="handleTemperaturePreset(0.2)">
+              Focus
+            </button>
+            <button type="button" appButton variant="ghost" size="sm" (click)="handleTemperaturePreset(0.7)">
+              Balance
+            </button>
+            <button type="button" appButton variant="ghost" size="sm" (click)="handleTemperaturePreset(1.1)">
+              Explore
+            </button>
+          </div>
+        </section>
+      }
+      @if (supportsOutputLimit()) {
+        <section class="chat-options__group">
+          <label class="chat-options__label" for="max-output">Maximum output tokens</label>
+          <input id="max-output" class="chat-options__input" type="number" min="1" step="1"
+            [max]="selectedModel()?.capabilities?.maxTokens" [value]="outputLimit()"
+            (change)="handleOutputLimitChange($event)" />
+          <p class="text-muted">Includes reasoning. Default: up to 4,096 tokens. Input and output share the context window.</p>
+        </section>
+      }
     } @else {
       <div class="chat-options__empty">
         <p class="text-muted">Select a conversation to configure settings</p>

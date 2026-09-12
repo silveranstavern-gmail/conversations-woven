@@ -10,6 +10,7 @@ import { MessageItemComponent } from '../message-item/message-item.component';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MessageListComponent {
+  public readonly busy = input(false);
   public readonly messages = input<ChatMessage[]>([]);
   public readonly activeMessageId = input<Id | null>(null);
   public readonly selectedIds = input<Id[]>([]);
@@ -21,7 +22,6 @@ export class MessageListComponent {
   public readonly copyMessage = output<Id>();
   public readonly selectionChange = output<{ id: Id; selected: boolean; range: boolean }>();
   public readonly restoreCompaction = output<Id>();
-  public readonly updateMessage = output<{ id: Id; content: string }>();
   public readonly contextSelectionChange = output<{ messageId: Id; included: boolean }>();
 
   protected readonly selectedSet = computed(() => new Set(this.selectedIds()));
@@ -46,10 +46,6 @@ export class MessageListComponent {
 
   protected onRestore(id: Id): void {
     this.restoreCompaction.emit(id);
-  }
-
-  protected onUpdate(payload: { id: Id; content: string }): void {
-    this.updateMessage.emit(payload);
   }
 
   protected onContextSelectionChange(event: { messageId: Id; included: boolean }): void {

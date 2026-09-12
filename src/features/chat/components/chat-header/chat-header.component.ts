@@ -10,7 +10,7 @@ import { TooltipDirective } from '@shared/ui/tooltip/tooltip.directive';
     <header class="header">
       <div class="header__left">
         <ng-content select="[start]"></ng-content> <!-- For the sidebar toggle button -->
-        <h1 class="header__title" (click)="titleClicked.emit()">{{ thread()?.title }}</h1>
+        <h1 class="header__title"><button type="button" appButton variant="ghost" size="sm" (click)="titleClicked.emit()" title="Rename conversation">{{ thread()?.title }}</button></h1>
       </div>
       
       <div class="header__actions">
@@ -33,7 +33,7 @@ import { TooltipDirective } from '@shared/ui/tooltip/tooltip.directive';
             [disabled]="!canExport()"
             (click)="exportClicked.emit()"
           >
-            Export
+            Export .md
           </button>
         </span>
       </div>

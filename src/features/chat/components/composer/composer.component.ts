@@ -1,4 +1,6 @@
-import { AfterViewInit, ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, input, output, viewChild } from '@angular/core';
+import { readTextAttachments } from '../../utils/text-attachments';
+import { ChatAdaptersService } from '../../data/chat-adapters.service';
+import { AfterViewInit, ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, input, output, signal, viewChild } from '@angular/core';
 import { UserPreferencesService } from '@core/services/preference/user-preferences.service';
 import { KeychainService } from '@core/services/keychain.service';
 import { TooltipDirective } from '@shared/ui/tooltip/tooltip.directive';
@@ -24,6 +26,16 @@ export class ComposerComponent implements AfterViewInit {
   private readonly preferences = inject(UserPreferencesService);
   private readonly keychain = inject(KeychainService);
 
+  private readonly adapters = inject(ChatAdaptersService);
+  protected readonly catalogError = this.adapters.loadError;
+  protected readonly catalogLoading = this.adapters.isLoading;
+  protected readonly unavailableModel = computed(() => !this.catalogLoading() && !this.catalogError() &&
+    !!this.modelId() && !this.adapters.models().some(model => model.id === this.modelId()));
+  protected readonly attachmentError = signal<string | null>(null);
+  protected readonly readingFiles = signal(false);
+  public readonly draftKey = input('');
+  public readonly isStreaming = input(false);
+  public readonly stopGeneration = output<void>();
   public readonly disabled = input(false);
   public readonly draft = input('');
   public readonly modelId = input<string | null>(null);
@@ -63,7 +75,7 @@ export class ComposerComponent implements AfterViewInit {
   );
 
   protected readonly isSendDisabled = computed(() => {
-    return this.disabled() || !this.draft().trim() || !this.modelId() || !this.isUnlocked();
+    return this.readingFiles() || this.unavailableModel() || this.disabled() || !this.draft().trim() || !this.modelId() || !this.isUnlocked();
   });
 
   protected readonly sendTooltipMessage = computed(() => {
@@ -114,6 +126,7 @@ export class ComposerComponent implements AfterViewInit {
   }
 
   protected onKeydown(event: KeyboardEvent): void {
+    if (event.isComposing || event.keyCode === 229) return;
     const hotkeyMode = this.sendHotkey();
     
     if (hotkeyMode === 'enter') {
@@ -133,6 +146,30 @@ export class ComposerComponent implements AfterViewInit {
           this.onSubmit();
         }
       }
+    }
+  }
+
+  protected retryModels(): void {
+    void this.adapters.initializeModels();
+  }
+
+  protected async handleFiles(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files ?? []);
+    input.value = '';
+    if (!files.length || this.readingFiles() || this.isStreaming()) return;
+    const key = this.draftKey();
+    this.readingFiles.set(true);
+    this.attachmentError.set(null);
+    try {
+      const content = await readTextAttachments(files);
+      if (key !== this.draftKey()) return;
+      this.draftChange.emit([this.draft(), content].filter(Boolean).join('\n\n'));
+      this.textareaRef()?.nativeElement.focus();
+    } catch (error) {
+      if (key === this.draftKey()) this.attachmentError.set(error instanceof Error ? error.message : 'Unable to read files.');
+    } finally {
+      this.readingFiles.set(false);
     }
   }
 

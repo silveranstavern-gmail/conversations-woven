@@ -1,5 +1,5 @@
 import { InjectionToken } from '@angular/core';
-import type { ReasoningDetail } from '@models/chat';
+import type { ReasoningDetail, ReasoningEffort } from '@models/chat';
 
 export interface StreamUsage {
   promptTokens?: number;
@@ -13,6 +13,7 @@ export interface StreamChunk {
   deltaReasoning?: ReasoningDetail;
   done?: boolean;
   usage?: StreamUsage;
+  finishReason?: string;
 }
 
 export interface ChatTurn {
@@ -22,7 +23,8 @@ export interface ChatTurn {
 }
 
 export interface ReasoningRequestOptions {
-  effort?: 'low' | 'medium' | 'high';
+  enabled?: boolean;
+  effort?: ReasoningEffort;
   maxTokens?: number;
   exclude?: boolean;
   summaryVerbosity?: 'auto' | 'concise' | 'detailed';
@@ -34,6 +36,7 @@ export interface StreamChatOptions {
   temperature?: number;
   system?: string;
   reasoning?: ReasoningRequestOptions;
+  signal?: AbortSignal;
 }
 
 export interface GenerateTextOptions {
@@ -57,6 +60,12 @@ export interface LlmCapabilities {
   tools: boolean;
   jsonMode: boolean;
   maxTokens: number;
+  supportedParameters: string[];
+  reasoning?: {
+    efforts: ReasoningEffort[];
+    maxTokens: boolean;
+    mandatory: boolean;
+  };
 }
 
 export interface LlmAdapter {

@@ -7,6 +7,7 @@ import { ChatThreadsService } from './chat-threads.service';
 import { DialogService } from '@core/services/dialog.service';
 import { ContextEngineService } from './context-engine.service';
 import { mergeReasoningDetail } from '../utils/reasoning-details';
+import { supportedOptions } from '../utils/openrouter-models';
 
 @Injectable({
   providedIn: 'root'
@@ -18,7 +19,24 @@ export class MessageApiService {
   private readonly dialog = inject(DialogService);
   private readonly contextEngine = inject(ContextEngineService);
 
+  private preparing = false;
+  private streamController: AbortController | null = null;
+
+  stopGeneration(): void {
+    this.streamController?.abort();
+  }
+
   async sendUserMessage(rawMd: string, modelId: string, threadId: Id): Promise<boolean> {
+    if (this.preparing || this.messageState.isStreaming()) return false;
+    this.preparing = true;
+    try {
+      return await this.prepareUserMessage(rawMd, modelId, threadId);
+    } finally {
+      this.preparing = false;
+    }
+  }
+
+  private async prepareUserMessage(rawMd: string, modelId: string, threadId: Id): Promise<boolean> {
     if (this.messageState.isStreaming()) {
       return false;
     }
@@ -42,7 +60,22 @@ export class MessageApiService {
     const reasoningConfig = thread.reasoningConfig ?? null;
 
     // --- VALIDATION START ---
-    const requestBuffer = 200;
+    const maxTokens = model.capabilities.supportedParameters.includes('max_tokens')
+      ? Math.min(thread.maxOutputTokens ?? 4096, model.capabilities.maxTokens) : undefined;
+    try {
+      supportedOptions(model.capabilities, {
+        maxTokens,
+        temperature: thread.temperature,
+        reasoning: thread.reasoningConfig
+      });
+    } catch (error) {
+      await this.dialog.alert({
+        title: 'Adjust run settings',
+        message: error instanceof Error ? error.message : 'The selected settings are not supported.'
+      });
+      return false;
+    }
+    const requestBuffer = (maxTokens ?? 0) + 200;
     const requestContext = this.contextEngine.buildRequestContext(thread, content, requestBuffer);
     const totalEstimated = requestContext.estimatedTotalTokens;
     const limit = model.contextLength > 0 ? model.contextLength : null;
@@ -85,18 +118,19 @@ export class MessageApiService {
       model: model.id,
       tokensIn: 0,
       tokensOut: 0,
-      reasoning: reasoningConfig?.enabled
+      reasoning: model.capabilities.reasoning
         ? {
             details: [],
             tokensUsed: 0,
-            visible: reasoningConfig.showInChat
+            visible: reasoningConfig?.showInChat ?? false
           }
         : undefined
     };
     // Persist immediately so a quick reload doesn't drop the pending assistant response
     await this.messageState.upsertMessage(assistantMessage);
+    this.streamController = new AbortController();
     this.messageState.setStreamingMessageId(assistantMessage.id);
-    void this.streamAssistantResponse(model.id, requestContext.turns, thread, assistantMessage).catch(
+    void this.streamAssistantResponse(model.id, requestContext.turns, thread, assistantMessage, this.streamController, maxTokens).catch(
       (error) => {
         console.error('Failed to finalize assistant stream', error);
         this.messageState.setStreamingMessageId(null);
@@ -109,15 +143,26 @@ export class MessageApiService {
     modelId: string,
     turns: ChatTurn[],
     thread: ChatThread,
-    assistantMessage: ChatMessage
+    assistantMessage: ChatMessage,
+    controller: AbortController,
+    maxTokens?: number
   ): Promise<void> {
     const reasoningConfig = thread.reasoningConfig ?? null;
     let workingAssistant = assistantMessage;
+    let publishTimer: ReturnType<typeof setTimeout> | undefined;
+    const publish = () => {
+      clearTimeout(publishTimer);
+      publishTimer = undefined;
+      this.messageState.replaceMessageSignal(workingAssistant);
+    };
     try {
       const stream = await this.adapters.streamModel(modelId, turns, {
         temperature: thread.temperature,
-        reasoning: reasoningConfig?.enabled
+        maxTokens,
+        signal: controller.signal,
+        reasoning: reasoningConfig
           ? {
+              enabled: reasoningConfig.enabled,
               effort: reasoningConfig.effort,
               maxTokens: reasoningConfig.maxTokens,
               summaryVerbosity: reasoningConfig.summaryVerbosity,
@@ -125,7 +170,6 @@ export class MessageApiService {
             }
           : undefined
       });
-      let hasContent = false;
       let lastSaved = Date.now();
       let isFirstContent = true;
       let reasoningBuffer: ReasoningDetail[] = [...(workingAssistant.reasoning?.details ?? [])];
@@ -133,10 +177,10 @@ export class MessageApiService {
       for await (const chunk of stream) {
         const patch: Partial<ChatMessage> = {
           state: chunk.done ? 'complete' : 'streaming',
-          error: undefined
+          error: undefined,
+          finishReason: chunk.finishReason ?? workingAssistant.finishReason
         };
         if (chunk.deltaText) {
-          hasContent = true;
           patch.rawMd = `${workingAssistant.rawMd ?? ''}${chunk.deltaText}`;
         }
         if (chunk.deltaReasoning && workingAssistant.reasoning) {
@@ -167,7 +211,8 @@ export class MessageApiService {
 
         // Update the visible signal when this thread is still active, but keep the local
         // working copy authoritative so switching chats mid-stream does not drop content.
-        this.messageState.replaceMessageSignal(workingAssistant);
+        if (chunk.done) publish();
+        else publishTimer ??= setTimeout(publish, 50);
 
         const now = Date.now();
         // Save if: chunk is done, OR 1s passed, OR this is the first content chunk (for safety)
@@ -180,26 +225,21 @@ export class MessageApiService {
         }
       }
 
-      if (!hasContent && workingAssistant.state !== 'complete') {
-        workingAssistant = {
-          ...workingAssistant,
-          state: 'complete',
-          revision: workingAssistant.revision + 1
-        };
-        this.messageState.replaceMessageSignal(workingAssistant);
-        await this.messageState.upsertMessage(workingAssistant);
-      }
+      controller.signal.throwIfAborted();
+
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to stream response';
       workingAssistant = {
         ...workingAssistant,
-        state: 'failed',
-        error: message,
+        state: controller.signal.aborted ? 'stopped' : 'failed',
+        error: controller.signal.aborted ? undefined : message,
         revision: workingAssistant.revision + 1
       };
       this.messageState.replaceMessageSignal(workingAssistant);
       await this.messageState.upsertMessage(workingAssistant);
     } finally {
+      publish();
+      this.streamController = null;
       this.messageState.setStreamingMessageId(null);
     }
   }

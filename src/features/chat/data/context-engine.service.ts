@@ -2,6 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import type { ChatMessage, ChatThread, Id, ReasoningConfig } from '@models/chat';
 import type { ChatTurn } from '../adapters/llm-adapter';
 import { MessageStateService } from './message-state.service';
+import { ChatAdaptersService } from './chat-adapters.service';
 import { SelectionStateService } from './selection-state.service';
 
 export interface PromptContext {
@@ -33,6 +34,7 @@ export interface PromptRequestContext {
   providedIn: 'root'
 })
 export class ContextEngineService {
+  private readonly adapters = inject(ChatAdaptersService);
   private readonly messageState = inject(MessageStateService);
   private readonly selectionState = inject(SelectionStateService);
 
@@ -58,9 +60,9 @@ export class ContextEngineService {
 
     const isSelectionActive = this.selectionState.isContextSelectionActive();
     const selectedIds = new Set(this.selectionState.getContextForThread(thread.id));
-    const useSelection = isSelectionActive && selectedIds.size > 0;
+    const useSelection = isSelectionActive;
     const selectedMessages = useSelection
-      ? this.filterMessagesForContext(this.messageState.getMessagesInOrder(Array.from(selectedIds)))
+      ? this.filterMessagesForContext(this.messageState.getMessagesInOrder(Array.from(selectedIds)).filter(message => message.threadId === thread.id))
       : this.messageState.getEffectiveHistory(thread.id);
 
     const historyTokens = this.messageState.calculateTotalTokens(selectedMessages);
@@ -68,7 +70,12 @@ export class ContextEngineService {
       ? this.messageState.estimateTokens(thread.systemPrompt) * 2
       : 0;
 
-    let turns = this.mapMessagesToTurns(selectedMessages, thread.reasoningConfig);
+    const selectedModel = this.adapters.resolveModelSelection(thread.preferredModelId).model;
+    let turns = this.mapMessagesToTurns(selectedMessages,
+      selectedModel?.capabilities.reasoning ? thread.reasoningConfig : null,
+      selectedModel?.id);
+    const reasoningTokens = turns.reduce((sum, turn) => sum +
+      (turn.reasoningDetails ?? []).reduce((total, detail) => total + this.messageState.estimateTokens(detail.content), 0), 0);
     if (thread.systemPrompt) {
       const systemTurn: ChatTurn = { role: 'system', content: thread.systemPrompt };
       // Keep the thread-level sandwich strategy explicit. This wraps the entire request
@@ -88,8 +95,8 @@ export class ContextEngineService {
       },
       tokens: {
         system: systemTokens,
-        history: historyTokens,
-        total: systemTokens + historyTokens
+        history: historyTokens + reasoningTokens,
+        total: systemTokens + historyTokens + reasoningTokens
       },
       reasoningConfig: thread.reasoningConfig ?? null
     };
@@ -124,7 +131,8 @@ export class ContextEngineService {
 
   private mapMessagesToTurns(
     messages: ChatMessage[],
-    reasoningConfig: ReasoningConfig | null = null
+    reasoningConfig: ReasoningConfig | null = null,
+    modelId?: string
   ): ChatTurn[] {
     const captureReasoning = reasoningConfig?.captureInHistory ?? false;
     return messages
@@ -136,6 +144,7 @@ export class ContextEngineService {
         if (
           captureReasoning &&
           message.role === 'assistant' &&
+          message.model === modelId &&
           message.reasoning?.details?.length
         ) {
           turn.reasoningDetails = [...message.reasoning.details];

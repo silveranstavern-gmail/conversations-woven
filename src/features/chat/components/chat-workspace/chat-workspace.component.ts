@@ -1,6 +1,6 @@
-import { AfterViewInit, ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, input, OnDestroy, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, input, signal, viewChild } from '@angular/core';
 import { Router } from '@angular/router';
-import { ChatMessage, ChatThread, Id, ReasoningConfig } from '@models/chat';
+import { ChatMessage, ChatThread, Id } from '@models/chat';
 import { MessageListComponent } from '../message-list/message-list.component';
 import { ComposerComponent, ComposerSubmitPayload } from '../composer/composer.component';
 import { MessageStateService } from '../../data/message-state.service';
@@ -15,7 +15,7 @@ import { DialogService } from '@core/services/dialog.service';
 import { ButtonDirective } from '@shared/ui/button/button.directive';
 import { TooltipDirective } from '@shared/ui/tooltip/tooltip.directive';
 import { ChatHeaderComponent } from '../chat-header/chat-header.component';
-import { normalizeReasoningDetails } from '../../utils/reasoning-details';
+import { formatMessagesMarkdown, buildThreadDocument } from '../../utils/markdown-export';
 
 @Component({
   selector: 'app-chat-workspace',
@@ -24,7 +24,7 @@ import { normalizeReasoningDetails } from '../../utils/reasoning-details';
   styleUrl: './chat-workspace.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
+export class ChatWorkspaceComponent {
   private static readonly EMPTY_COMPOSER_DRAFT_KEY = '__empty__';
   private readonly scrollContainer = viewChild<ElementRef<HTMLDivElement>>('scrollContainer');
   private readonly composerDrafts = signal<Record<string, string>>({});
@@ -47,6 +47,7 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
   protected readonly isUnlocked = this.keychain.isUnlocked;
   protected readonly storedProviders = this.keychain.storedProviders;
 
+  protected readonly copyStatus = signal('');
   protected readonly messages = this.messageState.messages;
   protected readonly activeMessageId = this.messageState.activeMessageId;
   protected readonly isLoading = this.messageState.isLoading;
@@ -95,11 +96,12 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
   });
 
   protected readonly emptyStateComposerDisabled = computed(
-    () => this.isSubmittingComposer() || !this.modelSelection().model
+    () => this.isSubmittingComposer() || this.isStreaming() || !this.modelSelection().model
   );
 
   protected readonly currentModelLimit = computed<number | null>(() => {
-    const model = this.modelSelection().model;
+    const id = this.composerModelId();
+    const model = id ? this.adapters.getModelById(id) : null;
     return typeof model?.contextLength === 'number' && model.contextLength > 0
       ? model.contextLength
       : null;
@@ -186,10 +188,21 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
   protected readonly isContextSelectionActive = this.selectionState.isContextSelectionActive.asReadonly();
 
   // ResizeObserver for auto-scroll optimization
-  private resizeObserver?: ResizeObserver;
   private userHasScrolledUp = false;
 
   constructor() {
+    effect(onCleanup => {
+      const element = this.scrollContainer()?.nativeElement;
+      if (!element) return;
+      this.userHasScrolledUp = false;
+      element.addEventListener('scroll', this.onScroll, { passive: true });
+      const observer = new ResizeObserver(() => this.scrollToBottomIfPinned());
+      if (element.firstElementChild) observer.observe(element.firstElementChild);
+      onCleanup(() => {
+        observer.disconnect();
+        element.removeEventListener('scroll', this.onScroll);
+      });
+    });
     // Handle new user messages - always scroll to bottom and reset scroll flag
     effect(() => {
       const msgs = this.messages();
@@ -212,25 +225,6 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
     });
   }
 
-  ngAfterViewInit(): void {
-    // Hook up the observer and scroll listener when the view renders
-    const ref = this.scrollContainer();
-    if (ref) {
-      const el = ref.nativeElement;
-      // Add scroll listener to detect user scroll
-      el.addEventListener('scroll', this.onScroll);
-
-      // Create observer to watch the *inner* container or the last element
-      this.resizeObserver = new ResizeObserver(() => {
-        this.scrollToBottomIfPinned();
-      });
-      
-      // Observe the container's first child (the stream container)
-      if (el.firstElementChild) {
-        this.resizeObserver.observe(el.firstElementChild);
-      }
-    }
-  }
 
   private onScroll = () => {
     const ref = this.scrollContainer();
@@ -256,18 +250,12 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
     // Use 'instant' during streaming for performance, 'smooth' only for new user messages
   }
 
-  ngOnDestroy(): void {
-    this.resizeObserver?.disconnect();
-    const ref = this.scrollContainer();
-    if (ref) {
-      ref.nativeElement.removeEventListener('scroll', this.onScroll);
-    }
-  }
   protected readonly currentThreadContextSet = computed(() => {
     return this.promptContext().selection.selectedIds;
   });
 
   protected handleDeleteMessage(messageId: Id): void {
+    if (this.isStreaming()) return;
     const threadId = this.thread()?.id;
     if (!threadId) {
       return;
@@ -306,20 +294,19 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
 
   protected handleCopyMessage(messageId: Id): void {
     const message = this.messages().find((item) => item.id === messageId);
-    if (message?.rawMd && typeof navigator !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(message.rawMd).catch(() => {
-        // noop fallback
-      });
-    }
+    if (message?.rawMd) void this.copyMarkdown(message.rawMd);
   }
 
-  protected handleBranchMessage(messageId: Id): void {
-    void this.chatActions.branchFromMessage(messageId);
+  protected async handleBranchMessage(messageId: Id): Promise<void> {
+    const id = await this.chatActions.branchFromMessage(messageId);
+    if (id) await this.router.navigate(['/chat', id]);
   }
 
-  protected handleUpdateMessage(event: { id: Id; content: string }): void {
-    void this.chatActions.editMessageContent(event.id, event.content);
-  }
+  protected handleStopGeneration(): void { this.messageApi.stopGeneration(); }
+
+  protected readonly contextPreview = computed(() => this.promptContext().turns
+    .map(turn => `[${turn.role}]\n${turn.content}`).join('\n\n---\n\n'));
+
 
   protected handleSelectionChange(event: { id: Id; selected: boolean; range: boolean }): void {
     this.selectionState.setMessageSelection(event.id, {
@@ -386,11 +373,28 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
     }
     const idSet = new Set(ids);
     const ordered = this.messages().filter((message) => idSet.has(message.id));
-    const markdown = this.formatMessagesMarkdown(ordered, thread.reasoningConfig ?? null);
+    const markdown = formatMessagesMarkdown(ordered, thread.reasoningConfig ?? null);
     if (!markdown.trim()) {
       return;
     }
-    navigator.clipboard.writeText(markdown).catch(() => {});
+    void this.copyMarkdown(markdown);
+  }
+
+  private async copyMarkdown(markdown: string): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(markdown);
+      this.copyStatus.set('Markdown copied.');
+    } catch {
+      this.copyStatus.set('Clipboard unavailable. Use Export to download Markdown.');
+    }
+  }
+
+  protected handleExportSelection(): void {
+    const thread = this.thread();
+    if (!thread) return;
+    const selected = new Set(this.selectedMessageIds());
+    const messages = this.messages().filter(message => selected.has(message.id));
+    if (messages.length) this.downloadTextFile(buildThreadDocument(thread, messages), `${this.buildFilename(thread.title)}-selection.md`);
   }
 
   protected handleExportThread(): void {
@@ -402,7 +406,7 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
     if (!messages.length) {
       return;
     }
-    const markdown = this.buildThreadDocument(thread, messages);
+    const markdown = buildThreadDocument(thread, messages);
     this.downloadTextFile(markdown, `${this.buildFilename(thread.title)}.md`);
   }
 
@@ -423,48 +427,6 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
     void this.threads.renameThread(thread.id, nextTitle.trim());
   }
 
-  private formatMessagesMarkdown(
-    messages: ChatMessage[],
-    reasoningConfig: ReasoningConfig | null
-  ): string {
-    if (!messages.length) {
-      return '';
-    }
-    return messages
-      .map((message) => {
-        const author =
-          message.role === 'assistant' ? 'Assistant' : message.role === 'user' ? 'You' : message.role;
-        const timestamp = new Date(message.createdAt).toLocaleString();
-        const body = (message.rawMd ?? '').trim();
-        const includeReasoning =
-          (reasoningConfig?.captureInHistory ?? true) && (message.reasoning?.visible ?? false);
-        let reasoning = '';
-        if (includeReasoning && message.reasoning) {
-          const summaryLines = message.reasoning.summary
-            ? message.reasoning.summary.split(/\r?\n/).map((line) => line ? `> ${line}` : '>')
-            : [];
-          const detailLines =
-            normalizeReasoningDetails(message.reasoning.details ?? [])
-              .filter((detail) => detail.type === 'reasoning.text' || detail.type === 'reasoning.summary')
-              .flatMap((detail) =>
-                detail.content.split(/\r?\n/).map((line) => line ? `> ${line}` : '>')
-              );
-          const lines = [...summaryLines, ...detailLines];
-          if (lines.length) {
-            reasoning = `\n\n**Thinking Process:**\n${lines.join('\n')}`;
-          }
-        }
-        return `### ${author} · ${timestamp}\n\n${body}${reasoning}`;
-      })
-      .join('\n\n---\n\n');
-  }
-
-  private buildThreadDocument(thread: ChatThread, messages: ChatMessage[]): string {
-    const header = `# ${thread.title}\n\nExported ${new Date().toLocaleString()}\n`;
-    const body = this.formatMessagesMarkdown(messages, thread.reasoningConfig ?? null);
-    return body ? `${header}\n${body}` : header;
-  }
-
   private downloadTextFile(content: string, filename: string): void {
     if (typeof document === 'undefined') {
       return;
@@ -474,8 +436,11 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
     const anchor = document.createElement('a');
     anchor.href = url;
     anchor.download = filename;
+    anchor.hidden = true;
+    document.body.appendChild(anchor);
     anchor.click();
-    URL.revokeObjectURL(url);
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   private buildFilename(title: string): string {
@@ -495,8 +460,10 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
       });
       void this.router.navigate(['/chat', created.id]);
       // The empty-state draft is keyed off the sentinel; clear it now that we have a real thread.
+      this.setComposerDraft(created.id, payload.content);
       this.setComposerDraft(ChatWorkspaceComponent.EMPTY_COMPOSER_DRAFT_KEY, '');
-      await this.messageApi.sendUserMessage(payload.content, payload.modelId, created.id);
+      const started = await this.messageApi.sendUserMessage(payload.content, payload.modelId, created.id);
+      if (started) this.setComposerDraft(created.id, '');
     } catch (error) {
       console.error('Failed to start new conversation', error);
     } finally {
@@ -517,7 +484,7 @@ export class ChatWorkspaceComponent implements OnDestroy, AfterViewInit {
       }
       this.setComposerDraft(threadId, '');
     } catch (error) {
-      console.error('Failed to send message', error);
+      await this.dialogService.alert({ title: 'Message not sent', message: error instanceof Error ? error.message : 'Unable to save the message. Your draft has been kept.' });
     } finally {
       this.isSubmittingComposer.set(false);
     }

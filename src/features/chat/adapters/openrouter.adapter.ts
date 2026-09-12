@@ -1,314 +1,196 @@
 import { inject, Injectable } from '@angular/core';
 import { KeychainService } from '@core/services/keychain.service';
-import type { ReasoningDetail } from '@models/chat';
-import OpenAI from 'openai';
-import { ChatTurn, GenerateTextOptions, LlmAdapter, LlmModelDescriptor, StreamChunk, StreamChatOptions } from './llm-adapter';
+import type OpenAI from 'openai';
+import {
+  ChatTurn,
+  GenerateTextOptions,
+  LlmAdapter,
+  LlmModelDescriptor,
+  StreamChunk,
+  StreamChatOptions,
+} from './llm-adapter';
+import {
+  fromOpenRouterReasoning,
+  toOpenRouterReasoning,
+  OpenRouterReasoningDetail,
+} from '../utils/reasoning-details';
 
-@Injectable({
-  providedIn: 'root'
-})
+type MessageParam = OpenAI.Chat.Completions.ChatCompletionMessageParam & {
+  reasoning_details?: OpenRouterReasoningDetail[];
+};
+type RouterDelta = { reasoning_details?: OpenRouterReasoningDetail[]; reasoning?: string };
+
+@Injectable({ providedIn: 'root' })
 export class OpenRouterAdapter implements LlmAdapter {
   private readonly keychain = inject(KeychainService);
-
   readonly id = 'openrouter';
-
   readonly label = 'OpenRouter';
+  models: LlmModelDescriptor[] = [];
 
-  models: LlmModelDescriptor[] = []; // This will be populated dynamically.
+  private async createClient() {
+    const apiKey = await this.keychain.readKey('openrouter');
+    if (!apiKey) throw new Error('OpenRouter API key is not set. Please add it in Settings.');
+    // Keep the SDK out of the initial application bundle; do not retain decrypted keys.
+    const { default: Client } = await import('openai');
+    return new Client({
+      baseURL: 'https://openrouter.ai/api/v1',
+      apiKey,
+      defaultHeaders: {
+        'HTTP-Referer': globalThis.location?.origin ?? '',
+        'X-Title': 'Conversations Woven',
+      },
+      maxRetries: 0,
+      dangerouslyAllowBrowser: true,
+    });
+  }
 
   async *streamChat(turns: ChatTurn[], opts: StreamChatOptions): AsyncIterable<StreamChunk> {
-    const apiKey = await this.keychain.readKey('openrouter');
-    if (!apiKey) {
-      throw new Error('OpenRouter API key is not set. Please add it in Settings.');
-    }
-
-    const client = new OpenAI({
-      baseURL: 'https://openrouter.ai/api/v1',
-      apiKey: apiKey,
-      defaultHeaders: {
-        'HTTP-Referer': 'http://localhost:4200', // Replace with your actual site URL in production
-        'X-Title': 'Conversations Woven' // Replace with your app name
-      },
-      dangerouslyAllowBrowser: true
-    });
-
-    // Filter out tool messages as they require tool_call_id which we don't have
-    // and they're typically not needed in the conversation context
-    type MessageParam =
-      OpenAI.Chat.Completions.ChatCompletionMessageParam & { reasoning_details?: ReasoningDetail[] };
-    const messages: MessageParam[] = turns
-      .filter((turn): turn is Exclude<ChatTurn, { role: 'tool' }> => turn.role !== 'tool')
-      .map((turn) => {
-        if (turn.role === 'system') {
-          return { role: 'system' as const, content: turn.content };
-        }
-        if (turn.role === 'user') {
-          return { role: 'user' as const, content: turn.content };
-        }
-        const assistantMessage: MessageParam = { role: 'assistant' as const, content: turn.content };
-        if (turn.reasoningDetails?.length) {
-          assistantMessage.reasoning_details = turn.reasoningDetails.map((detail, index) => ({
-            ...detail,
-            index: detail.index ?? index
-          }));
-        }
-        return assistantMessage;
-      });
-
-    if (opts.system?.trim()) {
-      messages.unshift({ role: 'system', content: opts.system });
-    }
-
-    type ReasoningParams = { reasoning?: { effort?: string; max_tokens?: number } };
-    const requestPayload: OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming &
-      ReasoningParams = {
+    try {
+      const client = await this.createClient();
+      const payload: OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming & {
+        provider: { require_parameters: boolean };
+        reasoning?: { enabled?: boolean; effort?: string; max_tokens?: number; exclude?: boolean };
+      } = {
         model: opts.model,
-        messages,
+        messages: this.buildMessages(turns, opts.system),
         stream: true,
         max_tokens: opts.maxTokens,
-        temperature: opts.temperature
+        temperature: opts.temperature,
+        provider: { require_parameters: true },
       };
-
-    if (opts.reasoning && !opts.reasoning.exclude) {
-      requestPayload.reasoning = {
-        effort: opts.reasoning.effort,
-        max_tokens: opts.reasoning.maxTokens
-      };
-    }
-
-    try {
-      const stream = await client.chat.completions.create(requestPayload);
-
-      let finalUsage: StreamChunk['usage'] | undefined;
-
+      if (opts.reasoning) {
+        payload.reasoning = {
+          enabled: opts.reasoning.enabled,
+          exclude: opts.reasoning.exclude,
+          ...(opts.reasoning.maxTokens !== undefined
+            ? { max_tokens: opts.reasoning.maxTokens }
+            : { effort: opts.reasoning.effort }),
+        };
+      }
+      const stream = await client.chat.completions.create(payload, { signal: opts.signal });
+      let usage: StreamChunk['usage'];
+      let finishReason: string | undefined;
+      let hasContent = false;
       for await (const chunk of stream) {
+        const error = (chunk as unknown as { error?: { message?: string } }).error;
+        if (error) throw new Error(error.message || 'The provider failed during generation.');
         const choice = chunk.choices?.[0];
         const delta = choice?.delta;
-
-        const reasoningDetails = (delta as any)?.reasoning_details as
-          | Array<{ type?: string; text?: string; summary?: string; data?: string; index?: number; id?: string }>
-          | undefined;
-        if (Array.isArray(reasoningDetails)) {
-          for (const detail of reasoningDetails) {
-            const content = detail.text ?? detail.summary ?? detail.data ?? '';
-            if (content) {
-              yield {
-                deltaReasoning: {
-                  type:
-                    detail.type === 'reasoning.encrypted' || detail.type === 'reasoning.summary'
-                      ? detail.type
-                      : 'reasoning.text',
-                  content,
-                  index: detail.index ?? 0,
-                  id: detail.id
-                }
-              };
-            }
+        if (choice?.finish_reason) finishReason = choice.finish_reason;
+        if (finishReason === 'error') throw new Error('The provider failed during generation.');
+        if (delta?.refusal) throw new Error(delta.refusal);
+        const routerDelta = delta as RouterDelta | undefined;
+        if (routerDelta?.reasoning_details?.length) {
+          for (const detail of routerDelta.reasoning_details) {
+            const normalized = fromOpenRouterReasoning(detail);
+            if (normalized) yield { deltaReasoning: normalized };
           }
+        } else if (routerDelta?.reasoning) {
+          yield {
+            deltaReasoning: { type: 'reasoning.text', content: routerDelta.reasoning, index: 0 },
+          };
         }
-
-        const contentDelta = delta?.content;
-        if (Array.isArray(contentDelta)) {
-          for (const part of contentDelta) {
-            const text =
-              typeof part === 'string'
-                ? part
-                : typeof part === 'object' && part !== null && 'text' in part
-                  ? (part as { text?: string }).text
-                  : null;
-            if (text) {
-              yield { deltaText: text };
-            }
-          }
-        } else if (typeof contentDelta === 'string' && contentDelta) {
-          yield { deltaText: contentDelta };
+        if (delta?.content) {
+          hasContent = true;
+          yield { deltaText: delta.content };
         }
-
         if (chunk.usage) {
-          finalUsage = {
+          usage = {
             promptTokens: chunk.usage.prompt_tokens,
             completionTokens: chunk.usage.completion_tokens,
-            reasoningTokens: (chunk.usage as any).reasoning_tokens,
-            totalTokens: chunk.usage.total_tokens
+            reasoningTokens: chunk.usage.completion_tokens_details?.reasoning_tokens ?? undefined,
+            totalTokens: chunk.usage.total_tokens,
           };
         }
       }
-
-      yield { done: true, usage: finalUsage };
+      opts.signal?.throwIfAborted();
+      if (!finishReason)
+        throw new Error(
+          'The connection ended before the response completed. Partial text has been kept.',
+        );
+      if (!hasContent)
+        throw new Error(
+          `No response text returned (finish reason: ${finishReason}). Try increasing the output limit or changing models.`,
+        );
+      yield { done: true, usage, finishReason };
     } catch (error) {
-      if (error instanceof OpenAI.APIError) {
-        const fragments: string[] = [];
-        const pushFragment = (value?: string | number | null) => {
-          if (value === null || value === undefined || value === '') {
-            return;
-          }
-          const text = String(value);
-          if (!fragments.includes(text)) {
-            fragments.push(text);
-          }
-        };
-
-        pushFragment(error.status ? `HTTP ${error.status}` : null);
-        pushFragment(error.type);
-
-        const payload = (error.error ?? undefined) as
-          | { message?: string; code?: string | number; metadata?: Record<string, unknown> }
-          | undefined;
-        if (payload) {
-          pushFragment(payload.code ? `Code ${payload.code}` : null);
-          pushFragment(payload.message);
-          const metadata = payload.metadata as { raw?: string; provider_name?: string } | undefined;
-          if (metadata?.raw) {
-            const providerSuffix = metadata.provider_name ? ` (provider: ${metadata.provider_name})` : '';
-            pushFragment(`${metadata.raw}${providerSuffix}`);
-          } else if (metadata?.provider_name) {
-            pushFragment(`Provider: ${metadata.provider_name}`);
-          }
-        }
-
-        pushFragment(error.message);
-
-        const details = fragments.join(' · ') || 'Unknown error';
-        throw new Error(`OpenRouter API Error: ${details}`);
-      }
-
-      throw new Error(`OpenRouter API Error: ${(error as Error).message}`);
+      if (opts.signal?.aborted) throw error;
+      throw this.formatError(error);
     }
   }
 
-  async generateText(
-    turns: ChatTurn[],
-    opts: GenerateTextOptions
-  ): Promise<string> {
-    const apiKey = await this.keychain.readKey('openrouter');
-    if (!apiKey) {
-      throw new Error('OpenRouter API key is not set. Please add it in Settings.');
-    }
-
-    const client = new OpenAI({
-      baseURL: 'https://openrouter.ai/api/v1',
-      apiKey: apiKey,
-      defaultHeaders: {
-        'HTTP-Referer': 'http://localhost:4200',
-        'X-Title': 'Conversations Woven'
-      },
-      dangerouslyAllowBrowser: true
-    });
-
-    type MessageParam =
-      OpenAI.Chat.Completions.ChatCompletionMessageParam & { reasoning_details?: ReasoningDetail[] };
-    const messages: MessageParam[] = turns
-      .filter((turn): turn is Exclude<ChatTurn, { role: 'tool' }> => turn.role !== 'tool')
-      .map((turn) => {
-        if (turn.role === 'system') {
-          return { role: 'system' as const, content: turn.content };
-        }
-        if (turn.role === 'user') {
-          return { role: 'user' as const, content: turn.content };
-        }
-        const assistantMessage: MessageParam = { role: 'assistant' as const, content: turn.content };
-        if (turn.reasoningDetails?.length) {
-          assistantMessage.reasoning_details = turn.reasoningDetails.map((detail, index) => ({
-            ...detail,
-            index: detail.index ?? index
-          }));
-        }
-        return assistantMessage;
-      });
-
-    if (opts.system?.trim()) {
-      messages.unshift({ role: 'system', content: opts.system });
-    }
-
+  async generateText(turns: ChatTurn[], opts: GenerateTextOptions): Promise<string> {
     try {
-      const requestPayload: OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming = {
+      const client = await this.createClient();
+      const payload: OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming & {
+        provider: { require_parameters: boolean };
+      } = {
         model: opts.model,
-        messages,
-        stream: false, // Set to false for a single response
+        messages: this.buildMessages(turns, opts.system),
+        stream: false,
         max_tokens: opts.maxTokens,
-        temperature: opts.temperature
+        temperature: opts.temperature,
+        provider: { require_parameters: true },
+        ...(opts.jsonMode ? { response_format: { type: 'json_object' as const } } : {}),
       };
-
-      if (opts.jsonMode) {
-        requestPayload.response_format = { type: 'json_object' };
-      }
-
-      const completion = await client.chat.completions.create(requestPayload);
-
-      const message = completion.choices[0]?.message;
-      const content = this.extractMessageText(message?.content);
-      if (content) {
-        return content;
-      }
-
-      const finishReason = completion.choices[0]?.finish_reason ?? 'unknown';
-      const refusal =
-        typeof (message as { refusal?: unknown } | undefined)?.refusal === 'string'
-          ? (message as { refusal?: string }).refusal
-          : null;
+      const completion = await client.chat.completions.create(payload);
+      const choice = completion.choices[0];
+      if (choice?.message.content) return choice.message.content;
       throw new Error(
-        `OpenRouter returned an empty completion (finish_reason: ${finishReason}${refusal ? `, refusal: ${refusal}` : ''}).`
+        choice?.message.refusal ||
+          `No response text returned (finish reason: ${choice?.finish_reason ?? 'unknown'}).`,
       );
     } catch (error) {
-      if (error instanceof OpenAI.APIError) {
-        const fragments: string[] = [];
-        const pushFragment = (value?: string | number | null) => {
-          if (value === null || value === undefined || value === '') {
-            return;
-          }
-          const text = String(value);
-          if (!fragments.includes(text)) {
-            fragments.push(text);
-          }
-        };
-
-        pushFragment(error.status ? `HTTP ${error.status}` : null);
-        pushFragment(error.type);
-
-        const payload = (error.error ?? undefined) as
-          | { message?: string; code?: string | number; metadata?: Record<string, unknown> }
-          | undefined;
-        if (payload) {
-          pushFragment(payload.code ? `Code ${payload.code}` : null);
-          pushFragment(payload.message);
-          const metadata = payload.metadata as { raw?: string; provider_name?: string } | undefined;
-          if (metadata?.raw) {
-            const providerSuffix = metadata.provider_name ? ` (provider: ${metadata.provider_name})` : '';
-            pushFragment(`${metadata.raw}${providerSuffix}`);
-          } else if (metadata?.provider_name) {
-            pushFragment(`Provider: ${metadata.provider_name}`);
-          }
-        }
-
-        pushFragment(error.message);
-        const details = fragments.join(' · ') || 'Unknown error';
-        throw new Error(`OpenRouter API Error: ${details}`);
-      }
-
-      throw new Error(`OpenRouter API Error: ${(error as Error).message}`);
+      throw this.formatError(error);
     }
   }
 
-  private extractMessageText(content: OpenAI.Chat.Completions.ChatCompletionMessage['content']): string {
-    if (typeof content === 'string') {
-      return content;
-    }
-    if (!content || !Array.isArray(content)) {
-      return '';
-    }
-
-    const parts = content as Array<string | { text?: string }>;
-
-    return parts
-      .map((part: string | { text?: string }) => {
-        if (typeof part === 'string') {
-          return part;
+  private buildMessages(turns: ChatTurn[], system?: string): MessageParam[] {
+    const messages: MessageParam[] = turns
+      .filter((turn) => turn.role !== 'tool')
+      .map((turn) => {
+        if (turn.role === 'system' || turn.role === 'user') {
+          return { role: turn.role, content: turn.content };
         }
-        if (part && typeof part === 'object' && 'text' in part && typeof part.text === 'string') {
-          return part.text;
-        }
-        return '';
-      })
-      .join('');
+        return {
+          role: 'assistant',
+          content: turn.content,
+          ...(turn.reasoningDetails?.length
+            ? { reasoning_details: turn.reasoningDetails.map(toOpenRouterReasoning) }
+            : {}),
+        };
+      });
+    if (system?.trim()) messages.unshift({ role: 'system', content: system });
+    return messages;
+  }
+
+  private formatError(error: unknown): Error {
+    const apiError = error as {
+      status?: number;
+      message?: string;
+      error?: { message?: string; metadata?: { provider_name?: string; raw?: string } };
+    } | null;
+    const status = apiError?.status;
+    const hint =
+      status === 401
+        ? 'Check your API key in Settings.'
+        : status === 402
+          ? 'Check your OpenRouter credit balance.'
+          : status === 429
+            ? 'Rate limit reached. Wait a moment or choose another model.'
+            : '';
+    const metadata = apiError?.error?.metadata;
+    return new Error(
+      [
+        'OpenRouter',
+        status ? `HTTP ${status}` : '',
+        hint,
+        apiError?.error?.message || apiError?.message || 'Unable to complete the request.',
+        metadata?.provider_name ? `Provider: ${metadata.provider_name}` : '',
+        metadata?.raw,
+      ]
+        .filter(Boolean)
+        .join(' · '),
+    );
   }
 }
