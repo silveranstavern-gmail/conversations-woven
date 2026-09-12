@@ -24,7 +24,10 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
       align-items: flex-start;
       gap: var(--space-4);
       margin-bottom: var(--space-6);
+      flex-wrap: wrap;
     }
+
+    .settings-section__header > div:first-child { flex: 1 1 20rem; min-width: 0; }
 
     .settings-section__eyebrow {
       margin: 0;
@@ -45,6 +48,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
       display: flex;
       gap: var(--space-2);
       flex-shrink: 0;
+      max-width: 100%;
     }
 
     .settings-section__body {
@@ -60,4 +64,3 @@ export class SettingsSectionComponent {
   public readonly heading = input('');
   public readonly description = input('');
 }
-

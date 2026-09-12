@@ -1,4 +1,4 @@
-.markdown {
+app-markdown-renderer .markdown {
   font-size: 0.95rem;
   line-height: 1.6;
   color: var(--color-text);
@@ -11,7 +11,7 @@
 }
 
 /* Code blocks - wrap instead of scroll (Typora-style) */
-.markdown pre {
+app-markdown-renderer .markdown pre {
   background: color-mix(in oklch, var(--color-surface-2) 80%, transparent);
   padding: 0.85rem;
   border-radius: var(--radius-sm);
@@ -26,7 +26,7 @@
 }
 
 /* Inline code - wrap if needed, preserve spacing */
-.markdown code {
+app-markdown-renderer .markdown code {
   font-family: var(--font-family-mono);
   font-size: 0.85rem;
   word-break: break-word;
@@ -34,7 +34,7 @@
 }
 
 /* Code inside pre blocks - ensure wrapping while preserving code structure */
-.markdown pre code {
+app-markdown-renderer .markdown pre code {
   white-space: pre-wrap;
   word-break: break-word;
   overflow-wrap: anywhere;
@@ -42,57 +42,51 @@
   max-width: 100%;
 }
 
-/* Tables - wrap content but allow horizontal scroll for very wide tables */
-.markdown table {
-  width: 100%;
-  max-width: 100%;
-  border-collapse: collapse;
-  overflow-x: auto;
+/* One table formatting context keeps header and body columns aligned. */
+app-markdown-renderer .markdown table {
   display: block;
-}
-
-.markdown table thead,
-.markdown table tbody {
-  display: table;
   width: 100%;
-  table-layout: auto;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 1rem 0;
 }
 
-.markdown table tr {
-  display: table-row;
-}
-
-.markdown table th,
-.markdown table td {
-  padding: 0.5rem;
+app-markdown-renderer .markdown th,
+app-markdown-renderer .markdown td {
+  padding: 0.65rem 0.75rem;
   border: 1px solid var(--color-border);
-  word-break: break-word;
-  overflow-wrap: break-word;
-  max-width: 0; /* Force table to respect width constraints */
+  min-width: 7rem;
+  text-align: left;
+  vertical-align: top;
+  word-break: normal;
 }
 
-.markdown h1,
-.markdown h2,
-.markdown h3,
-.markdown h4 {
+app-markdown-renderer .markdown th {
+  background: var(--color-surface);
+  font-weight: 600;
+}
+app-markdown-renderer .markdown h1,
+app-markdown-renderer .markdown h2,
+app-markdown-renderer .markdown h3,
+app-markdown-renderer .markdown h4 {
   margin-top: 1.2em;
   margin-bottom: 0.6em;
   word-break: break-word;
   overflow-wrap: break-word;
 }
 
-.markdown ul {
+app-markdown-renderer .markdown ul {
   padding-left: 1.3rem;
 }
 
 /* Ensure images don't overflow */
-.markdown img {
+app-markdown-renderer .markdown img {
   max-width: 100%;
   height: auto;
 }
 
 /* Ensure blockquotes wrap */
-.markdown blockquote {
+app-markdown-renderer .markdown blockquote {
   word-break: break-word;
   overflow-wrap: break-word;
   max-width: 100%;

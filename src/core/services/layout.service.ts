@@ -4,7 +4,7 @@ import { DestroyRef, inject, Injectable, signal } from '@angular/core';
   providedIn: 'root'
 })
 export class LayoutService {
-  private readonly mobile = globalThis.matchMedia?.('(max-width: 768px)');
+  private readonly mobile = globalThis.matchMedia?.('(max-width: 1100px)');
   // Left sidebar state
   private readonly sidebarOpenSignal = signal(!this.mobile?.matches);
   readonly isSidebarOpen = this.sidebarOpenSignal.asReadonly();

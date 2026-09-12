@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 
 import { ChatAdaptersService } from '@features/chat/data/chat-adapters.service';
 
 @Component({
   selector: 'app-model-selector',
+  imports: [FormsModule],
   templateUrl: './model-selector.component.html',
   styleUrl: './model-selector.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -75,4 +77,3 @@ export class ModelSelectorComponent {
     }
   }
 }
-

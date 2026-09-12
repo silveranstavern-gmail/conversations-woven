@@ -56,7 +56,8 @@ import { TooltipDirective } from '@shared/ui/tooltip/tooltip.directive';
       padding: 0.25rem 0.5rem; border-radius: var(--radius-md);
     }
     .header__title:hover { background: var(--color-surface-hover); }
-    .header__actions { display: flex; align-items: center; gap: var(--space-3); }
+    .header__title button { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .header__actions { display: flex; align-items: center; gap: var(--space-3); flex-shrink: 0; }
     .header__subtitle { font-size: 0.8rem; display: none; }
     @media(min-width: 768px) { .header__subtitle { display: block; } }
   `],

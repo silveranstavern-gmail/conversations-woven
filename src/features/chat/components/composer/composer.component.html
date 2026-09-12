@@ -1,4 +1,13 @@
 <div class="composer-shell" [class.disabled]="disabled()">
+  @if (!isUnlocked()) {
+    <p class="composer-notice">
+      @if (storedProviders().length === 0) {
+        <a routerLink="/settings/api-keys">Add an API key</a> to send messages.
+      } @else {
+        <a routerLink="/settings/api-keys">Unlock your keychain</a> to send messages.
+      }
+    </p>
+  }
 
   @if (catalogError(); as error) {
     <p role="alert" class="composer-notice">{{ error }} <button type="button" appButton variant="ghost" size="sm" (click)="retryModels()">Retry</button></p>

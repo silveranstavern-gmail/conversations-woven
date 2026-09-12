@@ -1,6 +1,7 @@
 import { readTextAttachments } from '../../utils/text-attachments';
 import { ChatAdaptersService } from '../../data/chat-adapters.service';
-import { AfterViewInit, ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, input, output, signal, viewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, Component, computed, DestroyRef, effect, ElementRef, inject, input, output, signal, viewChild } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { UserPreferencesService } from '@core/services/preference/user-preferences.service';
 import { KeychainService } from '@core/services/keychain.service';
 import { TooltipDirective } from '@shared/ui/tooltip/tooltip.directive';
@@ -15,7 +16,7 @@ export interface ComposerSubmitPayload {
 
 @Component({
   selector: 'app-composer',
-  imports: [TooltipDirective, ButtonDirective, ModelSelectorComponent, ContextIndicatorComponent],
+  imports: [TooltipDirective, ButtonDirective, ModelSelectorComponent, ContextIndicatorComponent, RouterLink],
   templateUrl: './composer.component.html',
   styleUrl: './composer.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -24,6 +25,7 @@ export class ComposerComponent implements AfterViewInit {
   private readonly textareaRef = viewChild<ElementRef<HTMLTextAreaElement>>('textarea');
 
   private readonly preferences = inject(UserPreferencesService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly keychain = inject(KeychainService);
 
   private readonly adapters = inject(ChatAdaptersService);
@@ -60,9 +62,9 @@ export class ComposerComponent implements AfterViewInit {
     if (!this.isUnlocked()) {
       const hasStoredKeys = this.storedProviders().length > 0;
       if (!hasStoredKeys) {
-        return 'No API key configured. Configure API keys in settings';
+        return 'Write a message…';
       }
-      return 'Application is locked. Unlock to send messages';
+      return 'Write a message…';
     }
 
     // If unlocked and can send, show normal placeholder
@@ -175,6 +177,17 @@ export class ComposerComponent implements AfterViewInit {
 
   ngAfterViewInit(): void {
     this.autoResize();
+    const textarea = this.textareaRef()?.nativeElement;
+    if (!textarea) return;
+    let previousWidth = textarea.clientWidth;
+    const observer = new ResizeObserver(() => {
+      if (textarea.clientWidth !== previousWidth) {
+        previousWidth = textarea.clientWidth;
+        this.autoResize();
+      }
+    });
+    observer.observe(textarea);
+    this.destroyRef.onDestroy(() => observer.disconnect());
   }
 
   protected onDraftInput(event: Event): void {

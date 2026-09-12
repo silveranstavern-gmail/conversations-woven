@@ -87,7 +87,7 @@
   <div class="thread-list__items" role="listbox">
     @if (filteredThreads().length === 0) {
       <div class="thread-list__empty">
-        <p>No threads match "{{ term() }}".</p>
+        <p>{{ term() ? 'No threads match “' + term() + '”.' : 'Your conversations will appear here.' }}</p>
         <button type="button" appButton variant="ghost" (click)="onCreateThread()">Start a new chat</button>
       </div>
     } @else {

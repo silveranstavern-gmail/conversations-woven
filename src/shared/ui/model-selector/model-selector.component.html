@@ -9,7 +9,7 @@
     <select
       class="model-selector__compact-select"
       [disabled]="disabled() || displayModels().length === 0"
-      [value]="selectedModelId() ?? ''"
+      [ngModel]="selectedModelId() ?? ''"
       (change)="onModelChange($event)"
       [attr.aria-label]="'Model: ' + (selectedLabel() ?? 'Select a model')"
     >
@@ -28,7 +28,8 @@
 } @else {
   <select
     [disabled]="disabled() || displayModels().length === 0"
-    [value]="selectedModelId() ?? ''"
+    [ngModel]="selectedModelId() ?? ''"
+    [attr.aria-label]="'Model: ' + (selectedLabel() ?? 'Select a model')"
     (change)="onModelChange($event)"
   >
     @for (option of displayModels(); track option.id) {
@@ -42,4 +43,3 @@
     }
   </select>
 }
-

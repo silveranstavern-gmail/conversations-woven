@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, ViewEncapsulation } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import DOMPurify from 'dompurify';
 import { Marked } from 'marked';
@@ -11,6 +11,9 @@ const marked = new Marked({
 
 @Component({
   selector: 'app-markdown-renderer',
+  // Rendered Markdown does not receive Angular's emulated style attributes.
+  // The stylesheet is explicitly scoped to this component's host instead.
+  encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<div class="markdown" [innerHTML]="sanitized()"></div>`,
   styleUrls: ['./markdown-renderer.component.css']

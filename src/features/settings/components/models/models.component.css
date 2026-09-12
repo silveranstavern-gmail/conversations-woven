@@ -22,7 +22,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  flex: 1;
+  flex: 1 1 20rem;
   min-width: 0;
 }
 
@@ -31,6 +31,8 @@
   align-items: center;
   gap: var(--space-2);
   flex-shrink: 0;
+  flex-wrap: wrap;
+  max-width: 100%;
 }
 
 .models__preset-actions button {
@@ -248,7 +250,7 @@
 
 .models__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
   gap: var(--space-4);
 }
 
@@ -269,6 +271,7 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: var(--space-4);
+  flex-wrap: wrap;
 }
 
 .models__card-actions {
@@ -283,7 +286,7 @@
   gap: var(--space-2);
 }
 
-.models__action-buttons .ghost-button.active {
+.models__action-buttons .ui-btn.active {
   background: var(--color-brand);
   color: var(--color-brand-contrast);
   border-color: var(--color-brand);
@@ -296,6 +299,7 @@
 }
 
 .models__card-title {
+  overflow-wrap: anywhere;
   font-weight: 600;
   margin-bottom: var(--space-2);
 }
@@ -341,6 +345,9 @@
 
 .models__pricing {
   font-size: 0.8rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
 }
 
 .models__pricing-title {
@@ -384,6 +391,17 @@
 .models__details-button {
   align-self: flex-start;
   color: var(--color-brand);
+}
+
+@media (max-width: 600px) {
+  .models__controls-sticky { position: static; padding: var(--space-3); gap: var(--space-3); }
+  .models__search { min-width: 0; flex-basis: 100%; }
+  .models__controls-top-actions, .models__date-filter { width: 100%; margin-left: 0; }
+  .models__select { width: 100%; min-width: 0; }
+  .models__date-filter-fields { flex-wrap: wrap; max-width: 100%; }
+  .models__provider { flex-wrap: wrap; }
+  .models__provider-dropdown { max-inline-size: calc(100vw - 72px); }
+  .models__card-actions { flex-direction: row; flex-wrap: wrap; align-items: center; }
 }
 
 .models__card--disabled:hover,

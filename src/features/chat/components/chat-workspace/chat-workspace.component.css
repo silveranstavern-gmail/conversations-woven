@@ -55,8 +55,10 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  height: 100%;
+  justify-content: safe center;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   width: 100%;
   gap: var(--space-6);
   padding: var(--space-4);
@@ -101,8 +103,10 @@
 
 .workspace__composer-wrapper--empty {
   max-width: 650px;
-  width: 90%;
+  width: 100%;
 }
+
+.workspace__empty-state > * { flex-shrink: 0; }
 
 .workspace__selection {
   display: flex;
@@ -149,3 +153,11 @@
 .workspace__context-preview pre { max-height: 240px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
 
 .workspace__feedback { margin: 0; padding: var(--space-2) var(--space-4); font-size: .8rem; }
+
+/* On short windows, scroll the conversation and composer together so neither
+   the transcript nor the send control becomes trapped outside the viewport. */
+@media (max-height: 650px) {
+  .workspace { overflow-y: auto; }
+  .workspace__body { flex: 0 0 auto; height: auto; overflow: visible; }
+  .workspace__empty-state { overflow: visible; min-height: max-content; }
+}

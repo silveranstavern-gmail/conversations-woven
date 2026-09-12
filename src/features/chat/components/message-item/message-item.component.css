@@ -49,6 +49,7 @@
 
 .message__meta {
   flex: 1;
+  min-width: 0;
 }
 
 .message__meta-line {
@@ -157,6 +158,7 @@
 }
 
 .message__raw {
+  overflow-wrap: anywhere;
   margin: 0;
   font-family: var(--font-family-mono);
   font-size: 0.85rem;
@@ -220,7 +222,7 @@
   color: var(--color-text);
 }
 
-.ghost-button.active {
+.ui-btn.active {
   border-color: var(--color-brand);
   background: color-mix(in oklch, var(--color-brand) 10%, transparent);
 }

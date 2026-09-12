@@ -16,3 +16,5 @@
 .backup-card h3 {
   margin-top: 0;
 }
+
+.settings-section__actions-content { display: flex; flex-wrap: wrap; gap: var(--space-2); }

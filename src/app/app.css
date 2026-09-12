@@ -133,3 +133,19 @@
   min-height: 0; /* Critical: Allows flex child to shrink and enables scrolling in children */
   overflow: hidden; /* Prevent content from overflowing, let children handle their own scrolling */
 }
+
+@media (max-height: 550px) {
+  .app-shell { padding-block: var(--space-1); gap: var(--space-1); }
+}
+
+@media (max-width: 600px) {
+  .app-shell { padding-top: var(--space-2); padding-bottom: env(safe-area-inset-bottom, 0px); gap: var(--space-2); }
+  .app-shell__header { flex-wrap: wrap; gap: var(--space-2); padding: 0 var(--space-3); }
+  .brand { flex: 1 1 100%; gap: var(--space-2); }
+  .brand__copy small { display: none; }
+  .brand__copy strong { font-size: .9rem; }
+  .header-actions { width: 100%; justify-content: space-between; }
+  .primary-nav { flex: 1; }
+  .primary-nav a { flex: 1; text-align: center; }
+  .nav-action { min-width: 40px; min-height: 40px; justify-content: center; }
+}

@@ -123,7 +123,7 @@
 
 /* MOBILE OVERRIDES */
 .chat-layout__mobile-nav, .chat-layout__backdrop { display: none; }
-@media (max-width: 768px) {
+@media (max-width: 1100px) {
   .chat-layout__mobile-nav { display: flex; justify-content: space-between; height: 42px; border-bottom: 1px solid var(--color-border); }
   .chat-layout__backdrop { display: block; position: absolute; inset: 42px 0 0; z-index: 90; border: 0; background: rgb(0 0 0 / 40%); }
   .chat-layout__workspace-wrapper { height: calc(100% - 42px); }

@@ -28,6 +28,14 @@ yarn-error.log
 !.vscode/extensions.json
 .history/*
 
+# Hidden directories
+**/.*/
+!.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
 # Miscellaneous
 /.angular/cache
 .sass-cache/
