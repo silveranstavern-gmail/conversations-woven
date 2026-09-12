@@ -1,0 +1,54 @@
+<dialog #dialog aria-labelledby="model-details-title"
+  (pointerdown)="onPointerDown($event)" (click)="onBackdropClick($event)"
+  (cancel)="$event.preventDefault(); close()">
+  <header class="details-header">
+    <div>
+      <p class="eyebrow">Model details · {{ model().adapterLabel }}</p>
+      <h2 id="model-details-title">{{ model().label }}</h2>
+      <p class="model-id">{{ model().id }}</p>
+    </div>
+    <button type="button" appButton variant="ghost" size="sm" autofocus (click)="close()">
+      Close <span aria-hidden="true">×</span>
+    </button>
+  </header>
+
+  <div class="details-body">
+    <section aria-labelledby="model-description-title">
+      <h3 id="model-description-title">About this model</h3>
+      <p class="description">{{ model().details?.description || 'No description is available for this model.' }}</p>
+    </section>
+
+    <section aria-labelledby="model-specs-title">
+      <h3 id="model-specs-title">At a glance</h3>
+      <dl class="specs">
+        <div><dt>Provider</dt><dd>{{ model().providerId | titlecase }}</dd></div>
+        <div><dt>Context window</dt><dd>{{ model().contextLength | number }} tokens</dd></div>
+        <div><dt>Input / 1M tokens</dt><dd>${{ model().pricing.prompt * 1000000 | number:'1.2-4' }}</dd></div>
+        <div><dt>Output / 1M tokens</dt><dd>${{ model().pricing.completion * 1000000 | number:'1.2-4' }}</dd></div>
+        <div><dt>Visibility</dt><dd>{{ model().enabled ? 'Visible' : 'Hidden' }}</dd></div>
+        @if (model().created) {
+          <div><dt>Added</dt><dd>{{ model().created * 1000 | date:'mediumDate' }}</dd></div>
+        }
+        @if (model().details; as details) {
+          <div><dt>Input modalities</dt><dd>{{ details.architecture.input_modalities.join(', ') || 'Not provided' }}</dd></div>
+          <div><dt>Output modalities</dt><dd>{{ details.architecture.output_modalities.join(', ') || 'Not provided' }}</dd></div>
+          @if (details.architecture.modality) {
+            <div><dt>Modality</dt><dd>{{ details.architecture.modality }}</dd></div>
+          }
+          <div><dt>Per request</dt><dd>${{ details.pricing.request | number:'1.2-8' }}</dd></div>
+          <div><dt>Per image</dt><dd>${{ details.pricing.image | number:'1.2-8' }}</dd></div>
+        }
+      </dl>
+    </section>
+
+    <section aria-labelledby="model-capabilities-title">
+      <h3 id="model-capabilities-title">Capabilities</h3>
+      <dl class="specs capabilities">
+        <div><dt>Vision</dt><dd>{{ model().filterCapabilities.image ? 'Supported' : 'Not supported' }}</dd></div>
+        <div><dt>Tools</dt><dd>{{ model().filterCapabilities.tools ? 'Supported' : 'Not supported' }}</dd></div>
+        <div><dt>JSON</dt><dd>{{ model().filterCapabilities.json ? 'Supported' : 'Not supported' }}</dd></div>
+        <div><dt>Video</dt><dd>{{ model().filterCapabilities.video ? 'Supported' : 'Not supported' }}</dd></div>
+      </dl>
+    </section>
+  </div>
+</dialog>

@@ -1,4 +1,4 @@
-import { DecimalPipe, SlicePipe, TitleCasePipe } from '@angular/common';
+import { DecimalPipe, TitleCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import {
   ChatAdaptersService,
@@ -7,12 +7,13 @@ import {
 } from '@features/chat/data/chat-adapters.service';
 import { ButtonDirective } from '@shared/ui/button/button.directive';
 import { TooltipDirective } from '@shared/ui/tooltip/tooltip.directive';
+import { ModelDetailsComponent } from './model-details.component';
 
 type SortOption = 'default' | 'newest' | 'price-asc' | 'price-desc' | 'context-desc';
 
 @Component({
   selector: 'app-settings-models',
-  imports: [DecimalPipe, SlicePipe, TitleCasePipe, ButtonDirective, TooltipDirective],
+  imports: [DecimalPipe, TitleCasePipe, ButtonDirective, TooltipDirective, ModelDetailsComponent],
   templateUrl: './models.component.html',
   styleUrl: './models.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -22,6 +23,7 @@ export class ModelsComponent {
 
   // --- State Signals ---
   protected readonly searchTerm = signal('');
+  protected readonly selectedModel = signal<ChatModelVisibilityOption | null>(null);
   protected readonly sortOption = signal<SortOption>('default');
   
   // Filters

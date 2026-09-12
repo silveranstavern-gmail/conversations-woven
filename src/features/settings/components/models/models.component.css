@@ -360,7 +360,33 @@
 }
 
 .models__description {
-  margin-top: auto;
+  margin-top: 0;
   padding-top: var(--space-2);
   border-top: 1px solid var(--color-border);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+
+@media (hover: hover) {
+  .models__card:hover .models__description {
+    -webkit-line-clamp: 10;
+  }
+}
+
+.models__card:focus-within .models__description {
+  -webkit-line-clamp: 10;
+}
+
+.models__details-button {
+  align-self: flex-start;
+  color: var(--color-brand);
+}
+
+.models__card--disabled:hover,
+.models__card--disabled:focus-within {
+  opacity: 1;
 }

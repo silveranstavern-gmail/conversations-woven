@@ -378,12 +378,28 @@
           <span>Out: ${{ model.pricing.completion * 1000000 | number:'1.2-4' }}/M</span>
         </div>
 
+        <button
+          type="button"
+          appButton
+          variant="ghost"
+          size="sm"
+          class="models__details-button"
+          aria-haspopup="dialog"
+          [attr.aria-label]="'View details for ' + model.label"
+          (click)="selectedModel.set(model)"
+        >
+          View details <span aria-hidden="true">↗</span>
+        </button>
         @if(model.details && model.details.description) {
-          <p class="models__description text-muted small" [title]="model.details.description">
-            {{ model.details.description | slice:0:150 }}{{ model.details.description.length > 150 ? '...' : '' }}
+          <p class="models__description text-muted small">
+            {{ model.details.description }}
           </p>
         }
       </article>
     }
   </div>
 </section>
+
+@if (selectedModel(); as model) {
+  <app-model-details [model]="model" (dismiss)="selectedModel.set(null)" />
+}
